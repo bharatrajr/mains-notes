@@ -1,0 +1,1006 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#faf9f7">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Mains Notes</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{--bg:#faf9f7;--surface:#fff;--ink:#1c1c1c;--muted:#6d6a66;--line:#e8e4de;--accent:#2f4b7c;--accent-ink:#fff;--soft:#eef1f6;--again:#b33d3d;--hard:#a4651c;--good:#2e7a4e;--easy:#2f5d9c;--mark:#fff0b0;--fs:17px;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#131313;--surface:#1c1c1c;--ink:#e8e6e2;--muted:#9a968f;--line:#2c2b29;--accent:#93b2e6;--accent-ink:#111;--soft:#212833;--again:#e07a7a;--hard:#d9a35a;--good:#6cc492;--easy:#8fb2ea;--mark:#5b4a12;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#131313;--surface:#1c1c1c;--ink:#e8e6e2;--muted:#9a968f;--line:#2c2b29;--accent:#93b2e6;--accent-ink:#111;--soft:#212833;--again:#e07a7a;--hard:#d9a35a;--good:#6cc492;--easy:#8fb2ea;--mark:#5b4a12;color-scheme:dark}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink)}
+body{font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans","Noto Sans Telugu",sans-serif;min-height:100vh}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--accent)}
+header#top{position:sticky;top:0;z-index:5;background:var(--bg);display:flex;align-items:center;gap:8px;padding:calc(10px + env(safe-area-inset-top)) 16px 10px;border-bottom:1px solid var(--line)}
+header#top h1{font-size:17px;margin:0;font-weight:600;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.iconbtn{background:none;border:0;padding:6px;border-radius:8px;color:var(--muted);cursor:pointer;display:inline-flex}
+.iconbtn:active{background:var(--soft)}
+main{max-width:760px;margin:0 auto;padding:16px 16px calc(96px + env(safe-area-inset-bottom))}
+nav#nav{position:fixed;bottom:0;left:0;right:0;z-index:6;background:var(--surface);border-top:1px solid var(--line);display:flex;justify-content:space-around;padding:6px 4px calc(6px + env(safe-area-inset-bottom))}
+nav#nav a{flex:1;text-decoration:none;color:var(--muted);display:flex;flex-direction:column;align-items:center;font-size:11px;gap:2px;padding:4px 0;position:relative}
+nav#nav a.on{color:var(--accent)}
+nav#nav svg{width:22px;height:22px}
+.badge{position:absolute;top:0;left:calc(50% + 6px);background:var(--accent);color:var(--accent-ink);border-radius:9px;font-size:10px;padding:0 5px;line-height:16px;min-width:16px;text-align:center}
+body.focus header#top,body.focus nav#nav{display:none}
+body.focus main{padding-top:24px}
+#exitfocus{display:none;position:fixed;right:14px;bottom:18px;z-index:7}
+body.focus #exitfocus{display:inline-flex}
+h2{font-size:20px;margin:4px 0 12px}
+h3{font-size:16px;margin:18px 0 8px}
+.muted{color:var(--muted)}.small{font-size:13px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 14px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;color:var(--ink)}
+.btn:active{transform:scale(.98)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.ghost{border-color:transparent;background:none;color:var(--accent)}
+.btn.danger{color:var(--again)}
+.btn.block{display:flex;width:100%;padding:13px}
+.btn:disabled{opacity:.45}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.row.end{justify-content:flex-end}
+.spacer{flex:1}
+label{display:block;font-size:13px;color:var(--muted);margin:12px 0 4px}
+input[type=text],input[type=number],input[type=date],input[type=search],select,textarea{width:100%;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+textarea{resize:vertical;min-height:90px;line-height:1.5}
+textarea.tall{min-height:260px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:14px}
+.seg{display:flex;background:var(--soft);border-radius:10px;padding:3px;gap:3px;margin-bottom:12px}
+.seg button{flex:1;border:0;background:none;padding:8px 6px;border-radius:8px;cursor:pointer;color:var(--muted);font-size:14px}
+.seg button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:10px;scrollbar-width:none}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:20px;padding:4px 12px;font-size:13px;white-space:nowrap;cursor:pointer;color:var(--muted)}
+.chip.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.tag{display:inline-block;font-size:11px;padding:1px 7px;border-radius:6px;background:var(--soft);color:var(--muted);margin-right:4px}
+.list .item{display:block;padding:12px 2px;border-bottom:1px solid var(--line);text-decoration:none;color:var(--ink);cursor:pointer}
+.list .item:last-child{border-bottom:0}
+.item .t{font-weight:500}
+.item .s{font-size:13px;color:var(--muted);margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.stats3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
+.stats3 div{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px;text-align:center}
+.stats3 b{display:block;font-size:26px;font-weight:600}
+.stats3 span{font-size:12px;color:var(--muted)}
+.stats3 .n b{color:var(--easy)}.stats3 .l b{color:var(--again)}.stats3 .r b{color:var(--good)}
+.reading{font-size:var(--fs);line-height:1.7}
+.reading h2,.reading h3,.reading h4,.reading h5{margin:20px 0 6px;line-height:1.3}
+.reading h2{font-size:1.2em}.reading h3{font-size:1.08em}.reading h4,.reading h5{font-size:1em}
+.reading p{margin:8px 0}
+.reading ul,.reading ol{margin:6px 0;padding-left:22px}
+.reading li{margin:3px 0}
+.reading table{border-collapse:collapse;width:100%;margin:10px 0;font-size:.9em;display:block;overflow-x:auto}
+.reading th,.reading td{border:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+.reading th{background:var(--soft)}
+.reading blockquote{margin:8px 0;padding:6px 12px;border-left:3px solid var(--accent);background:var(--soft);border-radius:0 8px 8px 0}
+mark{background:var(--mark);color:inherit;padding:0 2px;border-radius:3px}
+code{background:var(--soft);padding:1px 5px;border-radius:5px;font-size:.9em}
+.sec{margin-top:18px}
+.sec>.h{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;font-weight:600}
+.facts li{margin:4px 0}
+.actions{display:flex;gap:4px;flex-wrap:wrap;margin:6px 0 14px;border-bottom:1px solid var(--line);padding-bottom:10px}
+.actions .btn{padding:6px 10px;font-size:14px}
+.blur{filter:blur(7px);user-select:none;cursor:pointer;transition:filter .2s}
+/* review */
+.rv-top{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.rv-top select{flex:1;padding:8px 10px}
+.cnt{font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
+.cnt .n{color:var(--easy)}.cnt .l{color:var(--again)}.cnt .r{color:var(--good)}
+.cnt u{text-decoration-thickness:2px;text-underline-offset:3px}
+.flash{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px 18px;min-height:220px;font-size:var(--fs);line-height:1.65}
+.flash .divider{border:0;border-top:1px dashed var(--line);margin:16px 0}
+.flash .src{margin-top:16px;font-size:12px;color:var(--muted)}
+.cz{background:var(--soft);color:var(--accent);font-weight:600;padding:0 6px;border-radius:5px}
+.cz.on{background:var(--mark);color:inherit}
+.grades{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:12px}
+.grades button{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:10px 4px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px}
+.grades small{font-size:11px;color:var(--muted)}
+.grades .g1 b{color:var(--again)}.grades .g2 b{color:var(--hard)}.grades .g3 b{color:var(--good)}.grades .g4 b{color:var(--easy)}
+.rv-tools{display:flex;justify-content:center;gap:2px;margin-top:14px;flex-wrap:wrap}
+.rv-tools button{background:none;border:0;color:var(--muted);font-size:13px;padding:6px 10px;cursor:pointer;border-radius:8px}
+.rv-tools button:active{background:var(--soft)}
+.progress{height:3px;background:var(--line);border-radius:2px;margin-bottom:12px;overflow:hidden}
+.progress i{display:block;height:100%;background:var(--accent);transition:width .3s}
+/* practice */
+.timer{font-size:44px;font-weight:300;text-align:center;font-variant-numeric:tabular-nums;margin:8px 0}
+.timer.over{color:var(--again)}
+.wc{font-size:13px;color:var(--muted);text-align:right;margin-top:4px}
+.scores{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.scores button{padding:8px 0;border:1px solid var(--line);border-radius:8px;background:var(--surface);cursor:pointer}
+.scores button.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+/* stats */
+.heat{display:grid;grid-template-rows:repeat(7,1fr);grid-auto-flow:column;gap:3px;overflow-x:auto}
+.heat i{width:13px;height:13px;border-radius:3px;background:var(--line);display:block}
+.heat i.h1{background:color-mix(in srgb,var(--good) 30%,var(--line))}.heat i.h2{background:color-mix(in srgb,var(--good) 55%,var(--line))}.heat i.h3{background:color-mix(in srgb,var(--good) 80%,var(--line))}.heat i.h4{background:var(--good)}
+.bars{display:flex;align-items:flex-end;gap:4px;height:90px;margin-top:6px}
+.bars div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;font-size:10px;color:var(--muted)}
+.bars div i{display:block;width:100%;background:var(--accent);border-radius:3px 3px 0 0;min-height:1px;opacity:.85}
+table.t{width:100%;border-collapse:collapse;font-size:14px}
+table.t td,table.t th{padding:7px 4px;border-bottom:1px solid var(--line);text-align:left}
+table.t td.n,table.t th.n{text-align:right;font-variant-numeric:tabular-nums}
+/* modal & toast */
+#modal{display:none}
+#modal.on{display:block}
+.mbg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.mbox{background:var(--bg);width:100%;max-width:640px;max-height:92vh;overflow:auto;border-radius:16px 16px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom))}
+@media(min-width:700px){.mbg{align-items:center}.mbox{border-radius:16px}}
+.mbox h3{margin-top:0}
+#toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:10px;font-size:14px;z-index:30;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90vw;text-align:center}
+#toast.on{opacity:.95}
+.steps .stepn{display:inline-flex;width:22px;height:22px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font-size:12px;align-items:center;justify-content:center;margin-right:8px;font-weight:600}
+.pv{border:1px solid var(--line);border-radius:10px;padding:10px;margin:6px 0;display:flex;gap:10px;align-items:flex-start}
+.pv input{margin-top:4px;width:18px;height:18px}
+.empty{text-align:center;padding:36px 12px;color:var(--muted)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:13px}
+.kv span:nth-child(odd){color:var(--muted)}
+.switch{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line)}
+.switch input{width:20px;height:20px}
+pre.prompt{white-space:pre-wrap;font-size:12px;background:var(--soft);padding:10px;border-radius:8px;max-height:220px;overflow:auto}
+.hide{display:none!important}
+</style>
+</head>
+<body>
+<header id="top">
+  <button class="iconbtn hide" id="back" aria-label="Back"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+  <h1 id="title">Today</h1>
+  <button class="iconbtn" id="searchbtn" aria-label="Search"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></button>
+</header>
+<main id="view"></main>
+<nav id="nav">
+  <a href="#/home" data-r="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>Today</a>
+  <a href="#/lib" data-r="lib"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h4v16H5zM10 4h4v16h-4zM15.5 5l3.5-1 3 15-3.5 1z"/></svg>Library</a>
+  <a href="#/add" data-r="add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8v8M8 12h8"/></svg>Add</a>
+  <a href="#/review" data-r="review"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="14" height="12" rx="2"/><path d="M7 3h12a2 2 0 0 1 2 2v10"/></svg>Review<span class="badge hide" id="dueBadge"></span></a>
+  <a href="#/more" data-r="more"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/></svg>More</a>
+</nav>
+<button class="btn" id="exitfocus">Exit focus</button>
+<div id="modal"></div>
+<div id="toast"></div>
+
+<script>
+'use strict';
+/* ================= Basics ================= */
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+const MIN=6e4,HOUR=36e5,DAY=864e5;
+const clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
+const arr=v=>Array.isArray(v)?v.filter(x=>x!=null&&String(x).trim()!=='').map(x=>typeof x==='string'?x.trim():(typeof x==='object'?Object.values(x).join(' — '):String(x))):(v?String(v).split(/\n+/).map(s=>s.replace(/^\s*[-*•]\s*/,'').trim()).filter(Boolean):[]);
+const str=v=>v==null?'':(Array.isArray(v)?v.map(x=>'- '+x).join('\n'):String(v)).trim();
+
+const PAPERS=[
+  {id:'GE',name:'General English (Qualifying)'},
+  {id:'P1',name:'Paper I · General Essay'},
+  {id:'P2',name:'Paper II · History, Culture & Geography'},
+  {id:'P3',name:'Paper III · Indian Society, Constitution & Governance'},
+  {id:'P4',name:'Paper IV · Economy & Development'},
+  {id:'P5',name:'Paper V · Science & Technology, Data Interpretation'},
+  {id:'P6',name:'Paper VI · Telangana Movement & State Formation'}
+];
+const paperName=id=>(PAPERS.find(p=>p.id===id)||{name:'Unsorted'}).name;
+const paperOpts=(sel,blank='Unsorted')=>`<option value="">${blank}</option>`+PAPERS.map(p=>`<option value="${p.id}" ${p.id===sel?'selected':''}>${esc(p.name)}</option>`).join('');
+function normPaper(p){
+  if(!p)return'';p=String(p).toUpperCase().trim();
+  let m=p.match(/\b(GE|P[1-6])\b/);if(m)return m[1];
+  m=p.match(/PAPER\s*[-–:]?\s*(VI|IV|V|III|II|I|[1-6])\b/);
+  if(m){const map={I:1,II:2,III:3,IV:4,V:5,VI:6};return 'P'+(map[m[1]]||+m[1]);}
+  if(/ENGLISH/.test(p))return'GE';if(/ESSAY/.test(p))return'P1';
+  if(/MOVEMENT|STATE FORMATION/.test(p))return'P6';if(/HISTORY|GEOGRAPHY|CULTURE/.test(p))return'P2';
+  if(/POLITY|CONSTITUTION|GOVERNANCE|SOCIETY/.test(p))return'P3';if(/ECONOM/.test(p))return'P4';
+  if(/SCIENCE|TECHNOLOGY|DATA/.test(p))return'P5';return'';
+}
+
+/* ================= Storage ================= */
+const DB={db:null,
+  open(){return new Promise((res,rej)=>{const r=indexedDB.open('tspsc-mains',1);
+    r.onupgradeneeded=()=>{const d=r.result;for(const s of['notes','qas','cards','logs','attempts'])if(!d.objectStoreNames.contains(s))d.createObjectStore(s,{keyPath:'id'});if(!d.objectStoreNames.contains('meta'))d.createObjectStore('meta');};
+    r.onsuccess=()=>{this.db=r.result;res()};r.onerror=()=>rej(r.error)})},
+  req(store,mode,fn){return new Promise((res,rej)=>{const t=this.db.transaction(store,mode);const o=t.objectStore(store);let out;const q=fn(o);if(q)q.onsuccess=()=>{out=q.result};t.oncomplete=()=>res(out);t.onerror=()=>rej(t.error);t.onabort=()=>rej(t.error)})},
+  all(s){return this.req(s,'readonly',o=>o.getAll())},
+  put(s,v){return this.req(s,'readwrite',o=>{o.put(v)})},
+  putMany(s,a){return this.req(s,'readwrite',o=>{a.forEach(v=>o.put(v))})},
+  del(s,id){return this.req(s,'readwrite',o=>{o.delete(id)})},
+  delMany(s,ids){return this.req(s,'readwrite',o=>{ids.forEach(id=>o.delete(id))})},
+  clear(s){return this.req(s,'readwrite',o=>{o.clear()})},
+  getMeta(k){return this.req('meta','readonly',o=>o.get(k))},
+  setMeta(k,v){return this.req('meta','readwrite',o=>{o.put(v,k)})}
+};
+const DEF={theme:'auto',fontSize:17,retention:0.9,newPerDay:15,reviewsPerDay:200,learnSteps:[1,10],relearnSteps:[10],maxIvl:365,examDate:'',rollover:4,minPerMark:1.2,fuzz:true,autoQaCards:true,lastBackup:0,extraNew:0,extraNewDay:''};
+const S={notes:[],qas:[],cards:[],logs:[],attempts:[],settings:{...DEF}};
+const byId=(store,id)=>S[store].find(x=>x.id===id);
+async function upsert(store,obj,touch=true){if(touch)obj.updated=Date.now();const a=S[store];const i=a.findIndex(x=>x.id===obj.id);if(i>=0)a[i]=obj;else a.push(obj);await DB.put(store,obj);askPersist()}
+async function upsertMany(store,list){const map=new Map(S[store].map((x,i)=>[x.id,i]));for(const o of list){if(map.has(o.id))S[store][map.get(o.id)]=o;else S[store].push(o)}await DB.putMany(store,list);askPersist()}
+async function removeMany(store,ids){const set=new Set(ids);S[store]=S[store].filter(x=>!set.has(x.id));await DB.delMany(store,ids)}
+async function saveSettings(){await DB.setMeta('settings',S.settings);applyTheme()}
+let persistAsked=false;function askPersist(){if(persistAsked)return;persistAsked=true;try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}}
+
+/* ================= Time ================= */
+const dayStart=(t=Date.now())=>{const r=S.settings.rollover*HOUR;const d=new Date(t-r);d.setHours(0,0,0,0);return d.getTime()+r};
+const dayEnd=(t=Date.now())=>dayStart(t)+DAY;
+const dayKey=(t=Date.now())=>{const d=new Date(t-S.settings.rollover*HOUR);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+function examDays(){const e=S.settings.examDate;if(!e)return null;const t=new Date(e+'T00:00:00').getTime();if(isNaN(t))return null;const d=Math.ceil((t-dayStart())/DAY);return d>=0?d:null}
+const fmtDate=t=>new Date(t).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+function ago(t){if(!t)return'never';const d=Math.floor((dayStart()-dayStart(t))/DAY);return d<=0?'today':d===1?'yesterday':d+' days ago'}
+function until(t){const d=Math.round((dayStart(t)-dayStart())/DAY);return d<=0?'today':d===1?'tomorrow':'in '+d+' days'}
+
+/* ================= FSRS-4.5 scheduler ================= */
+const FS={W:[0.4872,1.4003,3.7145,13.8206,5.1618,1.2298,0.8975,0.031,1.6474,0.1367,1.0461,2.1072,0.0793,0.3246,1.587,0.2272,2.8755],
+  DECAY:-0.5,FACTOR:19/81,
+  R(t,s){return s>0?Math.pow(1+this.FACTOR*t/s,this.DECAY):0},
+  ivl(s){return s/this.FACTOR*(Math.pow(S.settings.retention,1/this.DECAY)-1)},
+  D0(g){return clamp(this.W[4]-(g-3)*this.W[5],1,10)},
+  nextD(d,g){return clamp(this.W[7]*this.W[4]+(1-this.W[7])*(d-this.W[6]*(g-3)),1,10)},
+  sRecall(d,s,r,g){const W=this.W;return s*(1+Math.exp(W[8])*(11-d)*Math.pow(s,-W[9])*(Math.exp((1-r)*W[10])-1)*(g===2?W[15]:1)*(g===4?W[16]:1))},
+  sForget(d,s,r){const W=this.W;return Math.min(s,W[11]*Math.pow(d,-W[12])*(Math.pow(s+1,W[13])-1)*Math.exp((1-r)*W[14]))}
+};
+function maxIvlDays(){let m=S.settings.maxIvl||365;const e=examDays();if(e!=null&&e>0)m=Math.min(m,e);return Math.max(1,m)}
+function roundIvl(i){i=Math.max(1,Math.round(i));if(S.settings.fuzz&&i>2){const f=Math.max(1,Math.round(i*.05));i+=Math.round((Math.random()*2-1)*f)}return clamp(i,1,maxIvlDays())}
+const dueFromDays=(d,now)=>dayStart(now)+d*DAY;
+const curR=(c,now=Date.now())=>c.state===2||c.state===3?FS.R(Math.max(0,(now-c.last)/DAY),c.stability):null;
+function preview(c,now=Date.now()){
+  const st=S.settings,L=st.learnSteps.map(m=>m*MIN),RL=st.relearnSteps.map(m=>m*MIN),out={};
+  const base={...c,reps:(c.reps||0)+1,last:now};
+  const grad=(o,s)=>{const d=roundIvl(FS.ivl(s));o.state=2;o.step=0;o.ivl=d;o.due=dueFromDays(d,now);return o};
+  const stay=(o,state,step,delay)=>{o.state=state;o.step=step;o.ivl=0;o.due=now+delay;return o};
+  if(!c.state){
+    for(const g of[1,2,3,4]){const o={...base,stability:FS.W[g-1],difficulty:FS.D0(g)};
+      if(g===4||!L.length||(g===3&&L.length<2))grad(o,o.stability);
+      else if(g===1)stay(o,1,0,L[0]);
+      else if(g===2)stay(o,1,0,L.length>1?(L[0]+L[1])/2:L[0]*1.5);
+      else stay(o,1,1,L[1]);
+      out[g]=o}
+  }else if(c.state===1||c.state===3){
+    const steps=c.state===1?L:RL,step=c.step||0,s=c.stability;
+    for(const g of[1,2,3,4]){const o={...base,difficulty:FS.nextD(c.difficulty,g),stability:s};
+      if(g===4||!steps.length)grad(o,s);
+      else if(g===1)stay(o,c.state,0,steps[0]);
+      else if(g===2){const cur=steps[Math.min(step,steps.length-1)],nx=steps[step+1];stay(o,c.state,step,step===0&&nx?(cur+nx)/2:cur)}
+      else{const ns=step+1;if(ns>=steps.length)grad(o,s);else stay(o,c.state,ns,steps[ns])}
+      out[g]=o}
+  }else{
+    const r=FS.R(Math.max(0,(now-c.last)/DAY),c.stability);
+    const o1={...base,difficulty:FS.nextD(c.difficulty,1),stability:FS.sForget(c.difficulty,c.stability,r),lapses:(c.lapses||0)+1};
+    if(RL.length)stay(o1,3,0,RL[0]);else grad(o1,o1.stability);out[1]=o1;
+    const ss={};for(const g of[2,3,4])ss[g]=FS.sRecall(c.difficulty,c.stability,r,g);
+    const mx=maxIvlDays();let ih=roundIvl(FS.ivl(ss[2])),ig=roundIvl(FS.ivl(ss[3])),ie=roundIvl(FS.ivl(ss[4]));
+    ih=Math.min(ih,ig);if(ig<=ih)ig=Math.min(ih+1,mx);if(ie<=ig)ie=Math.min(ig+1,mx);
+    const iv={2:ih,3:ig,4:ie};
+    for(const g of[2,3,4])out[g]={...base,difficulty:FS.nextD(c.difficulty,g),stability:ss[g],state:2,step:0,ivl:iv[g],due:dueFromDays(iv[g],now)};
+  }
+  if(out[3].state===2&&out[4].state===2&&out[4].ivl<=out[3].ivl){out[4].ivl=Math.min(out[3].ivl+1,maxIvlDays());out[4].due=dueFromDays(out[4].ivl,now)}
+  return out;
+}
+function ivlLabel(o,now){if(o.state===2){const d=o.ivl;return d<30?d+'d':d<365?(+(d/30).toFixed(1))+'mo':(+(d/365).toFixed(1))+'y'}const m=Math.round((o.due-now)/MIN);return m<60?Math.max(1,m)+'m':(+(m/60).toFixed(1))+'h'}
+
+/* ================= Cards ================= */
+function newCard(f){return{id:uid(),created:Date.now(),state:0,due:0,stability:0,difficulty:0,reps:0,lapses:0,step:0,ivl:0,last:0,suspended:false,flagged:false,leech:false,type:'basic',front:'',back:'',text:'',cloze:0,group:'',paper:'',sourceType:'manual',sourceId:'',...f}}
+const clozeNums=t=>[...new Set([...String(t||'').matchAll(/\{\{c(\d+)::/g)].map(m=>+m[1]))].sort((a,b)=>a-b);
+function cardsFromRaw(list,src,t0=Date.now()){
+  const out=[];let k=0;
+  for(const r of(Array.isArray(list)?list:[])){if(!r||typeof r!=='object')continue;
+    const text=r.text||r.cloze||'';
+    const type=(String(r.type||'').toLowerCase()==='cloze'||/\{\{c\d+::/.test(text)||/\{\{c\d+::/.test(r.front||''))?'cloze':'basic';
+    const base={paper:src.paper,sourceType:src.kind,sourceId:src.id};
+    if(type==='cloze'){const t=text||r.front;const g=uid();for(const n of clozeNums(t))out.push(newCard({...base,type:'cloze',text:t,back:str(r.back||r.extra),cloze:n,group:g,created:t0+(k++)}))}
+    else{const f=r.front||r.q||r.question,b=r.back||r.a||r.answer;if(f&&b)out.push(newCard({...base,type:'basic',front:str(f),back:str(b),created:t0+(k++)}))}
+  }return out;
+}
+function qaOutlineCard(q,t0){
+  const lines=String(q.body||'').split('\n').filter(l=>/^(#{1,4}\s|[-*•]\s|\d+[.)]\s)/.test(l)).slice(0,14).join('\n');
+  const first=s=>String(s||'').split(/(?<=[.!?])\s/)[0];
+  let back='';if(q.keywords.length)back+='**Keywords:** '+q.keywords.join(', ')+'\n\n';
+  if(q.intro)back+='**Intro:** '+first(q.intro)+'\n\n';if(lines)back+=lines+'\n\n';if(q.conclusion)back+='**Way ahead:** '+first(q.conclusion);
+  return newCard({type:'basic',front:q.question+'\n\n_Recall the answer outline'+(q.marks?` (${q.marks} marks)`:'')+'_',back:back.trim()||'(see answer)',paper:q.paper,sourceType:'qa',sourceId:q.id,created:t0,group:'outline-'+q.id});
+}
+const cardsOf=id=>S.cards.filter(c=>c.sourceId===id);
+function srcOf(c){return c.sourceType==='note'?byId('notes',c.sourceId):c.sourceType==='qa'?byId('qas',c.sourceId):null}
+function deckCards(deck){
+  if(!deck||deck==='all')return S.cards;
+  if(deck==='flag')return S.cards.filter(c=>c.flagged);
+  if(deck==='star')return S.cards.filter(c=>{const s=srcOf(c);return s&&s.starred});
+  if(deck.startsWith('src:')){const id=deck.slice(4);return S.cards.filter(c=>c.sourceId===id)}
+  return S.cards.filter(c=>c.paper===deck);
+}
+function counts(deck='all',now=Date.now()){
+  const end=dayEnd(now),today=dayKey(now);let learn=0,rev=0,nw=0;
+  for(const c of deckCards(deck)){if(c.suspended)continue;if(!c.state)nw++;else if(c.state===2){if(c.due<end)rev++}else if(c.due<end)learn++}
+  let newDone=0,revDone=0;for(const l of S.logs){if(l.day!==today)continue;if(l.prevState===0)newDone++;else if(l.prevState===2)revDone++}
+  const extra=S.settings.extraNewDay===today?S.settings.extraNew:0;
+  return{learn,review:Math.min(rev,Math.max(0,S.settings.reviewsPerDay-revDone)),newLeft:Math.min(nw,Math.max(0,S.settings.newPerDay+extra-newDone)),newTotal:nw,reviewTotal:rev,newDone,revDone};
+}
+
+/* ================= Markdown-lite ================= */
+function inline(s){return s.replace(/`([^`]+)`/g,'<code>$1</code>').replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>').replace(/==([^=]+)==/g,'<mark>$1</mark>').replace(/(^|[^*\w])\*([^*\n]+)\*(?!\w)/g,'$1<em>$2</em>').replace(/(^|[^\w&])_([^_\n]+)_(?!\w)/g,'$1<em>$2</em>')}
+function mdTable(rows){const cells=r=>r.trim().replace(/^\|/,'').replace(/\|$/,'').split('|').map(c=>inline(c.trim()));
+  const body=rows.filter(r=>!/^\s*\|?\s*:?-{2,}/.test(r));if(!body.length)return'';
+  return'<table><thead><tr>'+cells(body[0]).map(c=>`<th>${c}</th>`).join('')+'</tr></thead><tbody>'+body.slice(1).map(r=>'<tr>'+cells(r).map(c=>`<td>${c}</td>`).join('')+'</tr>').join('')+'</tbody></table>'}
+function md(src){
+  if(!src)return'';const lines=esc(String(src)).replace(/\r/g,'').split('\n'),out=[],st=[];
+  const closeAll=()=>{while(st.length)out.push(`</li></${st.pop().t}>`)};
+  const item=(ind,t)=>{
+    if(!st.length||ind>st[st.length-1].ind){out.push(`<${t}><li>`);st.push({t,ind});return}
+    while(st.length>1&&st[st.length-1].ind>ind)out.push(`</li></${st.pop().t}>`);
+    const top=st[st.length-1];if(top.t!==t){out.push(`</li></${st.pop().t}><${t}><li>`);st.push({t,ind})}else out.push('</li><li>')};
+  const isBlock=l=>/^(\s*([-*•]|\d+[.)])\s+|#{1,4}\s|&gt;|\s*\||\s*(---|\*\*\*)\s*$)/.test(l);
+  for(let i=0;i<lines.length;i++){const L=lines[i];
+    const m=L.match(/^(\s*)([-*•]|\d+[.)])\s+(.*)$/);
+    if(m){item(m[1].replace(/\t/g,'    ').length,/\d/.test(m[2])?'ol':'ul');out.push(inline(m[3]));continue}
+    if(!L.trim()){if(st.length&&i+1<lines.length&&/^\s*([-*•]|\d+[.)])\s+/.test(lines[i+1]))continue;closeAll();continue}
+    if(st.length&&/^\s{2,}\S/.test(L)){out.push('<br>'+inline(L.trim()));continue}
+    closeAll();
+    let h=L.match(/^(#{1,4})\s+(.*)$/);if(h){const lv=Math.min(h[1].length+1,5);out.push(`<h${lv}>${inline(h[2])}</h${lv}>`);continue}
+    if(/^\s*(---|\*\*\*)\s*$/.test(L)){out.push('<hr>');continue}
+    if(/^&gt;/.test(L)){const q=[];while(i<lines.length&&/^&gt;/.test(lines[i]))q.push(lines[i++].replace(/^&gt;\s?/,''));i--;out.push(`<blockquote>${inline(q.join('<br>'))}</blockquote>`);continue}
+    if(/^\s*\|/.test(L)){const rows=[];while(i<lines.length&&/^\s*\|/.test(lines[i]))rows.push(lines[i++]);i--;out.push(mdTable(rows));continue}
+    const p=[L];while(i+1<lines.length&&lines[i+1].trim()&&!isBlock(lines[i+1]))p.push(lines[++i]);
+    out.push(`<p>${inline(p.join('<br>'))}</p>`)}
+  closeAll();return out.join('');
+}
+function clozeHTML(text,n,reveal){
+  const toks=[];const t=String(text||'').replace(/\{\{c(\d+)::([\s\S]*?)(?:::([\s\S]*?))?\}\}/g,(m,num,ans,hint)=>{toks.push(+num===n?(reveal?`<span class="cz on">${esc(ans)}</span>`:`<span class="cz">[${esc(hint||'…')}]</span>`):esc(ans));return'\u0000'+(toks.length-1)+'\u0000'});
+  return md(t).replace(/\u0000(\d+)\u0000/g,(m,i)=>toks[+i]);
+}
+const plain=t=>String(t||'').replace(/\{\{c\d+::([\s\S]*?)(?:::[\s\S]*?)?\}\}/g,'$1').replace(/[#*_=`>|]/g,'').replace(/\s+/g,' ').trim();
+
+/* ================= UI helpers ================= */
+function toast(m,ms=2200){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove('on'),ms)}
+function modal(html,bind){const m=$('#modal');m.innerHTML=`<div class="mbg"><div class="mbox">${html}</div></div>`;m.classList.add('on');
+  $('.mbg',m).addEventListener('click',e=>{if(e.target.classList.contains('mbg')||e.target.closest('[data-close]'))closeModal()});bind&&bind($('.mbox',m))}
+function closeModal(){const m=$('#modal');m.classList.remove('on');m.innerHTML=''}
+async function copyText(t){try{await navigator.clipboard.writeText(t);return true}catch(e){const a=document.createElement('textarea');a.value=t;a.style.position='fixed';a.style.opacity='0';document.body.appendChild(a);a.select();let ok=false;try{ok=document.execCommand('copy')}catch(_){}a.remove();return ok}}
+async function pasteInto(el){try{const t=await navigator.clipboard.readText();if(t){el.value=t;el.dispatchEvent(new Event('input'));toast('Pasted')}else toast('Clipboard is empty')}catch(e){toast('Long-press the box and choose Paste')}}
+function download(name,text,mime='application/json'){const b=new Blob([text],{type:mime});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000)}
+async function shareFile(name,text){try{const f=new File([text],name,{type:'text/plain'});if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:name});return}}catch(e){if(e.name==='AbortError')return}download(name,text)}
+function readFile(accept){return new Promise(res=>{const i=document.createElement('input');i.type='file';i.accept=accept;i.onchange=()=>{const f=i.files[0];if(!f)return res(null);const r=new FileReader();r.onload=()=>res({name:f.name,text:r.result});r.readAsText(f)};i.click()})}
+const stamp=()=>new Date().toISOString().slice(0,10);
+function applyTheme(){const s=S.settings;document.documentElement.dataset.theme=s.theme==='auto'?'':s.theme;document.documentElement.style.setProperty('--fs',s.fontSize+'px');
+  const dark=s.theme==='dark'||(s.theme==='auto'&&matchMedia('(prefers-color-scheme: dark)').matches);$('meta[name=theme-color]').content=dark?'#131313':'#faf9f7'}
+function updateBadge(){const c=counts('all');const n=c.learn+c.review+c.newLeft;const b=$('#dueBadge');b.textContent=n>99?'99+':n;b.classList.toggle('hide',!n)}
+function streak(){const days=new Set(S.logs.map(l=>l.day));let n=0,t=Date.now();if(!days.has(dayKey(t)))t-=DAY;while(days.has(dayKey(t))){n++;t-=DAY}return n}
+
+/* ================= Revision schedule for notes ================= */
+const REV=[1,3,7,14,30,60,120];
+const freshRev=(now=Date.now())=>({count:0,last:0,next:dayStart(now)+DAY});
+function markRevised(n){const now=Date.now(),c=(n.rev?.count||0)+1;n.rev={count:c,last:now,next:dayStart(now)+REV[Math.min(c,REV.length-1)]*DAY}}
+const revDue=n=>n.rev&&n.rev.next<dayEnd();
+
+/* ================= Router ================= */
+let tick=null;const R={deck:'all',card:null,pv:null,shown:false,t0:0,undo:[],lastGroup:'',cram:null,done:0};
+const TITLES={home:'Today',lib:'Library',add:'Add content',review:'Review',more:'More',note:'Note',qa:'Question',edit:'Edit',practice:'Answer practice',stats:'Statistics',settings:'Settings',backup:'Backup & import',help:'How it works'};
+function go(h){if(location.hash===h)render();else location.hash=h}
+window.addEventListener('hashchange',render);
+document.addEventListener('click',e=>{const a=e.target.closest('[data-go]');if(a){e.preventDefault();go(a.dataset.go)}});
+$('#back').onclick=()=>history.length>1?history.back():go('#/home');
+$('#searchbtn').onclick=()=>{L.focusSearch=true;go('#/lib')};
+$('#exitfocus').onclick=()=>document.body.classList.remove('focus');
+function render(){
+  clearInterval(tick);tick=null;closeModal();document.body.classList.remove('focus');
+  const parts=(location.hash||'#/home').slice(2).split('/');const r=parts[0]||'home';
+  $$('#nav a').forEach(a=>a.classList.toggle('on',a.dataset.r===r));
+  $('#title').textContent=TITLES[r]||'Mains';
+  $('#back').classList.toggle('hide',['home','lib','add','review','more'].includes(r));
+  const v=$('#view');v.scrollTop=0;window.scrollTo(0,0);
+  const fn={home:vHome,lib:vLib,add:vAdd,review:vReview,more:vMore,note:vNote,qa:vQA,edit:vEdit,practice:vPractice,stats:vStats,settings:vSettings,backup:vBackup,help:vHelp}[r]||vHome;
+  fn(v,parts.slice(1));updateBadge();
+}
+
+/* ================= Today ================= */
+function vHome(v){
+  const c=counts('all'),total=c.learn+c.review+c.newLeft,ex=examDays(),sk=streak();
+  const dueNotes=S.notes.filter(revDue).sort((a,b)=>a.rev.next-b.rev.next);
+  const backupOld=(S.notes.length+S.qas.length)>0&&Date.now()-(S.settings.lastBackup||0)>7*DAY;
+  const empty=!S.notes.length&&!S.qas.length;
+  const fc=[];for(let d=1;d<=7;d++){const s=dayStart()+d*DAY;fc.push(S.cards.filter(x=>!x.suspended&&x.state===2&&x.due>=s&&x.due<s+DAY).length)}
+  const mx=Math.max(1,...fc);
+  v.innerHTML=`
+  <div class="row"><div class="muted small">${new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'})}</div><span class="spacer"></span>
+  ${ex!=null?`<div class="small"><b>${ex}</b> <span class="muted">days to Mains</span></div>`:''}</div>
+  <div class="stats3"><div class="r"><b>${c.review}</b><span>Review</span></div><div class="l"><b>${c.learn}</b><span>Learning</span></div><div class="n"><b>${c.newLeft}</b><span>New</span></div></div>
+  <a class="btn primary block" data-go="#/review">${total?'Start review':'All caught up'}</a>
+  <p class="small muted" style="text-align:center;margin:8px 0 18px">Reviewed today: ${c.newDone+c.revDone+S.logs.filter(l=>l.day===dayKey()&&l.prevState!==0&&l.prevState!==2).length} · Streak: ${sk} day${sk===1?'':'s'}</p>
+  ${empty?`<div class="card"><h3 style="margin-top:0">Start here</h3><ol class="small" style="padding-left:18px;margin:0">
+   <li>Go to <b>Add</b>, paste your raw notes or Q&amp;A.</li><li>Copy the prompt and paste it into ChatGPT / Claude / Gemini.</li>
+   <li>Paste the AI's reply back — notes, model answers and flashcards are saved.</li><li>Review the due cards here every day.</li></ol>
+   <div class="row" style="margin-top:12px"><a class="btn" data-go="#/add">Add content</a><a class="btn ghost" data-go="#/help">How it works</a></div></div>`:''}
+  ${backupOld?`<div class="card row"><div class="small" style="flex:1">Last backup: ${ago(S.settings.lastBackup)}. Keep a copy outside the phone.</div><a class="btn" data-go="#/backup">Back up</a></div>`:''}
+  ${dueNotes.length?`<h3>Notes to revise <span class="muted small">(${dueNotes.length})</span></h3><div class="card list" style="padding:2px 12px">${dueNotes.slice(0,6).map(n=>`<a class="item" data-go="#/note/${n.id}"><div class="t">${esc(n.title)}</div><div class="s">${n.paper||'—'} · revised ${n.rev.count}× · last ${ago(n.rev.last)}</div></a>`).join('')}</div>`:''}
+  ${S.qas.length?`<a class="btn block" data-go="#/practice" style="margin-top:8px">Practise an answer</a>`:''}
+  ${S.cards.length?`<h3>Next 7 days</h3><div class="card"><div class="bars">${fc.map((n,i)=>`<div title="${n}"><span>${n||''}</span><i style="height:${n/mx*70}px"></i><span>${new Date(dayStart()+(i+1)*DAY).toLocaleDateString('en-IN',{weekday:'narrow'})}</span></div>`).join('')}</div></div>`:''}`;
+}
+
+/* ================= Library ================= */
+const L={tab:'notes',q:'',paper:'',sort:'recent',star:false,cstate:'',focusSearch:false};
+function vLib(v,args){
+  if(args[0]&&['notes','qa','cards'].includes(args[0]))L.tab=args[0];
+  v.innerHTML=`
+  <div class="seg" id="ltab"><button data-t="notes">Notes ${S.notes.length}</button><button data-t="qa">Q&amp;A ${S.qas.length}</button><button data-t="cards">Cards ${S.cards.length}</button></div>
+  <input type="search" id="lq" placeholder="Search…" value="${esc(L.q)}">
+  <div class="chips" style="margin-top:10px" id="lp"><span class="chip" data-p="">All</span>${PAPERS.map(p=>`<span class="chip" data-p="${p.id}">${p.id}</span>`).join('')}<span class="chip" data-p="★">★</span></div>
+  <div class="row small" id="lopts"></div>
+  <div class="card list" id="llist" style="padding:2px 12px;margin-top:8px"></div>`;
+  const syncUI=()=>{$$('#ltab button').forEach(b=>b.classList.toggle('on',b.dataset.t===L.tab));$$('#lp .chip').forEach(c=>c.classList.toggle('on',L.star?c.dataset.p==='★':c.dataset.p===L.paper));
+    $('#lopts').innerHTML=L.tab==='cards'?`<select id="lcs" style="width:auto;padding:6px 10px"><option value="">All states</option><option value="new">New</option><option value="due">Due today</option><option value="learn">Learning</option><option value="flag">Flagged</option><option value="leech">Leeches</option><option value="susp">Suspended</option></select><span class="spacer"></span><button class="btn" id="newcard">+ Card</button>`
+      :`<select id="lsort" style="width:auto;padding:6px 10px"><option value="recent">Recently updated</option><option value="title">A–Z</option><option value="rev">Revision due</option>${L.tab==='qa'?'<option value="weak">Least practised</option>':''}</select><span class="spacer"></span><button class="btn" id="newitem">+ New</button>`;
+    if($('#lcs')){$('#lcs').value=L.cstate;$('#lcs').onchange=e=>{L.cstate=e.target.value;list()};$('#newcard').onclick=()=>cardEditor(null,null)}
+    if($('#lsort')){$('#lsort').value=L.sort;$('#lsort').onchange=e=>{L.sort=e.target.value;list()};$('#newitem').onclick=()=>go(L.tab==='qa'?'#/edit/qa/new':'#/edit/note/new')}};
+  const list=()=>{const q=L.q.toLowerCase().trim(),el=$('#llist');let h='';
+    const pOk=x=>(!L.paper||x.paper===L.paper);
+    if(L.tab==='notes'){let a=S.notes.filter(n=>pOk(n)&&(!L.star||n.starred)&&(!q||[n.title,n.topic,n.summary,n.content,(n.tags||[]).join(' '),(n.keyFacts||[]).join(' ')].join(' ').toLowerCase().includes(q)));
+      a.sort(L.sort==='title'?(x,y)=>x.title.localeCompare(y.title):L.sort==='rev'?(x,y)=>(x.rev?.next||0)-(y.rev?.next||0):(x,y)=>(y.updated||0)-(x.updated||0));
+      h=a.map(n=>`<a class="item" data-go="#/note/${n.id}"><div class="t">${n.starred?'★ ':''}${esc(n.title)}</div><div class="s">${n.paper?`<span class="tag">${n.paper}</span>`:''}${revDue(n)?'<span class="tag">revise</span>':''}${esc(n.summary||plain(n.content).slice(0,140))}</div></a>`).join('')}
+    else if(L.tab==='qa'){let a=S.qas.filter(n=>pOk(n)&&(!L.star||n.starred)&&(!q||[n.question,n.topic,n.intro,n.body,n.conclusion,(n.keywords||[]).join(' ')].join(' ').toLowerCase().includes(q)));
+      const att=id=>S.attempts.filter(x=>x.qaId===id).length;
+      a.sort(L.sort==='title'?(x,y)=>x.question.localeCompare(y.question):L.sort==='rev'?(x,y)=>(x.rev?.next||0)-(y.rev?.next||0):L.sort==='weak'?(x,y)=>att(x.id)-att(y.id):(x,y)=>(y.updated||0)-(x.updated||0));
+      h=a.map(n=>`<a class="item" data-go="#/qa/${n.id}"><div class="t">${n.starred?'★ ':''}${esc(n.question)}</div><div class="s">${n.paper?`<span class="tag">${n.paper}</span>`:''}${n.marks?`<span class="tag">${n.marks}m</span>`:''}${att(n.id)?`<span class="tag">practised ${att(n.id)}×</span>`:''}${esc(n.topic||'')}</div></a>`).join('')}
+    else{const now=Date.now(),end=dayEnd(now);let a=S.cards.filter(c=>{if(L.paper&&c.paper!==L.paper)return false;if(L.star){const s=srcOf(c);if(!s||!s.starred)return false}
+        const st=L.cstate;if(st==='new'&&c.state)return false;if(st==='due'&&!(c.state&&c.due<end&&!c.suspended))return false;if(st==='learn'&&!(c.state===1||c.state===3))return false;if(st==='flag'&&!c.flagged)return false;if(st==='leech'&&!c.leech)return false;if(st==='susp'&&!c.suspended)return false;
+        return!q||[c.front,c.back,c.text].join(' ').toLowerCase().includes(q)});
+      a.sort((x,y)=>(y.created||0)-(x.created||0));const more=a.length>300;a=a.slice(0,300);
+      h=a.map(c=>`<div class="item" data-card="${c.id}"><div class="t">${esc(plain(c.type==='cloze'?c.text:c.front).slice(0,160))}</div><div class="s">${c.paper?`<span class="tag">${c.paper}</span>`:''}<span class="tag">${c.type==='cloze'?'cloze '+c.cloze:'basic'}</span>${c.suspended?'<span class="tag">suspended</span>':!c.state?'<span class="tag">new</span>':c.state===2?`<span class="tag">due ${until(c.due)}</span>`:'<span class="tag">learning</span>'}${c.flagged?'<span class="tag">⚑</span>':''}${c.leech?'<span class="tag">leech</span>':''}</div></div>`).join('')+(more?'<p class="small muted">Showing first 300 — refine the search.</p>':'')}
+    el.innerHTML=h||`<div class="empty">${q||L.paper||L.star?'Nothing matches.':'Nothing here yet. Use <a href="#/add">Add</a> to import content.'}</div>`;
+    $$('[data-card]',el).forEach(x=>x.onclick=()=>cardEditor(byId('cards',x.dataset.card),null,list))};
+  $$('#ltab button').forEach(b=>b.onclick=()=>{L.tab=b.dataset.t;syncUI();list()});
+  $$('#lp .chip').forEach(c=>c.onclick=()=>{if(c.dataset.p==='★'){L.star=!L.star;L.paper=''}else{L.paper=c.dataset.p;L.star=false}syncUI();list()});
+  $('#lq').oninput=e=>{L.q=e.target.value;list()};
+  syncUI();list();if(L.focusSearch){L.focusSearch=false;$('#lq').focus()}
+}
+
+/* ================= Note view ================= */
+function sec(title,body){return body?`<div class="sec"><div class="h">${title}</div>${body}</div>`:''}
+const ulist=a=>a&&a.length?`<ul class="facts">${a.map(x=>`<li>${inline(esc(x))}</li>`).join('')}</ul>`:'';
+function cardListHTML(id){const cs=cardsOf(id);if(!cs.length)return'<p class="small muted">No flashcards yet.</p>';
+  return`<div class="list">${cs.map(c=>`<div class="item" data-card="${c.id}"><div class="t small">${esc(plain(c.type==='cloze'?c.text:c.front).slice(0,140))}</div><div class="s">${c.type==='cloze'?'cloze '+c.cloze:'basic'} · ${c.suspended?'suspended':!c.state?'new':c.state===2?'due '+until(c.due):'learning'}</div></div>`).join('')}</div>`}
+function vNote(v,[id]){
+  const n=byId('notes',id);if(!n){v.innerHTML='<div class="empty">Note not found.</div>';return}
+  $('#title').textContent=n.paper||'Note';
+  const cs=cardsOf(id);
+  v.innerHTML=`<h2>${esc(n.title)}</h2>
+  <div class="small muted">${esc(paperName(n.paper))}${n.topic?' · '+esc(n.topic):''}</div>
+  <div style="margin-top:6px">${(n.tags||[]).map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>
+  <div class="actions"><button class="btn" id="star">${n.starred?'★':'☆'}</button><button class="btn" id="rev">✓ Revised</button><button class="btn" id="study">Study ${cs.length}</button><button class="btn" id="focus">Focus</button><span class="spacer"></span><button class="btn" id="more">⋯</button></div>
+  <div class="small muted">Revised ${n.rev?.count||0}× · last ${ago(n.rev?.last)} · next ${n.rev?until(n.rev.next):'—'}</div>
+  <div class="reading">
+  ${n.summary?`<blockquote>${inline(esc(n.summary))}</blockquote>`:''}
+  ${md(n.content)}
+  ${sec('Key facts',ulist(n.keyFacts))}
+  ${sec('Telangana angle',n.telanganaAngle?md(n.telanganaAngle):'')}
+  ${sec('Memory aids',ulist(n.mnemonics))}
+  ${sec('Likely questions',ulist(n.pyqs))}
+  </div>
+  <div class="sec"><div class="h row">Flashcards <span class="spacer"></span><button class="btn ghost" id="addcard">+ Card</button></div><div id="clist">${cardListHTML(id)}</div></div>`;
+  bindNoteCommon(v,n,'notes');
+}
+function bindNoteCommon(v,n,store){
+  const kind=store==='notes'?'note':'qa';
+  const refreshCards=()=>{$('#clist').innerHTML=cardListHTML(n.id);bindCards()};
+  const bindCards=()=>$$('#clist [data-card]').forEach(x=>x.onclick=()=>cardEditor(byId('cards',x.dataset.card),null,refreshCards));bindCards();
+  $('#star').onclick=async()=>{n.starred=!n.starred;await upsert(store,n,false);$('#star').textContent=n.starred?'★':'☆'};
+  $('#rev').onclick=async()=>{markRevised(n);await upsert(store,n,false);toast('Next revision '+until(n.rev.next));render()};
+  $('#study').onclick=()=>{if(!cardsOf(n.id).length)return toast('No cards for this item');R.deck='src:'+n.id;go('#/review')};
+  if($('#focus'))$('#focus').onclick=()=>{document.body.classList.add('focus');window.scrollTo(0,0)};
+  $('#addcard').onclick=()=>cardEditor(null,{kind,id:n.id,paper:n.paper},refreshCards);
+  $('#more').onclick=()=>modal(`<h3>${esc(kind==='note'?n.title:'Question')}</h3>
+    <div style="display:grid;gap:8px"><button class="btn" data-a="edit">Edit</button><button class="btn" data-a="copy">Copy as text</button><button class="btn" data-a="pack">Export this item (shareable)</button>${kind==='qa'?'<button class="btn" data-a="practice">Practise this question</button>':''}<button class="btn" data-a="reset">Reset card progress</button><button class="btn danger" data-a="del">Delete</button><button class="btn ghost" data-close>Close</button></div>`,box=>{
+    $$('[data-a]',box).forEach(b=>b.onclick=async()=>{const a=b.dataset.a;
+      if(a==='edit')go(`#/edit/${kind}/${n.id}`);
+      if(a==='copy'){await copyText(kind==='note'?noteToMd(n):qaToMd(n));toast('Copied');closeModal()}
+      if(a==='pack'){const p=kind==='note'?{type:'tspsc-notes',version:1,notes:[packNote(n)]}:{type:'tspsc-qa',version:1,items:[packQA(n)]};await shareFile(`${kind}-${(kind==='note'?n.title:n.question).slice(0,30).replace(/\W+/g,'-')}.json`,JSON.stringify(p,null,1));closeModal()}
+      if(a==='practice'){P.qa=n.id;P.phase='ready';go('#/practice')}
+      if(a==='reset'){if(!confirm('Reset review progress for all cards of this item?'))return;const cs=cardsOf(n.id).map(c=>resetCard(c));await upsertMany('cards',cs);toast('Progress reset');closeModal();render()}
+      if(a==='del'){if(!confirm('Delete this item and its '+cardsOf(n.id).length+' cards?'))return;await removeMany('cards',cardsOf(n.id).map(c=>c.id));await removeMany(store,[n.id]);toast('Deleted');closeModal();go(kind==='note'?'#/lib/notes':'#/lib/qa')}})});
+}
+function vQA(v,[id]){
+  const q=byId('qas',id);if(!q){v.innerHTML='<div class="empty">Question not found.</div>';return}
+  $('#title').textContent=(q.paper||'Question')+(q.marks?` · ${q.marks} marks`:'');
+  const atts=S.attempts.filter(a=>a.qaId===id).sort((a,b)=>b.t-a.t);
+  v.innerHTML=`<h2 style="line-height:1.4">${esc(q.question)}</h2>
+  <div class="small muted">${esc(paperName(q.paper))}${q.topic?' · '+esc(q.topic):''}${q.wordLimit?' · '+q.wordLimit+' words':''}${q.directive?' · <b>'+esc(q.directive)+'</b>':''}</div>
+  <div class="actions"><button class="btn" id="star">${q.starred?'★':'☆'}</button><button class="btn" id="rev">✓ Revised</button><button class="btn" id="test">Test me</button><button class="btn" id="study">Cards ${cardsOf(id).length}</button><span class="spacer"></span><button class="btn" id="more">⋯</button></div>
+  ${q.keywords?.length?`<div style="margin-bottom:8px">${q.keywords.map(k=>`<span class="tag" style="font-size:12px">${esc(k)}</span>`).join('')}</div>`:''}
+  <div class="reading" id="ans">
+  ${sec('Introduction',q.intro?md(q.intro):'')}
+  ${sec('Body',md(q.body))}
+  ${sec('Conclusion',q.conclusion?md(q.conclusion):'')}
+  ${sec('Diagram',q.diagram?md(q.diagram):'')}
+  ${sec('Value additions',ulist(q.valueAdd))}
+  </div>
+  ${atts.length?sec('Your attempts',`<table class="t">${atts.slice(0,8).map(a=>`<tr><td>${fmtDate(a.t)}</td><td>${Math.round(a.secs/60)} min</td><td>${a.words?a.words+' words':'on paper'}</td><td class="n">${a.score?a.score+'/10':'—'}</td></tr>`).join('')}</table>`):''}
+  <div class="sec"><div class="h row">Flashcards <span class="spacer"></span><button class="btn ghost" id="addcard">+ Card</button></div><div id="clist">${cardListHTML(id)}</div></div>`;
+  bindNoteCommon(v,q,'qas');
+  $('#test').onclick=()=>{const a=$('#ans');a.classList.toggle('blur');$('#test').textContent=a.classList.contains('blur')?'Show answer':'Test me'};
+  $('#ans').addEventListener('click',()=>{if($('#ans').classList.contains('blur')){$('#ans').classList.remove('blur');$('#test').textContent='Test me'}});
+}
+
+/* ================= Editors ================= */
+function vEdit(v,[kind,id]){
+  const isNew=id==='new';
+  if(kind==='note'){
+    const n=isNew?{title:'',paper:L.paper||'',topic:'',tags:[],summary:'',content:'',keyFacts:[],telanganaAngle:'',mnemonics:[],pyqs:[]}:byId('notes',id);if(!n)return v.innerHTML='<div class="empty">Not found</div>';
+    v.innerHTML=`<label>Title</label><input type="text" id="f_title" value="${esc(n.title)}">
+    <label>Paper</label><select id="f_paper">${paperOpts(n.paper)}</select>
+    <label>Topic / section</label><input type="text" id="f_topic" value="${esc(n.topic)}">
+    <label>Tags (comma separated)</label><input type="text" id="f_tags" value="${esc((n.tags||[]).join(', '))}">
+    <label>Summary (2–3 lines)</label><textarea id="f_summary" rows="3">${esc(n.summary)}</textarea>
+    <label>Notes — Markdown: ## heading, - bullet, **bold**, ==highlight==, | table |</label><textarea id="f_content" class="tall">${esc(n.content)}</textarea>
+    <label>Key facts (one per line)</label><textarea id="f_facts">${esc((n.keyFacts||[]).join('\n'))}</textarea>
+    <label>Telangana angle</label><textarea id="f_tg" rows="3">${esc(n.telanganaAngle)}</textarea>
+    <label>Memory aids (one per line)</label><textarea id="f_mn" rows="3">${esc((n.mnemonics||[]).join('\n'))}</textarea>
+    <label>Likely questions (one per line)</label><textarea id="f_pyq" rows="3">${esc((n.pyqs||[]).join('\n'))}</textarea>
+    <div class="row end" style="margin-top:16px"><button class="btn" id="cancel">Cancel</button><button class="btn primary" id="save">Save</button></div>`;
+    $('#cancel').onclick=()=>history.back();
+    $('#save').onclick=async()=>{const t=$('#f_title').value.trim();if(!t)return toast('Title is required');
+      const o=isNew?{id:uid(),created:Date.now(),starred:false,rev:freshRev()}:n;const oldPaper=o.paper;
+      Object.assign(o,{title:t,paper:$('#f_paper').value,topic:$('#f_topic').value.trim(),tags:$('#f_tags').value.split(',').map(s=>s.trim()).filter(Boolean),summary:$('#f_summary').value.trim(),content:$('#f_content').value,keyFacts:arr($('#f_facts').value),telanganaAngle:$('#f_tg').value.trim(),mnemonics:arr($('#f_mn').value),pyqs:arr($('#f_pyq').value)});
+      await upsert('notes',o);if(!isNew&&oldPaper!==o.paper)await upsertMany('cards',cardsOf(o.id).map(c=>({...c,paper:o.paper})));
+      toast('Saved');location.replace('#/note/'+o.id)};
+  }else{
+    const q=isNew?{question:'',paper:L.paper||'',topic:'',tags:[],marks:'',wordLimit:'',directive:'',keywords:[],intro:'',body:'',conclusion:'',diagram:'',valueAdd:[]}:byId('qas',id);if(!q)return v.innerHTML='<div class="empty">Not found</div>';
+    v.innerHTML=`<label>Question</label><textarea id="f_q" rows="3">${esc(q.question)}</textarea>
+    <div class="row"><div style="flex:2;min-width:180px"><label>Paper</label><select id="f_paper">${paperOpts(q.paper)}</select></div><div style="flex:1"><label>Marks</label><input type="number" id="f_marks" value="${esc(q.marks)}"></div><div style="flex:1"><label>Words</label><input type="number" id="f_words" value="${esc(q.wordLimit)}"></div></div>
+    <div class="row"><div style="flex:2"><label>Topic</label><input type="text" id="f_topic" value="${esc(q.topic)}"></div><div style="flex:1"><label>Directive</label><input type="text" id="f_dir" value="${esc(q.directive)}" placeholder="Discuss"></div></div>
+    <label>Keywords (comma separated)</label><input type="text" id="f_kw" value="${esc((q.keywords||[]).join(', '))}">
+    <label>Introduction</label><textarea id="f_intro" rows="3">${esc(q.intro)}</textarea>
+    <label>Body (Markdown)</label><textarea id="f_body" class="tall">${esc(q.body)}</textarea>
+    <label>Conclusion</label><textarea id="f_conc" rows="3">${esc(q.conclusion)}</textarea>
+    <label>Diagram suggestion</label><textarea id="f_diag" rows="2">${esc(q.diagram)}</textarea>
+    <label>Value additions (one per line)</label><textarea id="f_va" rows="3">${esc((q.valueAdd||[]).join('\n'))}</textarea>
+    <label>Tags (comma separated)</label><input type="text" id="f_tags" value="${esc((q.tags||[]).join(', '))}">
+    <div class="row end" style="margin-top:16px"><button class="btn" id="cancel">Cancel</button><button class="btn primary" id="save">Save</button></div>`;
+    $('#cancel').onclick=()=>history.back();
+    $('#save').onclick=async()=>{const t=$('#f_q').value.trim();if(!t)return toast('Question is required');
+      const o=isNew?{id:uid(),created:Date.now(),starred:false,rev:freshRev()}:q;const oldPaper=o.paper;
+      Object.assign(o,{question:t,paper:$('#f_paper').value,marks:+$('#f_marks').value||'',wordLimit:+$('#f_words').value||'',topic:$('#f_topic').value.trim(),directive:$('#f_dir').value.trim(),keywords:$('#f_kw').value.split(',').map(s=>s.trim()).filter(Boolean),intro:$('#f_intro').value.trim(),body:$('#f_body').value,conclusion:$('#f_conc').value.trim(),diagram:$('#f_diag').value.trim(),valueAdd:arr($('#f_va').value),tags:$('#f_tags').value.split(',').map(s=>s.trim()).filter(Boolean)});
+      await upsert('qas',o);
+      if(isNew&&S.settings.autoQaCards)await upsertMany('cards',[qaOutlineCard(o,Date.now())]);
+      if(!isNew&&oldPaper!==o.paper)await upsertMany('cards',cardsOf(o.id).map(c=>({...c,paper:o.paper})));
+      toast('Saved');location.replace('#/qa/'+o.id)};
+  }
+}
+function resetCard(c){return{...c,state:0,due:0,stability:0,difficulty:0,reps:0,lapses:0,step:0,ivl:0,last:0,leech:false}}
+function cardEditor(card,src,after){
+  const isNew=!card;const c=card||newCard({paper:src?.paper||L.paper||'',sourceType:src?src.kind:'manual',sourceId:src?src.id:''});
+  let type=c.type;const now=Date.now();const r=curR(c,now);
+  modal(`<h3>${isNew?'New card':'Edit card'}</h3>
+  <div class="seg" id="ctype"><button data-t="basic">Basic</button><button data-t="cloze">Cloze</button></div>
+  <div id="cb_basic"><label>Front</label><textarea id="cf" rows="3">${esc(c.front)}</textarea><label>Back</label><textarea id="cbk" rows="4">${esc(c.type==='basic'?c.back:'')}</textarea></div>
+  <div id="cb_cloze"><label>Text — hide parts with {{c1::answer}} (c2, c3… make separate cards)</label><textarea id="ct" rows="4">${esc(c.text)}</textarea>
+   <button class="btn" id="mkcz" style="margin-top:6px">Hide selected text</button><label>Extra shown on the back (optional)</label><textarea id="cx" rows="2">${esc(c.type==='cloze'?c.back:'')}</textarea></div>
+  <label>Paper</label><select id="cp">${paperOpts(c.paper)}</select>
+  ${!isNew?`<div class="kv" style="margin-top:12px"><span>State</span><span>${c.suspended?'Suspended':['New','Learning','Review','Relearning'][c.state||0]}${c.leech?' · leech':''}</span>
+   ${c.state?`<span>Due</span><span>${c.state===2?until(c.due):new Date(c.due).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}</span><span>Stability</span><span>${c.stability.toFixed(1)} days</span><span>Difficulty</span><span>${c.difficulty.toFixed(1)} / 10</span>${r!=null?`<span>Recall now</span><span>${Math.round(r*100)}%</span>`:''}`:''}
+   <span>Reviews</span><span>${c.reps} · lapses ${c.lapses}</span>${srcOf(c)?`<span>Source</span><span><a href="#/${c.sourceType}/${c.sourceId}">${esc((srcOf(c).title||srcOf(c).question||'').slice(0,60))}</a></span>`:''}</div>
+   <div class="row" style="margin-top:12px"><button class="btn" id="csusp">${c.suspended?'Unsuspend':'Suspend'}</button><button class="btn" id="cflag">${c.flagged?'Unflag':'Flag'}</button><button class="btn" id="creset">Reset</button><button class="btn danger" id="cdel">Delete</button></div>`:''}
+  <div class="row end" style="margin-top:16px"><button class="btn" data-close>Cancel</button><button class="btn primary" id="csave">Save</button></div>`,box=>{
+    const sync=()=>{$$('#ctype button',box).forEach(b=>b.classList.toggle('on',b.dataset.t===type));$('#cb_basic',box).classList.toggle('hide',type!=='basic');$('#cb_cloze',box).classList.toggle('hide',type!=='cloze')};
+    $$('#ctype button',box).forEach(b=>b.onclick=()=>{type=b.dataset.t;sync()});sync();
+    $('#mkcz',box).onclick=()=>{const t=$('#ct',box),s=t.selectionStart,e=t.selectionEnd;if(s===e)return toast('Select a word or phrase first');const n=Math.max(0,...clozeNums(t.value))+1;t.value=t.value.slice(0,s)+`{{c${n}::`+t.value.slice(s,e)+'}}'+t.value.slice(e);t.focus()};
+    const done=async m=>{toast(m);closeModal();updateBadge();after&&after()};
+    if(!isNew){
+      $('#csusp',box).onclick=async()=>{const g=c.type==='cloze'?S.cards.filter(x=>x.group===c.group):[c];g.forEach(x=>x.suspended=!c.suspended);await upsertMany('cards',g);done(c.suspended?'Suspended':'Unsuspended')};
+      $('#cflag',box).onclick=async()=>{c.flagged=!c.flagged;await upsert('cards',c,false);done(c.flagged?'Flagged':'Unflagged')};
+      $('#creset',box).onclick=async()=>{if(!confirm('Forget this card\u2019s review history?'))return;await upsert('cards',resetCard(c));done('Card reset')};
+      $('#cdel',box).onclick=async()=>{const g=c.type==='cloze'&&c.group?S.cards.filter(x=>x.group===c.group):[c];if(!confirm(g.length>1?`Delete this cloze and its ${g.length} cards?`:'Delete this card?'))return;await removeMany('cards',g.map(x=>x.id));done('Deleted')};
+    }
+    $('#csave',box).onclick=async()=>{const paper=$('#cp',box).value;
+      const oldGroup=!isNew&&c.type==='cloze'?S.cards.filter(x=>x.group===c.group&&c.group):[];
+      if(type==='basic'){const f=$('#cf',box).value.trim(),b=$('#cbk',box).value.trim();if(!f||!b)return toast('Front and back are needed');
+        if(!isNew&&c.type==='cloze'){await removeMany('cards',oldGroup.map(x=>x.id));await upsert('cards',newCard({type:'basic',front:f,back:b,paper,sourceType:c.sourceType,sourceId:c.sourceId}))}
+        else await upsert('cards',{...c,type:'basic',front:f,back:b,paper});
+      }else{const t=$('#ct',box).value.trim(),x=$('#cx',box).value.trim(),nums=clozeNums(t);if(!nums.length)return toast('Add at least one {{c1::…}}');
+        const group=(!isNew&&c.type==='cloze'&&c.group)?c.group:uid();const keep=[],del=[];
+        const existing=new Map(oldGroup.map(o=>[o.cloze,o]));
+        for(const n of nums){const o=existing.get(n);keep.push(o?{...o,text:t,back:x,paper}:newCard({type:'cloze',text:t,back:x,cloze:n,group,paper,sourceType:c.sourceType,sourceId:c.sourceId,created:Date.now()+n}))}
+        for(const o of oldGroup)if(!nums.includes(o.cloze))del.push(o.id);
+        if(!isNew&&c.type==='basic')del.push(c.id);
+        if(del.length)await removeMany('cards',del);await upsertMany('cards',keep)}
+      done('Card saved')};
+  });
+}
+
+/* ================= Add: prompts + import ================= */
+const A={mode:'notes',paper:'',depth:'Standard',style:'faithful',marks:10,words:150,cards:'8–12',raw:'',reply:'',parsed:null};
+try{Object.assign(A,JSON.parse(localStorage.getItem('mains-add')||'{}'),{parsed:null})}catch(e){}
+const saveA=()=>{try{const{parsed,...rest}=A;localStorage.setItem('mains-add',JSON.stringify(rest))}catch(e){}};
+const PAPER_CODES='Paper codes: GE = General English, P1 = General Essay, P2 = History, Culture & Geography, P3 = Indian Society, Constitution & Governance, P4 = Economy & Development, P5 = Science & Technology and Data Interpretation, P6 = Telangana Movement & State Formation.';
+const CARD_RULES=n=>`FLASHCARDS (${n} per item): test the facts most likely to be asked — dates, articles, committees, numbers, names, causes/effects, definitions. Mix "basic" cards (front = a precise question, back = a short answer under 25 words) and "cloze" cards (a sentence with {{c1::hidden text}}; use c2, c3… for extra blanks in the same sentence). One fact per card. No yes/no questions. Back must be self-contained.`;
+const JSON_RULES='OUTPUT FORMAT — STRICT: reply with ONLY a single JSON code block and nothing before or after it. It must be valid JSON: double quotes, no comments, no trailing commas, line breaks inside strings written as \\n. Do not truncate — if the content is long, keep every item complete.';
+function buildPrompt(){
+  const pl=A.paper?`Paper: ${paperName(A.paper)} — use "paper":"${A.paper}" for every item.`:'Choose the best paper code for each item.';
+  const raw=A.raw.trim()||'(paste content here)';
+  if(A.mode==='notes'){
+    const mode=A.style==='faithful'?'Restructure FAITHFULLY: keep every fact from my notes; fix language and organisation; do not drop anything. Add only a little essential context.':'Restructure AND ENRICH: keep every fact from my notes, then add high-value exam content an examiner rewards — data, committees, constitutional articles, schemes, reports, examples and Telangana-specific facts.';
+    return`You are an expert mentor and examiner for TSPSC (TGPSC) Group-1 Mains, English medium. Convert my RAW NOTES into structured revision notes for my notes app.
+
+TASK
+- ${pl}
+- ${mode}
+- Depth: ${A.depth}.
+- If the raw notes cover clearly different topics, split them into separate notes (one per topic).
+
+WRITING RULES
+- Exam-ready layout: ## sub-headings, short bullet points, no long paragraphs.
+- **Bold** only key terms, dates, numbers and names. Use a | table | where comparison helps.
+- Give a Telangana / Hyderabad State angle wherever one genuinely exists.
+- Never invent statistics, dates or citations; if unsure, append " [verify]".
+
+${CARD_RULES(A.cards)}
+
+${JSON_RULES}
+Schema:
+{"type":"tspsc-notes","version":1,"notes":[{"title":"...","paper":"P2","topic":"section / sub-topic","tags":["..."],"summary":"2–3 line gist","content":"## Heading\\n- point\\n- point","keyFacts":["fact worth memorising"],"telanganaAngle":"... or empty string","mnemonics":["optional memory aid"],"pyqs":["likely Mains question on this topic"],"cards":[{"type":"basic","front":"...","back":"..."},{"type":"cloze","text":"... {{c1::...}} ...","back":"optional extra context"}]}]}
+
+${PAPER_CODES}
+
+RAW NOTES:
+"""
+${raw}
+"""`}
+  const mode=A.style==='faithful'?'Keep my answers\u2019 content and points; restructure them into the format below and fix language. Where I gave only a question, write the model answer.':A.style==='enrich'?'Keep my points, then improve the answers to topper level — add dimensions, data, committees, articles, schemes, examples and Telangana-specific facts.':'Write complete model answers for these questions.';
+  return`You are an expert TSPSC (TGPSC) Group-1 Mains examiner and answer-writing mentor, English medium. Convert my RAW QUESTIONS / ANSWERS into model answers for my notes app.
+
+TASK
+- ${pl}
+- ${mode}
+- Default: ${A.marks} marks, about ${A.words} words per answer (if a question states its own marks or word limit, use that).
+
+ANSWER RULES
+- Identify the directive (Discuss, Explain, Analyse, Examine, Critically evaluate, Comment, Elucidate) and answer exactly what it asks.
+- Introduction: 1–2 lines — definition, context or a data point.
+- Body: sub-headings or bullets covering the relevant dimensions (historical, social, economic, political, constitutional/legal, Telangana-specific); for "critically" give both sides.
+- Conclusion: balanced, forward-looking way ahead (scheme, committee, SDG or constitutional value).
+- Keep within the word limit. **Bold** keywords. Suggest a simple diagram / flowchart / map where it would earn marks.
+- Value additions: reports, committees, articles, judgements, schemes, data — never invented; append " [verify]" if unsure.
+
+${CARD_RULES('2–4')}
+
+${JSON_RULES}
+Schema:
+{"type":"tspsc-qa","version":1,"items":[{"question":"...","paper":"P3","topic":"...","tags":["..."],"marks":${A.marks},"wordLimit":${A.words},"directive":"Discuss","keywords":["6–8 must-use keywords"],"answer":{"intro":"...","body":"## Sub-heading\\n- point\\n- point","conclusion":"..."},"diagram":"suggested diagram or empty string","valueAdd":["..."],"cards":[{"type":"basic","front":"...","back":"..."},{"type":"cloze","text":"... {{c1::...}} ..."}]}]}
+
+${PAPER_CODES}
+
+RAW QUESTIONS / ANSWERS:
+"""
+${raw}
+"""`}
+function looseParse(s){
+  const a=s.indexOf('{'),b=s.indexOf('[');const start=a<0?b:b<0?a:Math.min(a,b);if(start<0)throw new Error('No JSON found in the reply');
+  const end=Math.max(s.lastIndexOf('}'),s.lastIndexOf(']'));s=s.slice(start,end+1);
+  try{return JSON.parse(s)}catch(e1){
+    const f=s.replace(/,\s*([}\]])/g,'$1').replace(/[\u201C\u201D]/g,'"').replace(/\u00a0/g,' ');
+    try{return JSON.parse(f)}catch(e2){throw new Error('The reply is not valid JSON ('+e1.message+'). Ask the AI to "return the same as valid JSON only", or check the reply was copied completely.')}}
+}
+function parseAI(text){
+  text=String(text||'').trim();if(!text)throw new Error('Paste the AI reply first');
+  const blocks=[...text.matchAll(/```(?:json|JSON)?\s*([\s\S]*?)```/g)].map(m=>m[1].trim()).filter(b=>/[{[]/.test(b));
+  const out={notes:[],items:[]};
+  const take=o=>{if(!o)return;if(Array.isArray(o)){o.forEach(x=>x&&(x.question?out.items.push(x):(x.title||x.content)?out.notes.push(x):take(x)));return}
+    if(o.type==='tspsc-backup')throw new Error('This is a full backup — import it from More → Backup & import');
+    if(Array.isArray(o.notes))out.notes.push(...o.notes);
+    for(const k of['items','qas','questions','qa'])if(Array.isArray(o[k]))out.items.push(...o[k]);
+    if(!o.notes&&!o.items&&!o.qas&&!o.questions&&!o.qa){if(o.question)out.items.push(o);else if(o.title||o.content)out.notes.push(o)}};
+  for(const b of(blocks.length?blocks:[text]))take(looseParse(b));
+  if(!out.notes.length&&!out.items.length)throw new Error('No notes or questions found in the reply');
+  return out;
+}
+const keyNote=n=>((n.paper||'')+'|'+String(n.title||'').toLowerCase().replace(/\s+/g,' ').trim());
+const keyQA=q=>String(q.question||'').toLowerCase().replace(/[^a-z0-9\u0C00-\u0C7F]+/g,' ').trim().slice(0,160);
+function normNote(r,fallbackPaper){
+  return{title:String(r.title||r.topic||'Untitled').trim(),paper:normPaper(r.paper)||fallbackPaper||'',topic:str(r.topic||r.section||r.subtopic),tags:arr(r.tags),summary:str(r.summary),content:str(r.content||r.notes||r.body),keyFacts:arr(r.keyFacts||r.key_facts||r.facts),telanganaAngle:str(r.telanganaAngle||r.telangana_angle||r.telangana),mnemonics:arr(r.mnemonics),pyqs:arr(r.pyqs||r.questions||r.likelyQuestions),_cards:r.cards||r.flashcards||[]}}
+function normQA(r,fallbackPaper){
+  const an=r.answer&&typeof r.answer==='object'&&!Array.isArray(r.answer)?r.answer:{body:r.answer||r.modelAnswer||r.body};
+  return{question:String(r.question||'').trim(),paper:normPaper(r.paper)||fallbackPaper||'',topic:str(r.topic),tags:arr(r.tags),marks:+r.marks||'',wordLimit:+(r.wordLimit||r.word_limit||r.words)||'',directive:str(r.directive),keywords:arr(r.keywords),intro:str(an.intro||an.introduction||r.intro),body:str(an.body||an.mainBody||an.points),conclusion:str(an.conclusion||an.wayForward||r.conclusion),diagram:str(r.diagram),valueAdd:arr(r.valueAdd||r.value_add||r.valueAdditions),_cards:r.cards||r.flashcards||[]}}
+function prepareImport(parsed,fallbackPaper){
+  const nk=new Map(S.notes.map(n=>[keyNote(n),n])),qk=new Map(S.qas.map(q=>[keyQA(q),q]));
+  const notes=parsed.notes.map(r=>normNote(r,fallbackPaper)).map(n=>({...n,_dup:nk.get(keyNote(n))||null,_on:true}));
+  const qas=parsed.items.map(r=>normQA(r,fallbackPaper)).filter(q=>q.question).map(q=>({...q,_dup:qk.get(keyQA(q))||null,_on:true}));
+  return{notes,qas};
+}
+async function commitImport(prep){
+  const now=Date.now();let t=now,nN=0,nQ=0,nC=0,nU=0;const notes=[],qas=[],cards=[];
+  const addCards=(raw,src,existing)=>{const have=new Set(existing.map(c=>plain(c.type==='cloze'?c.text+'#'+c.cloze:c.front).toLowerCase()));
+    for(const c of cardsFromRaw(raw,src,t)){const k=plain(c.type==='cloze'?c.text+'#'+c.cloze:c.front).toLowerCase();if(have.has(k))continue;have.add(k);cards.push(c);t++;nC++}};
+  for(const n of prep.notes){if(!n._on)continue;const{_dup,_on,_cards,...f}=n;
+    let o;if(_dup){o={..._dup,...f};nU++}else{o={id:uid(),created:t++,starred:false,rev:freshRev(now),...f};nN++}
+    o.updated=now;notes.push(o);addCards(_cards,{kind:'note',id:o.id,paper:o.paper},_dup?cardsOf(o.id):[])}
+  for(const q of prep.qas){if(!q._on)continue;const{_dup,_on,_cards,...f}=q;
+    let o;if(_dup){o={..._dup,...f};nU++}else{o={id:uid(),created:t++,starred:false,rev:freshRev(now),...f};nQ++}
+    o.updated=now;qas.push(o);
+    if(!_dup&&S.settings.autoQaCards){cards.push(qaOutlineCard(o,t++));nC++}
+    addCards(_cards,{kind:'qa',id:o.id,paper:o.paper},_dup?cardsOf(o.id):[])}
+  if(notes.length)await upsertMany('notes',notes);if(qas.length)await upsertMany('qas',qas);if(cards.length)await upsertMany('cards',cards);
+  return{nN,nQ,nC,nU,first:notes[0]?'#/note/'+notes[0].id:qas[0]?'#/qa/'+qas[0].id:null};
+}
+function vAdd(v){
+  v.innerHTML=`
+  <div class="seg" id="amode"><button data-m="notes">Topic notes</button><button data-m="qa">Questions &amp; answers</button></div>
+  <div class="card steps">
+    <div><span class="stepn">1</span><b>Paste your raw ${A.mode==='notes'?'notes':'questions / answers'}</b></div>
+    <textarea id="araw" rows="7" style="margin-top:10px" placeholder="${A.mode==='notes'?'Class notes, book extracts, your own summary…':'One or more questions, with or without your answers…'}">${esc(A.raw)}</textarea>
+    <div class="row" style="margin-top:6px"><button class="btn" id="apaste1">Paste</button><button class="btn ghost" id="aclear1">Clear</button><span class="spacer"></span><span class="small muted" id="awc"></span></div>
+    <label>Paper</label><select id="apaper">${paperOpts(A.paper,'Let AI decide')}</select>
+    ${A.mode==='notes'?`<div class="row"><div style="flex:1"><label>Approach</label><select id="astyle"><option value="faithful">Keep my content</option><option value="enrich">Keep + enrich</option></select></div>
+      <div style="flex:1"><label>Depth</label><select id="adepth"><option>Concise</option><option>Standard</option><option>Detailed</option></select></div>
+      <div style="flex:1"><label>Cards / note</label><select id="acards"><option>5–8</option><option>8–12</option><option>12–20</option></select></div></div>`
+    :`<div class="row"><div style="flex:2;min-width:160px"><label>Approach</label><select id="astyle"><option value="faithful">Format my answers</option><option value="enrich">Format + improve</option><option value="write">Write model answers</option></select></div>
+      <div style="flex:1"><label>Marks</label><input type="number" id="amarks" value="${A.marks}"></div><div style="flex:1"><label>Words</label><input type="number" id="awords" value="${A.words}"></div></div>`}
+  </div>
+  <div class="card steps">
+    <div><span class="stepn">2</span><b>Copy the prompt into your AI</b></div>
+    <p class="small muted" style="margin:6px 0 10px">ChatGPT, Claude or Gemini — any works. Long notes? Send them in parts and import each reply.</p>
+    <div class="row"><button class="btn primary" id="acopy">Copy prompt</button><button class="btn" id="ashare">Share to app</button><button class="btn ghost" id="aview">Preview</button></div>
+    <pre class="prompt hide" id="apv"></pre>
+  </div>
+  <div class="card steps">
+    <div><span class="stepn">3</span><b>Paste the AI reply</b></div>
+    <textarea id="areply" rows="6" style="margin-top:10px" placeholder="Paste the whole reply here (the JSON block)">${esc(A.reply)}</textarea>
+    <div class="row" style="margin-top:6px"><button class="btn" id="apaste2">Paste</button><button class="btn" id="afile">Open file</button><span class="spacer"></span><button class="btn primary" id="acheck">Check &amp; preview</button></div>
+    <div id="aprev"></div>
+  </div>
+  <div class="row" style="justify-content:center"><a class="btn ghost" data-go="#/edit/note/new">Write a note by hand</a><a class="btn ghost" data-go="#/edit/qa/new">Write a Q&amp;A by hand</a></div>`;
+  $$('#amode button').forEach(b=>{b.classList.toggle('on',b.dataset.m===A.mode);b.onclick=()=>{A.mode=b.dataset.m;saveA();vAdd(v)}});
+  const wc=()=>{const w=(A.raw.match(/\S+/g)||[]).length;$('#awc').textContent=w?w+' words':''};wc();
+  $('#araw').oninput=e=>{A.raw=e.target.value;saveA();wc()};
+  $('#apaste1').onclick=()=>pasteInto($('#araw'));$('#aclear1').onclick=()=>{A.raw='';$('#araw').value='';saveA();wc()};
+  $('#apaper').onchange=e=>{A.paper=e.target.value;saveA()};
+  const bindSel=(id,k,num)=>{const el=$(id);if(!el)return;el.value=A[k];el.onchange=el.oninput=e=>{A[k]=num?+e.target.value:e.target.value;saveA()}};
+  bindSel('#astyle','style');bindSel('#adepth','depth');bindSel('#acards','cards');bindSel('#amarks','marks',1);bindSel('#awords','words',1);
+  if(A.mode==='notes'&&A.style==='write'){A.style='faithful';$('#astyle').value='faithful'}
+  const need=()=>{if(!A.raw.trim()){toast('Paste your content in step 1 first');return false}return true};
+  $('#acopy').onclick=async()=>{if(!need())return;toast(await copyText(buildPrompt())?'Prompt copied — paste it in your AI':'Copy failed; use Preview and copy manually')};
+  $('#ashare').onclick=async()=>{if(!need())return;const p=buildPrompt();if(navigator.share){try{await navigator.share({text:p})}catch(e){}}else{await copyText(p);toast('Copied')}};
+  $('#aview').onclick=()=>{const p=$('#apv');p.textContent=buildPrompt();p.classList.toggle('hide')};
+  $('#areply').oninput=e=>{A.reply=e.target.value;saveA()};
+  $('#apaste2').onclick=()=>pasteInto($('#areply'));
+  $('#afile').onclick=async()=>{const f=await readFile('.json,.txt,application/json,text/plain');if(!f)return;A.reply=f.text;$('#areply').value=f.text;saveA();check()};
+  const check=()=>{const box=$('#aprev');try{const prep=prepareImport(parseAI(A.reply),A.paper);A.parsed=prep;showPrev(box,prep)}catch(e){box.innerHTML=`<p class="small" style="color:var(--again);margin-top:10px">${esc(e.message)}</p>`}};
+  $('#acheck').onclick=check;
+  const showPrev=(box,prep)=>{const all=[...prep.notes.map(n=>({k:'n',x:n})),...prep.qas.map(q=>({k:'q',x:q}))];
+    box.innerHTML=`<h3>${prep.notes.length?prep.notes.length+' note'+(prep.notes.length>1?'s':''):''}${prep.notes.length&&prep.qas.length?' · ':''}${prep.qas.length?prep.qas.length+' question'+(prep.qas.length>1?'s':''):''}</h3>
+    ${all.map((it,i)=>`<label class="pv"><input type="checkbox" data-i="${i}" ${it.x._on?'checked':''}><div><div style="color:var(--ink);font-size:15px">${esc(it.k==='n'?it.x.title:it.x.question)}</div><div class="small muted">${it.x.paper||'Unsorted'} · ${(Array.isArray(it.x._cards)?it.x._cards.length:0)} cards${it.k==='q'&&S.settings.autoQaCards&&!it.x._dup?' + outline':''}${it.x._dup?' · <b>already exists — will update</b>':''}</div></div></label>`).join('')}
+    <div class="row end"><button class="btn primary" id="asave">Save to library</button></div>`;
+    $$('input[data-i]',box).forEach(cb=>cb.onchange=()=>{all[+cb.dataset.i].x._on=cb.checked});
+    $('#asave',box).onclick=async()=>{const r=await commitImport(prep);A.reply='';A.parsed=null;saveA();
+      toast(`Saved ${r.nN+r.nQ} new, ${r.nU} updated, ${r.nC} cards`,3000);if(r.first)go(r.first);else vAdd(v)}};
+}
+
+/* ================= Review ================= */
+function deckOptions(){const o=[['all','All cards'],...PAPERS.filter(p=>S.cards.some(c=>c.paper===p.id)).map(p=>[p.id,p.id+' · '+p.name.replace(/^Paper \w+ · /,'')]),['star','Starred notes & Q&A'],['flag','Flagged cards']];
+  if(R.deck.startsWith('src:')){const s=byId('notes',R.deck.slice(4))||byId('qas',R.deck.slice(4));o.push([R.deck,'This item: '+((s&&(s.title||s.question))||'').slice(0,40)])}
+  return o.map(([v,l])=>{const c=counts(v);const n=c.learn+c.review+c.newLeft;return`<option value="${v}" ${v===R.deck?'selected':''}>${esc(l)}${n?' ('+n+')':''}</option>`}).join('')}
+function nextCard(){
+  const now=Date.now(),end=dayEnd(now),pool=deckCards(R.deck).filter(c=>!c.suspended);
+  const notLast=a=>a.find(c=>(c.group||c.id)!==R.lastGroup)||a[0]||null;
+  const lrn=pool.filter(c=>(c.state===1||c.state===3)&&c.due<=now).sort((a,b)=>a.due-b.due);
+  if(lrn.length)return lrn[0];
+  const k=counts(R.deck,now);
+  const revs=k.review?pool.filter(c=>c.state===2&&c.due<end).sort((a,b)=>FS.R((now-a.last)/DAY,a.stability)-FS.R((now-b.last)/DAY,b.stability)).slice(0,k.review):[];
+  const news=k.newLeft?pool.filter(c=>!c.state).sort((a,b)=>(a.created-b.created)||(a.cloze-b.cloze)).slice(0,Math.max(k.newLeft,5)):[];
+  if(revs.length&&news.length)return Math.random()<k.newLeft/(k.newLeft+k.review)?notLast(news):notLast(revs);
+  if(revs.length)return notLast(revs);if(news.length)return notLast(news);
+  return pool.filter(c=>(c.state===1||c.state===3)&&c.due<=now+20*MIN).sort((a,b)=>a.due-b.due)[0]||null;
+}
+function cardFace(c,reveal){
+  const s=srcOf(c);
+  if(c.type==='cloze')return clozeHTML(c.text,c.cloze,reveal)+(reveal&&c.back?`<hr class="divider">${md(c.back)}`:'')+(s?`<div class="src">${esc((s.title||s.question||'').slice(0,90))}</div>`:'');
+  return md(c.front)+(reveal?`<hr class="divider">${md(c.back)}`:'')+(s?`<div class="src">${esc((s.title||s.question||'').slice(0,90))}</div>`:'');
+}
+function vReview(v){
+  if(R.cram)return vCram(v);
+  R.card=R.forced||nextCard();R.forced=null;R.shown=false;R.t0=Date.now();
+  const k=counts(R.deck);
+  const head=`<div class="rv-top"><select id="deck">${deckOptions()}</select><div class="cnt"><span class="n">${k.newLeft}</span> · <span class="l">${k.learn}</span> · <span class="r">${k.review}</span></div></div>`;
+  if(!R.card){
+    const now=Date.now(),pool=deckCards(R.deck).filter(c=>!c.suspended);
+    const nl=pool.filter(c=>c.state===1||c.state===3).sort((a,b)=>a.due-b.due)[0];
+    const tm=pool.filter(c=>c.state===2&&c.due>=dayEnd(now)&&c.due<dayEnd(now)+DAY).length;
+    v.innerHTML=head+`<div class="card empty" style="color:var(--ink)"><div style="font-size:34px">✓</div><h3 style="margin:6px 0">${S.cards.length?'Done for now':'No cards yet'}</h3>
+    <p class="small muted">${nl?`Next learning card ${new Date(nl.due).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}. `:''}${S.cards.length?`${tm} review${tm===1?'':'s'} due tomorrow.`:'Import notes or Q&A from the Add tab — flashcards are created automatically.'}</p>
+    ${R.done?`<p class="small">This session: ${R.done} card${R.done===1?'':'s'}</p>`:''}</div>
+    ${S.cards.length?`<h3>Study more</h3><div style="display:grid;gap:8px">${k.newTotal?`<button class="btn" id="more10">Add 10 more new cards today</button>`:''}<button class="btn" id="cram">Quick revision (weakest first, no scheduling)</button></div>`:`<a class="btn primary block" data-go="#/add">Add content</a>`}`;
+    $('#deck').onchange=e=>{R.deck=e.target.value;R.undo=[];vReview(v)};
+    if($('#more10'))$('#more10').onclick=async()=>{const t=dayKey();if(S.settings.extraNewDay!==t){S.settings.extraNewDay=t;S.settings.extraNew=0}S.settings.extraNew+=10;await saveSettings();vReview(v);updateBadge()};
+    if($('#cram'))$('#cram').onclick=()=>{startCram();vReview(v)};
+    return;
+  }
+  const c=R.card,tot=Math.max(1,R.done+k.newLeft+k.learn+k.review);
+  v.innerHTML=head+`<div class="progress"><i style="width:${R.done/tot*100}%"></i></div>
+  <article class="flash" id="face">${cardFace(c,false)}</article>
+  <div id="ctrl"><button class="btn primary block" id="show" style="margin-top:12px">Show answer</button></div>
+  <div class="rv-tools"><button id="undo" ${R.undo.length?'':'disabled'}>↶ Undo</button><button id="edit">Edit</button><button id="flag">${c.flagged?'⚑ Unflag':'⚐ Flag'}</button><button id="susp">Suspend</button>${srcOf(c)?'<button id="src">Open source</button>':''}</div>`;
+  const show=()=>{if(R.shown)return;R.shown=true;$('#face').innerHTML=cardFace(c,true);const now=Date.now();R.pv=preview(c,now);
+    const names={1:'Again',2:'Hard',3:'Good',4:'Easy'};
+    $('#ctrl').innerHTML=`<div class="grades">${[1,2,3,4].map(g=>`<button class="g${g}" data-g="${g}"><b>${names[g]}</b><small>${ivlLabel(R.pv[g],now)}</small></button>`).join('')}</div>`;
+    $$('#ctrl [data-g]').forEach(b=>b.onclick=()=>answer(+b.dataset.g,v))};
+  $('#show').onclick=show;$('#face').onclick=()=>{if(!R.shown)show()};
+  $('#deck').onchange=e=>{R.deck=e.target.value;R.undo=[];R.done=0;vReview(v)};
+  $('#undo').onclick=()=>undo(v);
+  $('#edit').onclick=()=>cardEditor(c,null,()=>vReview(v));
+  $('#flag').onclick=async()=>{c.flagged=!c.flagged;await upsert('cards',c,false);$('#flag').textContent=c.flagged?'⚑ Unflag':'⚐ Flag'};
+  $('#susp').onclick=async()=>{c.suspended=true;await upsert('cards',c,false);toast('Suspended');vReview(v);updateBadge()};
+  if($('#src'))$('#src').onclick=()=>go(`#/${c.sourceType}/${c.sourceId}`);
+  R.show=show;
+}
+async function answer(g,v){
+  const c=R.card,o=R.pv&&R.pv[g];if(!c||!o)return;const now=Date.now();
+  const prev={...c},log={id:uid(),cardId:c.id,t:now,g,prevState:c.state||0,ivl:o.state===2?o.ivl:0,ms:Math.min(now-R.t0,120000),day:dayKey(now)};
+  const nc={...o};if(g===1&&prev.state===2&&nc.lapses>=8&&!nc.leech){nc.leech=true;setTimeout(()=>toast('This card keeps slipping — try rewriting it simpler',3200),300)}
+  const i=S.cards.findIndex(x=>x.id===c.id);S.cards[i]=nc;S.logs.push(log);
+  await DB.put('cards',nc);await DB.put('logs',log);
+  R.undo.push({prev,logId:log.id});if(R.undo.length>20)R.undo.shift();R.lastGroup=c.group||c.id;R.done++;
+  vReview(v);updateBadge();
+}
+async function undo(v){const u=R.undo.pop();if(!u)return;const i=S.cards.findIndex(x=>x.id===u.prev.id);if(i>=0)S.cards[i]=u.prev;S.logs=S.logs.filter(l=>l.id!==u.logId);
+  await DB.put('cards',u.prev);await DB.del('logs',u.logId);R.done=Math.max(0,R.done-1);R.lastGroup='';
+  R.forced=u.prev;vReview(v);updateBadge();toast('Undone')}
+function startCram(){const now=Date.now();const pool=deckCards(R.deck).filter(c=>!c.suspended&&c.state);
+  pool.sort((a,b)=>(curR(a,now)??0)-(curR(b,now)??0));R.cram={q:pool.slice(0,60).map(c=>c.id),i:0,ok:0}}
+function vCram(v){
+  const C=R.cram;if(!C.q.length){v.innerHTML=`<div class="empty">No studied cards in this deck yet.</div><button class="btn block" id="cx">Back</button>`;$('#cx').onclick=()=>{R.cram=null;vReview(v)};return}
+  if(C.i>=C.q.length){v.innerHTML=`<div class="card empty" style="color:var(--ink)"><h3>Quick revision done</h3><p class="small muted">Recalled ${C.ok} of ${C.q.length} on first try. Schedules were not changed.</p></div><button class="btn block" id="cx">Back to review</button>`;$('#cx').onclick=()=>{R.cram=null;vReview(v)};return}
+  const c=byId('cards',C.q[C.i]);if(!c){C.i++;return vCram(v)}
+  v.innerHTML=`<div class="row" style="margin-bottom:12px"><b class="small">Quick revision</b><span class="spacer"></span><span class="small muted">${C.i+1} / ${C.q.length}</span><button class="btn ghost" id="cx">End</button></div>
+  <article class="flash" id="face">${cardFace(c,false)}</article><div id="ctrl"><button class="btn primary block" id="show" style="margin-top:12px">Show answer</button></div>`;
+  $('#cx').onclick=()=>{R.cram=null;vReview(v)};
+  const show=()=>{$('#face').innerHTML=cardFace(c,true);$('#ctrl').innerHTML=`<div class="grades" style="grid-template-columns:1fr 1fr"><button class="g1" id="miss"><b>Missed</b><small>see again</small></button><button class="g3" id="got"><b>Got it</b><small>next</small></button></div>`;
+    $('#miss').onclick=()=>{C.q.push(c.id);C.q.splice(C.i,1);C.first=C.first||{};C.first[c.id]=1;vCram(v)};
+    $('#got').onclick=()=>{if(!(C.first&&C.first[c.id]))C.ok++;C.i++;vCram(v)};R.show=null};
+  $('#show').onclick=show;$('#face').onclick=show;R.show=show;
+}
+document.addEventListener('keydown',e=>{if(!location.hash.startsWith('#/review')||$('#modal').classList.contains('on')||/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;
+  if(R.cram){if((e.key===' '||e.key==='Enter')&&$('#show')){e.preventDefault();$('#show').click()}else if(e.key==='1'&&$('#miss'))$('#miss').click();else if((e.key==='2'||e.key===' ')&&$('#got')){e.preventDefault();$('#got').click()}return}
+  if(!R.card)return;
+  if(!R.shown&&(e.key===' '||e.key==='Enter')){e.preventDefault();R.show&&R.show();return}
+  if(R.shown&&/^[1-4]$/.test(e.key)){answer(+e.key,$('#view'))}
+  else if(R.shown&&(e.key===' '||e.key==='Enter')){e.preventDefault();answer(3,$('#view'))}
+  else if(e.key==='z'&&(e.ctrlKey||e.metaKey))undo($('#view'))});
+
+/* ================= Answer practice ================= */
+const P={paper:'',pick:'weak',mode:'paper',qa:null,phase:'pick',t0:0,secs:0,text:'',score:0};
+function vPractice(v){
+  if(!S.qas.length){v.innerHTML=`<div class="empty">Add some questions first (Add → Questions &amp; answers).</div>`;return}
+  if(P.phase==='pick'){
+    v.innerHTML=`<p class="small muted" style="margin-top:0">Exam-style timed answer writing. Write on paper (best) or type here, then compare with the model answer and score yourself.</p>
+    <label>Paper</label><select id="pp">${paperOpts(P.paper,'All papers')}</select>
+    <label>Pick</label><select id="pk"><option value="weak">Least practised first</option><option value="random">Random</option><option value="star">Starred only</option><option value="low">Lowest self-score</option></select>
+    <label>Write</label><div class="seg" id="pm"><button data-m="paper">On paper</button><button data-m="type">Type here</button></div>
+    <p class="small muted">Time: ${S.settings.minPerMark} min per mark (change in Settings).</p>
+    <button class="btn primary block" id="pgo">Get a question</button>`;
+    $('#pp').value=P.paper;$('#pk').value=P.pick;$('#pp').onchange=e=>P.paper=e.target.value;$('#pk').onchange=e=>P.pick=e.target.value;
+    const sm=()=>$$('#pm button').forEach(b=>b.classList.toggle('on',b.dataset.m===P.mode));sm();$$('#pm button').forEach(b=>b.onclick=()=>{P.mode=b.dataset.m;sm()});
+    $('#pgo').onclick=()=>{let a=S.qas.filter(q=>!P.paper||q.paper===P.paper);if(P.pick==='star')a=a.filter(q=>q.starred);if(!a.length)return toast('No questions match');
+      const att=id=>S.attempts.filter(x=>x.qaId===id);
+      if(P.pick==='weak'){const m=Math.min(...a.map(q=>att(q.id).length));a=a.filter(q=>att(q.id).length===m)}
+      if(P.pick==='low'){const sc=q=>{const x=att(q.id).filter(y=>y.score);return x.length?x.reduce((s,y)=>s+y.score,0)/x.length:0};a.sort((x,y)=>sc(x)-sc(y));a=a.slice(0,Math.max(1,Math.ceil(a.length/4)))}
+      P.qa=a[Math.floor(Math.random()*a.length)].id;P.phase='ready';vPractice(v)};
+    return}
+  const q=byId('qas',P.qa);if(!q){P.phase='pick';return vPractice(v)}
+  const dur=Math.round((q.marks||10)*S.settings.minPerMark*60);
+  const qHead=`<div class="small muted">${esc(q.paper||'')}${q.marks?' · '+q.marks+' marks':''}${q.wordLimit?' · '+q.wordLimit+' words':''}</div><h2 style="line-height:1.4">${esc(q.question)}</h2>`;
+  if(P.phase==='ready'){v.innerHTML=qHead+`<p class="small muted">You get ${Math.round(dur/60)} minutes.</p><div class="row"><button class="btn primary" id="pstart">Start timer</button><button class="btn" id="pskip">Another question</button></div>`;
+    $('#pstart').onclick=()=>{P.phase='run';P.t0=Date.now();P.text='';vPractice(v)};$('#pskip').onclick=()=>{P.phase='pick';vPractice(v)};return}
+  if(P.phase==='run'){
+    v.innerHTML=qHead+`<div class="timer" id="ptime"></div>${P.mode==='type'?`<textarea id="ptext" rows="14" placeholder="Intro → body → conclusion">${esc(P.text)}</textarea><div class="wc" id="pwc"></div>`:'<p class="small muted" style="text-align:center">Write your answer on paper.</p>'}
+    <button class="btn primary block" id="pdone" style="margin-top:12px">Finish</button>`;
+    const upd=()=>{const s=Math.floor((Date.now()-P.t0)/1000),left=dur-s,a=Math.abs(left);const t=$('#ptime');if(!t)return;t.textContent=(left<0?'+':'')+Math.floor(a/60)+':'+String(a%60).padStart(2,'0');t.classList.toggle('over',left<0)};upd();tick=setInterval(upd,1000);
+    if($('#ptext')){const w=()=>{const n=(P.text.match(/\S+/g)||[]).length;$('#pwc').textContent=n+(q.wordLimit?' / '+q.wordLimit:'')+' words'};w();$('#ptext').oninput=e=>{P.text=e.target.value;w()}}
+    $('#pdone').onclick=()=>{P.secs=Math.round((Date.now()-P.t0)/1000);P.phase='done';P.score=0;vPractice(v)};return}
+  const words=(P.text.match(/\S+/g)||[]).length;
+  v.innerHTML=qHead+`<p class="small muted">Time taken ${Math.floor(P.secs/60)}m ${P.secs%60}s of ${Math.round(dur/60)}m${P.mode==='type'?` · ${words} words`:''}</p>
+  ${P.mode==='type'&&P.text?sec('Your answer',`<div class="card reading" style="white-space:pre-wrap">${esc(P.text)}</div>`):''}
+  <div class="sec"><div class="h">Model answer</div><div class="card reading">${q.keywords?.length?`<p>${q.keywords.map(k=>`<span class="tag" style="font-size:12px">${esc(k)}</span>`).join('')}</p>`:''}${q.intro?md(q.intro):''}${md(q.body)}${q.conclusion?md(q.conclusion):''}</div></div>
+  <h3>Score yourself</h3><p class="small muted" style="margin-top:-4px">Structure, keywords covered, examples/data, conclusion, time.</p>
+  <div class="scores">${[1,2,3,4,5,6,7,8,9,10].map(n=>`<button data-s="${n}">${n}</button>`).join('')}</div>
+  <div class="row" style="margin-top:14px"><button class="btn primary" id="psave">Save attempt</button><button class="btn" id="pnext">Skip saving</button></div>`;
+  $$('[data-s]').forEach(b=>b.onclick=()=>{P.score=+b.dataset.s;$$('[data-s]').forEach(x=>x.classList.toggle('on',x===b))});
+  $('#psave').onclick=async()=>{await upsert('attempts',{id:uid(),qaId:q.id,t:Date.now(),secs:P.secs,words:P.mode==='type'?words:0,score:P.score,text:P.mode==='type'?P.text:''});toast('Attempt saved');P.phase='pick';vPractice(v)};
+  $('#pnext').onclick=()=>{P.phase='pick';vPractice(v)};
+}
+
+/* ================= More / Stats / Settings / Backup / Help ================= */
+function vMore(v){
+  v.innerHTML=`<div class="card list" style="padding:2px 14px">
+  ${[['#/practice','Answer practice','Timed writing with model-answer comparison'],['#/stats','Statistics','Retention, streak, heatmap, forecast'],['#/lib/cards','Browse cards','Edit, suspend, find leeches'],['#/backup','Backup & import','Export, restore, share, Anki export'],['#/settings','Settings','Theme, font size, review limits, exam date'],['#/help','How it works','Workflow and the review buttons']].map(([h,t,s])=>`<a class="item" data-go="${h}"><div class="t">${t}</div><div class="s">${s}</div></a>`).join('')}</div>
+  <p class="small muted" style="text-align:center">${S.notes.length} notes · ${S.qas.length} questions · ${S.cards.length} cards</p>`;
+}
+function vStats(v){
+  const now=Date.now(),k=counts('all');
+  const st={new:0,learn:0,young:0,mature:0,susp:0};for(const c of S.cards){if(c.suspended)st.susp++;else if(!c.state)st.new++;else if(c.state!==2)st.learn++;else if(c.ivl>=21)st.mature++;else st.young++}
+  const l30=S.logs.filter(l=>l.t>now-30*DAY&&l.prevState===2);const ret=l30.length?Math.round(l30.filter(l=>l.g>1).length/l30.length*100):null;
+  const today=S.logs.filter(l=>l.day===dayKey());const avg=today.length?Math.round(today.reduce((s,l)=>s+l.ms,0)/today.length/1000):0;
+  const per={};for(const l of S.logs)per[l.day]=(per[l.day]||0)+1;
+  const cells=[];const start=dayStart(now)-83*DAY;for(let i=0;i<84;i++){const t=start+i*DAY;const n=per[dayKey(t+HOUR)]||0;cells.push(`<i class="${n?'h'+(n<10?1:n<30?2:n<60?3:4):''}" title="${dayKey(t+HOUR)}: ${n}"></i>`)}
+  const fc=[];for(let d=0;d<14;d++){const s=dayStart(now)+d*DAY;fc.push(S.cards.filter(c=>!c.suspended&&c.state===2&&(d===0?c.due<s+DAY:c.due>=s&&c.due<s+DAY)).length)}const mx=Math.max(1,...fc);
+  const rows=PAPERS.map(p=>{const cs=S.cards.filter(c=>c.paper===p.id);const ck=counts(p.id);return{p,n:S.notes.filter(x=>x.paper===p.id).length,q:S.qas.filter(x=>x.paper===p.id).length,c:cs.length,d:ck.review+ck.learn,m:cs.filter(c=>c.state===2&&c.ivl>=21).length}}).filter(r=>r.n||r.q||r.c);
+  const att=S.attempts.filter(a=>a.score);const avgScore=att.length?(att.reduce((s,a)=>s+a.score,0)/att.length).toFixed(1):'—';
+  v.innerHTML=`<div class="stats3"><div><b>${streak()}</b><span>Day streak</span></div><div><b>${ret==null?'—':ret+'%'}</b><span>Recall (30 days)</span></div><div><b>${today.length}</b><span>Today${avg?' · '+avg+'s avg':''}</span></div></div>
+  <h3>Last 12 weeks</h3><div class="card"><div class="heat">${cells.join('')}</div></div>
+  <h3>Reviews due — next 14 days</h3><div class="card"><div class="bars">${fc.map((n,i)=>`<div><span>${n||''}</span><i style="height:${n/mx*70}px"></i><span>${i===0?'T':new Date(dayStart()+i*DAY).getDate()}</span></div>`).join('')}</div></div>
+  <h3>Cards</h3><div class="card"><table class="t"><tr><td>New</td><td class="n">${st.new}</td></tr><tr><td>Learning</td><td class="n">${st.learn}</td></tr><tr><td>Young (&lt; 21 days)</td><td class="n">${st.young}</td></tr><tr><td>Mature (≥ 21 days)</td><td class="n">${st.mature}</td></tr><tr><td>Suspended</td><td class="n">${st.susp}</td></tr><tr><td>Leeches</td><td class="n">${S.cards.filter(c=>c.leech).length}</td></tr></table></div>
+  ${rows.length?`<h3>By paper</h3><div class="card"><table class="t"><tr><th>Paper</th><th class="n">Notes</th><th class="n">Q&amp;A</th><th class="n">Cards</th><th class="n">Due</th><th class="n">Mature</th></tr>${rows.map(r=>`<tr><td>${r.p.id}</td><td class="n">${r.n}</td><td class="n">${r.q}</td><td class="n">${r.c}</td><td class="n">${r.d}</td><td class="n">${r.c?Math.round(r.m/r.c*100)+'%':'—'}</td></tr>`).join('')}</table></div>`:''}
+  <h3>Answer writing</h3><div class="card small">${S.attempts.length} attempts · average self-score ${avgScore}/10 · ${new Set(S.attempts.map(a=>a.qaId)).size} of ${S.qas.length} questions practised</div>`;
+}
+function vSettings(v){
+  const s=S.settings;
+  v.innerHTML=`<h3 style="margin-top:0">Display</h3>
+  <label>Theme</label><div class="seg" id="th"><button data-t="auto">Auto</button><button data-t="light">Light</button><button data-t="dark">Dark</button></div>
+  <label>Reading text size: <b id="fsv">${s.fontSize}px</b></label><input type="range" id="fs" min="14" max="24" value="${s.fontSize}" style="width:100%">
+  <h3>Exam</h3><label>Mains exam date (shows a countdown; no card is scheduled past it)</label><input type="date" id="ex" value="${esc(s.examDate)}">
+  <h3>Flashcards (FSRS)</h3>
+  <label>Target recall: <b id="rtv">${Math.round(s.retention*100)}%</b> — higher means more reviews, better memory</label><input type="range" id="rt" min="80" max="97" value="${Math.round(s.retention*100)}" style="width:100%">
+  <div class="row"><div style="flex:1"><label>New cards / day</label><input type="number" id="np" value="${s.newPerDay}" min="0"></div><div style="flex:1"><label>Max reviews / day</label><input type="number" id="rp" value="${s.reviewsPerDay}" min="0"></div></div>
+  <div class="row"><div style="flex:1"><label>Learning steps (minutes)</label><input type="text" id="ls" value="${s.learnSteps.join(' ')}"></div><div style="flex:1"><label>Relearning steps</label><input type="text" id="rls" value="${s.relearnSteps.join(' ')}"></div></div>
+  <div class="row"><div style="flex:1"><label>Maximum interval (days)</label><input type="number" id="mi" value="${s.maxIvl}" min="1"></div><div style="flex:1"><label>New day starts at (hour)</label><input type="number" id="ro" value="${s.rollover}" min="0" max="12"></div></div>
+  <div class="switch"><span>Interval fuzz (spreads reviews out)</span><input type="checkbox" id="fz" ${s.fuzz?'checked':''}></div>
+  <div class="switch"><span>Auto “recall the outline” card for each new question</span><input type="checkbox" id="aq" ${s.autoQaCards?'checked':''}></div>
+  <h3>Answer practice</h3><label>Minutes per mark</label><input type="number" id="mpm" step="0.1" value="${s.minPerMark}">
+  <div class="row end" style="margin-top:16px"><button class="btn primary" id="ssave">Save settings</button></div>
+  <h3>Reset</h3><div class="row"><button class="btn" id="rprog">Reset all review progress</button><button class="btn danger" id="wipe">Delete everything</button></div>`;
+  let theme=s.theme;const sth=()=>$$('#th button').forEach(b=>b.classList.toggle('on',b.dataset.t===theme));sth();
+  $$('#th button').forEach(b=>b.onclick=()=>{theme=b.dataset.t;sth();S.settings.theme=theme;applyTheme()});
+  $('#fs').oninput=e=>{$('#fsv').textContent=e.target.value+'px';document.documentElement.style.setProperty('--fs',e.target.value+'px')};
+  $('#rt').oninput=e=>$('#rtv').textContent=e.target.value+'%';
+  const steps=t=>t.split(/[\s,]+/).map(Number).filter(n=>n>0);
+  $('#ssave').onclick=async()=>{Object.assign(S.settings,{theme,fontSize:+$('#fs').value,examDate:$('#ex').value,retention:+$('#rt').value/100,newPerDay:Math.max(0,+$('#np').value||0),reviewsPerDay:Math.max(0,+$('#rp').value||0),learnSteps:steps($('#ls').value),relearnSteps:steps($('#rls').value),maxIvl:Math.max(1,+$('#mi').value||365),rollover:clamp(+$('#ro').value||0,0,12),fuzz:$('#fz').checked,autoQaCards:$('#aq').checked,minPerMark:Math.max(.2,+$('#mpm').value||1.2)});await saveSettings();toast('Settings saved');updateBadge()};
+  $('#rprog').onclick=async()=>{if(!confirm('Reset every card to new and clear review history? Content stays.'))return;await upsertMany('cards',S.cards.map(resetCard));S.logs=[];await DB.clear('logs');toast('Progress reset');updateBadge()};
+  $('#wipe').onclick=async()=>{if(!confirm('Delete ALL notes, questions, cards and history? Make a backup first.'))return;if(prompt('Type DELETE to confirm')!=='DELETE')return;for(const st of['notes','qas','cards','logs','attempts']){S[st]=[];await DB.clear(st)}toast('Everything deleted');go('#/home')};
+}
+function noteToMd(n){return`# ${n.title}\n*${paperName(n.paper)}${n.topic?' · '+n.topic:''}*\n\n${n.summary?'> '+n.summary+'\n\n':''}${n.content||''}\n${n.keyFacts?.length?'\n## Key facts\n'+n.keyFacts.map(x=>'- '+x).join('\n')+'\n':''}${n.telanganaAngle?'\n## Telangana angle\n'+n.telanganaAngle+'\n':''}${n.mnemonics?.length?'\n## Memory aids\n'+n.mnemonics.map(x=>'- '+x).join('\n')+'\n':''}${n.pyqs?.length?'\n## Likely questions\n'+n.pyqs.map(x=>'- '+x).join('\n')+'\n':''}`}
+function qaToMd(q){return`## Q. ${q.question}\n*${paperName(q.paper)}${q.marks?' · '+q.marks+' marks':''}${q.wordLimit?' · '+q.wordLimit+' words':''}*\n\n${q.keywords?.length?'**Keywords:** '+q.keywords.join(', ')+'\n\n':''}${q.intro?q.intro+'\n\n':''}${q.body||''}\n\n${q.conclusion||''}\n${q.diagram?'\n**Diagram:** '+q.diagram+'\n':''}${q.valueAdd?.length?'\n**Value additions:**\n'+q.valueAdd.map(x=>'- '+x).join('\n')+'\n':''}`}
+const cardRaw=id=>cardsOf(id).filter(c=>!c.group?.startsWith('outline-')).reduce((a,c)=>{if(c.type==='cloze'){if(!a.seen.has(c.group)){a.seen.add(c.group);a.l.push({type:'cloze',text:c.text,back:c.back})}}else a.l.push({type:'basic',front:c.front,back:c.back});return a},{seen:new Set(),l:[]}).l;
+function packNote(n){return{title:n.title,paper:n.paper,topic:n.topic,tags:n.tags,summary:n.summary,content:n.content,keyFacts:n.keyFacts,telanganaAngle:n.telanganaAngle,mnemonics:n.mnemonics,pyqs:n.pyqs,cards:cardRaw(n.id)}}
+function packQA(q){return{question:q.question,paper:q.paper,topic:q.topic,tags:q.tags,marks:q.marks,wordLimit:q.wordLimit,directive:q.directive,keywords:q.keywords,answer:{intro:q.intro,body:q.body,conclusion:q.conclusion},diagram:q.diagram,valueAdd:q.valueAdd,cards:cardRaw(q.id)}}
+function vBackup(v){
+  v.innerHTML=`<div class="card"><b>Full backup</b><p class="small muted" style="margin:4px 0 10px">Everything — notes, Q&amp;A, cards, review history, attempts and settings. Last backup: ${ago(S.settings.lastBackup)}.</p>
+   <div class="row"><button class="btn primary" id="bdl">Download</button><button class="btn" id="bsh">Share (Drive, WhatsApp…)</button></div></div>
+  <div class="card"><b>Restore / import a file</b><p class="small muted" style="margin:4px 0 10px">Accepts a full backup, a shared notes/Q&amp;A pack, or a saved AI reply.</p><button class="btn" id="bimp">Choose file</button></div>
+  <div class="card"><b>Export content</b><label>Paper</label><select id="bpaper">${paperOpts('','All papers')}</select>
+   <div style="display:grid;gap:8px;margin-top:10px"><button class="btn" id="bpack">Shareable pack (.json, re-importable)</button><button class="btn" id="bmd">Readable notes (.md)</button><button class="btn" id="banki">Flashcards for Anki (.txt)</button></div>
+   <p class="small muted">Anki: File → Import, separator Tab, allow HTML. Cloze rows go into a Cloze note type.</p></div>`;
+  const full=()=>JSON.stringify({type:'tspsc-backup',version:1,exported:Date.now(),settings:S.settings,notes:S.notes,qas:S.qas,cards:S.cards,logs:S.logs,attempts:S.attempts});
+  const mark=async()=>{S.settings.lastBackup=Date.now();await saveSettings()};
+  $('#bdl').onclick=async()=>{download(`mains-backup-${stamp()}.json`,full());await mark();toast('Backup saved to Downloads')};
+  $('#bsh').onclick=async()=>{await shareFile(`mains-backup-${stamp()}.json`,full());await mark()};
+  const sel=()=>$('#bpaper').value,f=x=>!sel()||x.paper===sel(),tag=()=>sel()||'all';
+  $('#bpack').onclick=()=>{const notes=S.notes.filter(f),qas=S.qas.filter(f);if(!notes.length&&!qas.length)return toast('Nothing to export');
+    const out=[];if(notes.length)out.push({type:'tspsc-notes',version:1,notes:notes.map(packNote)});if(qas.length)out.push({type:'tspsc-qa',version:1,items:qas.map(packQA)});
+    download(`mains-pack-${tag()}-${stamp()}.json`,JSON.stringify(out.length===1?out[0]:out,null,1))};
+  $('#bmd').onclick=()=>{const notes=S.notes.filter(f).sort((a,b)=>(a.paper+a.title).localeCompare(b.paper+b.title)),qas=S.qas.filter(f);if(!notes.length&&!qas.length)return toast('Nothing to export');
+    download(`mains-notes-${tag()}-${stamp()}.md`,notes.map(noteToMd).join('\n---\n\n')+(qas.length?'\n\n# Questions & answers\n\n'+qas.map(qaToMd).join('\n---\n\n'):''),'text/markdown')};
+  $('#banki').onclick=()=>{const cs=S.cards.filter(f);if(!cs.length)return toast('No cards');const seen=new Set();const cl=s=>md(s).replace(/\t/g,' ').replace(/\n/g,'');
+    const rows=['#separator:tab','#html:true','#tags column:3'];for(const c of cs){if(c.type==='cloze'){if(seen.has(c.group))continue;seen.add(c.group);rows.push([String(c.text).replace(/[\t\n]/g,' '),cl(c.back||''),'tspsc '+(c.paper||'')].join('\t'))}else rows.push([cl(c.front),cl(c.back),'tspsc '+(c.paper||'')].join('\t'))}
+    download(`mains-anki-${tag()}-${stamp()}.txt`,rows.join('\n'),'text/plain')};
+  $('#bimp').onclick=async()=>{const fl=await readFile('.json,.txt,application/json,text/plain');if(!fl)return;let o=null;try{o=JSON.parse(fl.text)}catch(e){}
+    if(o&&o.type==='tspsc-backup'){const rep=confirm(`Backup from ${fmtDate(o.exported)}: ${o.notes.length} notes, ${o.qas.length} questions, ${o.cards.length} cards.\n\nOK = REPLACE everything on this phone\nCancel = MERGE (keep newer versions)`);
+      for(const st of['notes','qas','cards','logs','attempts']){const inc=o[st]||[];if(rep){await DB.clear(st);S[st]=[];await upsertMany(st,inc)}else{const cur=new Map(S[st].map(x=>[x.id,x]));const take=inc.filter(x=>!cur.has(x.id)||(x.updated||0)>(cur.get(x.id).updated||0)||(st==='cards'&&(x.reps||0)>(cur.get(x.id).reps||0)));await upsertMany(st,take)}}
+      if(rep&&o.settings){S.settings={...DEF,...o.settings};await saveSettings()}toast('Backup restored');go('#/home');return}
+    try{const prep=prepareImport(parseAI(fl.text),'');const n=prep.notes.length+prep.qas.length;if(!confirm(`Import ${prep.notes.length} notes and ${prep.qas.length} questions?`+(prep.notes.concat(prep.qas).some(x=>x._dup)?' Existing items with the same title/question will be updated.':'')))return;const r=await commitImport(prep);toast(`Imported ${n} items, ${r.nC} cards`)}catch(e){toast(e.message,4000)}};
+}
+function vHelp(v){
+  v.innerHTML=`<div class="reading" style="font-size:15px">
+  <h3>Daily routine (under 2 hours)</h3><ol><li><b>Review</b> due cards first (10–25 min). Do it every day — skipping days is what breaks spaced repetition.</li><li><b>Revise</b> the notes listed under “Notes to revise”, tap <b>✓ Revised</b>. Notes come back after 1, 3, 7, 14, 30, 60, 120 days.</li><li><b>Practise</b> one timed answer.</li><li><b>Add</b> today’s new material.</li></ol>
+  <h3>Adding content</h3><p>Paste raw notes or Q&amp;A → copy the prompt → paste it in any AI → paste the reply back → <b>Check &amp; preview</b> → Save. Flashcards in the reply are created automatically. The app tolerates extra text around the JSON and can read several JSON blocks in one reply.</p>
+  <h3>The four buttons</h3><ul><li><b>Again</b> — forgot. Card comes back in minutes.</li><li><b>Hard</b> — recalled with real effort.</li><li><b>Good</b> — recalled correctly. Use this most.</li><li><b>Easy</b> — instant. Use sparingly.</li></ul>
+  <p>Scheduling uses <b>FSRS</b> (the algorithm in modern Anki): it estimates each card’s memory stability and schedules it just before you would forget, at the recall rate you set (default 90%). Keyboard: Space = show / Good, 1–4 = grades.</p>
+  <h3>Good cards</h3><ul><li>One fact per card; keep backs short.</li><li>Cloze for dates, articles, numbers: “Article {{c1::371D}} — special provisions for Andhra Pradesh”.</li><li>A card you keep failing becomes a <b>leech</b> — rewrite or split it (Library → Cards → Leeches).</li></ul>
+  <h3>Before the exam</h3><p>Set the exam date in Settings — no card is scheduled after it. Use <b>Quick revision</b> on the Review screen to run through your weakest cards without changing schedules.</p>
+  <h3>Keep your data safe</h3><p>Everything is stored on this phone only. Download a backup weekly (More → Backup) and keep it in Drive.</p></div>`;
+}
+
+/* ================= Boot ================= */
+(async function boot(){
+  try{await DB.open();const[notes,qas,cards,logs,attempts,settings]=await Promise.all([DB.all('notes'),DB.all('qas'),DB.all('cards'),DB.all('logs'),DB.all('attempts'),DB.getMeta('settings')]);
+    Object.assign(S,{notes,qas,cards,logs,attempts,settings:{...DEF,...(settings||{})}})}
+  catch(e){$('#view').innerHTML=`<div class="empty">Storage is unavailable in this browser (${esc(e.message||e)}). Open the app in Chrome, not in private mode.</div>`;return}
+  applyTheme();matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',applyTheme);
+  render();
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)updateBadge()});
+  if('serviceWorker'in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
+})();
+</script>
+</body>
+</html>
