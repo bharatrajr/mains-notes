@@ -147,6 +147,7 @@ pre.prompt{white-space:pre-wrap;font-size:12px;background:var(--soft);padding:10
 <header id="top">
   <button class="iconbtn hide" id="back" aria-label="Back"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg></button>
   <h1 id="title">Today</h1>
+  <button class="iconbtn hide" id="installbtn" aria-label="Install app"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg></button>
   <button class="iconbtn" id="searchbtn" aria-label="Search"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></button>
 </header>
 <main id="view"></main>
@@ -1001,6 +1002,10 @@ function vHelp(v){
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)updateBadge()});
   if('serviceWorker'in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
 })();
+let installEvt=null;const ib=document.getElementById('installbtn');
+addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;ib.classList.remove('hide')});
+ib.addEventListener('click',async()=>{if(!installEvt)return;installEvt.prompt();await installEvt.userChoice;installEvt=null;ib.classList.add('hide')});
+addEventListener('appinstalled',()=>ib.classList.add('hide'));
 </script>
 </body>
 </html>
