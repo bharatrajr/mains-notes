@@ -1,5 +1,5 @@
 // Offline support: network-first for the app shell, cached copy when offline.
-const CACHE = 'mains-notes-v3';
+const CACHE = 'mains-notes-v5';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-maskable-512.png'];
 
 self.addEventListener('install', e => {

@@ -141,6 +141,45 @@ table.t td.n,table.t th.n{text-align:right;font-variant-numeric:tabular-nums}
 .switch input{width:20px;height:20px}
 pre.prompt{white-space:pre-wrap;font-size:12px;background:var(--soft);padding:10px;border-radius:8px;max-height:220px;overflow:auto}
 .hide{display:none!important}
+/* feed & game */
+:root{--gold:#b07d10}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--gold:#e5c15a}}
+:root[data-theme="dark"]{--gold:#e5c15a}
+.bulk{margin:0 0 12px;padding:10px 12px;border:1px dashed var(--line);border-radius:10px}
+.bulk .list{max-height:320px;overflow-y:auto}
+.prt.on{background:var(--soft);border-radius:8px;padding-left:8px;padding-right:8px}
+.prt .btn{padding:6px 12px}
+.hero{display:flex;gap:14px;align-items:center}
+.hero .ring{flex:none}
+.risk{color:var(--again);font-size:13px;margin:-4px 0 10px}
+body.feedon{overflow:hidden}
+body.feedon #exitfocus{display:none!important}
+.feed{position:fixed;inset:0;z-index:8;background:var(--bg);overflow-y:scroll;scroll-snap-type:y mandatory;overscroll-behavior:contain}
+.hud{position:fixed;top:0;left:0;right:0;z-index:9;display:flex;align-items:center;gap:10px;padding:calc(8px + env(safe-area-inset-top)) 12px 8px;background:linear-gradient(var(--bg) 70%,transparent)}
+.gbar{flex:1;height:8px;background:var(--line);border-radius:4px;overflow:hidden}
+.gbar i{display:block;height:100%;background:var(--good);border-radius:4px;transition:width .4s}
+.hud .cnt{font-size:13px}
+.combo{font-size:13px;font-weight:700;color:var(--hard);min-width:34px}
+.fs{height:100vh;height:100dvh;scroll-snap-align:start;scroll-snap-stop:always;display:flex;align-items:center;justify-content:center;padding:calc(56px + env(safe-area-inset-top)) 16px calc(28px + env(safe-area-inset-bottom))}
+.fs-in{width:100%;max-width:640px;max-height:100%;overflow-y:auto;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px 18px}
+.fs.bonus .fs-in{border:2px solid var(--gold)}
+.ftag{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:4px}
+.fs.bonus .ftag{color:var(--gold)}
+.ftitle{font-size:13px;color:var(--muted);margin-bottom:8px}
+.fs .flash{border:0;padding:0;min-height:0}
+.qctl{margin-top:14px}
+.qctl .grades{grid-template-columns:1fr 1fr}
+.ok{text-align:center;color:var(--good);font-weight:600;padding:10px}
+.swipe{text-align:center;color:var(--muted);font-size:13px;margin-top:14px}
+.xpf{position:fixed;right:18px;top:calc(44px + env(safe-area-inset-top));z-index:12;font-weight:700;color:var(--good);pointer-events:none;animation:xup 1s forwards}
+.xpf.gold{color:var(--gold)}
+@keyframes xup{to{transform:translateY(-28px);opacity:0}}
+.cele{position:fixed;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;pointer-events:none;text-align:center;overflow:hidden}
+.cele>div{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px 28px;font-size:18px;animation:pop .35s ease-out}
+.cele i{position:absolute;top:-12px;width:8px;height:12px;border-radius:2px;animation:fall 1.9s ease-in forwards}
+@keyframes fall{to{transform:translateY(105vh) rotate(600deg)}}
+@keyframes pop{from{transform:scale(.6);opacity:0}}
+@media (prefers-reduced-motion:reduce){.cele i{display:none}.cele>div,.xpf{animation:none}.gbar i{transition:none}}
 </style>
 </head>
 <body>
@@ -361,7 +400,22 @@ const stamp=()=>new Date().toISOString().slice(0,10);
 function applyTheme(){const s=S.settings;document.documentElement.dataset.theme=s.theme==='auto'?'':s.theme;document.documentElement.style.setProperty('--fs',s.fontSize+'px');
   const dark=s.theme==='dark'||(s.theme==='auto'&&matchMedia('(prefers-color-scheme: dark)').matches);$('meta[name=theme-color]').content=dark?'#131313':'#faf9f7'}
 function updateBadge(){const c=counts('all');const n=c.learn+c.review+c.newLeft;const b=$('#dueBadge');b.textContent=n>99?'99+':n;b.classList.toggle('hide',!n)}
-function streak(){const days=new Set(S.logs.map(l=>l.day));let n=0,t=Date.now();if(!days.has(dayKey(t)))t-=DAY;while(days.has(dayKey(t))){n++;t-=DAY}return n}
+function streak(){const days=new Set([...S.logs.map(l=>l.day),...Object.keys(G.days).filter(k=>G.days[k]>0)]);let n=0,t=Date.now();if(!days.has(dayKey(t)))t-=DAY;while(days.has(dayKey(t))){n++;t-=DAY}return n}
+
+/* ================= Game: XP, levels, daily goal ================= */
+let G={xp:0,days:{},seen:{},goal:150,best:0};
+const saveG=()=>DB.setMeta('game',G).catch(()=>{});
+const lvl=xp=>Math.floor(Math.sqrt(xp/60))+1;
+const lvlXp=l=>60*(l-1)*(l-1);
+const todayXp=()=>G.days[dayKey()]||0;
+function award(n){const before=todayXp(),l0=lvl(G.xp);G.xp+=n;G.days[dayKey()]=before+n;saveG();
+  if(before<G.goal&&before+n>=G.goal)celebrate('Daily goal reached!','🎯');
+  else if(lvl(G.xp)>l0)celebrate('Level '+lvl(G.xp)+' unlocked','⭐');
+  return n}
+function celebrate(text,emoji){const d=document.createElement('div');d.className='cele';
+  d.innerHTML=`<div><div style="font-size:52px">${emoji}</div><b>${esc(text)}</b></div>`+Array.from({length:26},()=>`<i style="left:${Math.random()*100}%;background:hsl(${Math.random()*360|0} 80% 60%);animation-delay:${(Math.random()*.4).toFixed(2)}s"></i>`).join('');
+  document.body.appendChild(d);navigator.vibrate?.([30,40,30]);setTimeout(()=>d.remove(),2200)}
+function floatXp(n,gold){const d=document.createElement('div');d.className='xpf'+(gold?' gold':'');d.textContent='+'+n+' XP';document.body.appendChild(d);setTimeout(()=>d.remove(),1000)}
 
 /* ================= Revision schedule for notes ================= */
 const REV=[1,3,7,14,30,60,120];
@@ -371,7 +425,7 @@ const revDue=n=>n.rev&&n.rev.next<dayEnd();
 
 /* ================= Router ================= */
 let tick=null;const R={deck:'all',card:null,pv:null,shown:false,t0:0,undo:[],lastGroup:'',cram:null,done:0};
-const TITLES={home:'Today',lib:'Library',add:'Add content',review:'Review',more:'More',note:'Note',qa:'Question',edit:'Edit',practice:'Answer practice',stats:'Statistics',settings:'Settings',backup:'Backup & import',help:'How it works'};
+const TITLES={feed:'Feed',home:'Today',lib:'Library',add:'Add content',review:'Review',more:'More',note:'Note',qa:'Question',edit:'Edit',practice:'Answer practice',stats:'Statistics',settings:'Settings',backup:'Backup & import',help:'How it works'};
 function go(h){if(location.hash===h)render();else location.hash=h}
 window.addEventListener('hashchange',render);
 document.addEventListener('click',e=>{const a=e.target.closest('[data-go]');if(a){e.preventDefault();go(a.dataset.go)}});
@@ -379,13 +433,13 @@ $('#back').onclick=()=>history.length>1?history.back():go('#/home');
 $('#searchbtn').onclick=()=>{L.focusSearch=true;go('#/lib')};
 $('#exitfocus').onclick=()=>document.body.classList.remove('focus');
 function render(){
-  clearInterval(tick);tick=null;closeModal();document.body.classList.remove('focus');
+  clearInterval(tick);tick=null;closeModal();document.body.classList.remove('focus','feedon');if(F.io){F.io.disconnect();F.io=null}
   const parts=(location.hash||'#/home').slice(2).split('/');const r=parts[0]||'home';
   $$('#nav a').forEach(a=>a.classList.toggle('on',a.dataset.r===r));
   $('#title').textContent=TITLES[r]||'Mains';
   $('#back').classList.toggle('hide',['home','lib','add','review','more'].includes(r));
   const v=$('#view');v.scrollTop=0;window.scrollTo(0,0);
-  const fn={home:vHome,lib:vLib,add:vAdd,review:vReview,more:vMore,note:vNote,qa:vQA,edit:vEdit,practice:vPractice,stats:vStats,settings:vSettings,backup:vBackup,help:vHelp}[r]||vHome;
+  const fn={feed:vFeed,home:vHome,lib:vLib,add:vAdd,review:vReview,more:vMore,note:vNote,qa:vQA,edit:vEdit,practice:vPractice,stats:vStats,settings:vSettings,backup:vBackup,help:vHelp}[r]||vHome;
   fn(v,parts.slice(1));updateBadge();
 }
 
@@ -397,11 +451,16 @@ function vHome(v){
   const empty=!S.notes.length&&!S.qas.length;
   const fc=[];for(let d=1;d<=7;d++){const s=dayStart()+d*DAY;fc.push(S.cards.filter(x=>!x.suspended&&x.state===2&&x.due>=s&&x.due<s+DAY).length)}
   const mx=Math.max(1,...fc);
+  const tx=todayXp(),pct=Math.min(1,tx/G.goal),lv=lvl(G.xp),active=tx>0||S.logs.some(l=>l.day===dayKey());
   v.innerHTML=`
   <div class="row"><div class="muted small">${new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'})}</div><span class="spacer"></span>
   ${ex!=null?`<div class="small"><b>${ex}</b> <span class="muted">days to Mains</span></div>`:''}</div>
+  ${empty?'':`<div class="card" style="margin-top:12px"><div class="hero"><svg class="ring" viewBox="0 0 64 64" width="64" height="64"><circle cx="32" cy="32" r="27" fill="none" stroke="var(--line)" stroke-width="6"/><circle cx="32" cy="32" r="27" fill="none" stroke="${pct?'var(--good)':'none'}" stroke-width="6" stroke-linecap="round" stroke-dasharray="${(169.6*pct).toFixed(1)} 170" transform="rotate(-90 32 32)"/><text x="32" y="37" text-anchor="middle" font-size="14" font-weight="600" fill="var(--ink)">${Math.round(pct*100)}%</text></svg>
+   <div style="flex:1"><b>${tx} / ${G.goal} XP today</b><div class="small muted">🔥 ${sk}-day streak · Level ${lv} · ${lvlXp(lv+1)-G.xp} XP to level ${lv+1}</div></div></div>
+   ${sk>0&&!active?`<p class="risk">Your ${sk}-day streak ends tonight. Two minutes in the feed keeps it alive.</p>`:''}
+   <a class="btn primary block" data-go="#/feed">▶ ${tx>=G.goal?'Keep the streak going':tx?'Continue revision feed':'Start revision feed'}</a></div>`}
   <div class="stats3"><div class="r"><b>${c.review}</b><span>Review</span></div><div class="l"><b>${c.learn}</b><span>Learning</span></div><div class="n"><b>${c.newLeft}</b><span>New</span></div></div>
-  <a class="btn primary block" data-go="#/review">${total?'Start review':'All caught up'}</a>
+  <a class="btn ${empty?'primary':''} block" data-go="#/review">${total?'Start flashcard review':'Flashcards: all caught up'}</a>
   <p class="small muted" style="text-align:center;margin:8px 0 18px">Reviewed today: ${c.newDone+c.revDone+S.logs.filter(l=>l.day===dayKey()&&l.prevState!==0&&l.prevState!==2).length} · Streak: ${sk} day${sk===1?'':'s'}</p>
   ${empty?`<div class="card"><h3 style="margin-top:0">Start here</h3><ol class="small" style="padding-left:18px;margin:0">
    <li>Go to <b>Add</b>, paste your raw notes or Q&amp;A.</li><li>Copy the prompt and paste it into ChatGPT / Claude / Gemini.</li>
@@ -603,7 +662,7 @@ function cardEditor(card,src,after){
 }
 
 /* ================= Add: prompts + import ================= */
-const A={mode:'notes',paper:'',depth:'Standard',style:'faithful',marks:10,words:150,cards:'8–12',raw:'',reply:'',parsed:null};
+const A={mode:'notes',paper:'',depth:'Standard',style:'faithful',marks:10,words:150,cards:'8–12',raw:'',reply:'',parsed:null,size:1500,cur:0,done:[]};
 try{Object.assign(A,JSON.parse(localStorage.getItem('mains-add')||'{}'),{parsed:null})}catch(e){}
 const saveA=()=>{try{const{parsed,...rest}=A;localStorage.setItem('mains-add',JSON.stringify(rest))}catch(e){}};
 const PAPER_CODES='Paper codes: GE = General English, P1 = General Essay, P2 = History, Culture & Geography, P3 = Indian Society, Constitution & Governance, P4 = Economy & Development, P5 = Science & Technology and Data Interpretation, P6 = Telangana Movement & State Formation.';
@@ -615,9 +674,48 @@ const PLAIN_RULES=`LANGUAGE — SIMPLE AND CLEAR (very important)
 - Active voice; no filler phrases ("It is pertinent to note that…", "In the contemporary era…").
 - Simple language must not mean less content: keep all facts, data, articles, committees and examples.`;
 const JSON_RULES='OUTPUT FORMAT — STRICT: reply with ONLY a single JSON code block and nothing before or after it. It must be valid JSON: double quotes, no comments, no trailing commas, line breaks inside strings written as \\n. Do not truncate — if the content is long, keep every item complete.';
-function buildPrompt(){
+/* Bulk: split long raw text at topic / question boundaries into AI-sized parts */
+const wcount=s=>(String(s||'').match(/\S+/g)||[]).length;
+const SIZES={800:'Small · ~800 words',1500:'Medium · ~1500 words',2500:'Large · ~2500 words'};
+function isHeadLine(l,prev){const t=l.trim(),ws=t.split(/\s+/),n=ws.length;if(!t||t.length>90||n>12)return false;
+  return /^#{1,4}\s/.test(t)||/^(chapter|unit|topic|lesson|part|section|module)\b/i.test(t)||(t===t.toUpperCase()&&/[A-Z]{3}/.test(t))
+    ||(/^\d+(\.\d+)*[.)]?\s+[A-Z]/.test(t)&&!/[.;,?]$/.test(t)&&n<=8)||(/:$/.test(t)&&n<=8&&!/^[-*•]/.test(t))
+    ||(!(prev||'').trim()&&n<=8&&/^[A-Z]/.test(t)&&!/[.;,?!:]$/.test(t)&&!/^[-*•]/.test(t)&&ws.filter(w=>/^[A-Z0-9(]/.test(w)).length>=n*.6)}
+const isQLine=l=>/^\s*(Q(ues(tion)?)?\s*\.?\s*\d+\s*[.):\-]|Q\s*[.):\-])/i.test(l)||/^\s*\d+\s*[.)]\s+.{10,}\?\s*$/.test(l);
+function cutText(text,lim){
+  const SEPS=[/\n\s*\n/,/\n/,/(?<=[.!?।])\s+/],JOIN=['\n\n','\n',' '],atoms=[];
+  const rec=(t,lv,sep)=>{if(wcount(t)<=lim){atoms.push({t,sep});return}
+    for(let k=lv;k<3;k++){const u=t.split(SEPS[k]).filter(x=>x.trim());if(u.length>1){u.forEach((x,i)=>rec(x,k+1,i?JOIN[k]:sep));return}}
+    const w=t.split(/\s+/);for(let i=0;i<w.length;i+=lim)atoms.push({t:w.slice(i,i+lim).join(' '),sep:i?' ':sep})};
+  rec(text,0,'');
+  const out=[];let buf='';
+  for(const a of atoms){if(buf&&wcount(buf)+wcount(a.t)>lim){out.push(buf);buf=a.t}else buf+=(buf?a.sep||'\n':'')+a.t}
+  if(buf)out.push(buf);
+  if(out.length>1&&wcount(out[out.length-1])<lim*.25){const t=out.pop();out[out.length-1]+='\n'+t}
+  return out}
+function smartSplit(raw,target,mode){
+  const lines=String(raw||'').replace(/\r/g,'').split('\n'),useQ=mode==='qa'&&lines.filter(isQLine).length>=2;
+  const secs=[];let s=null;
+  lines.forEach((l,li)=>{const b=useQ?isQLine(l):isHeadLine(l,lines[li-1]);if(b||!s){s={head:b?l.trim().replace(/^#+\s*/,'').replace(/:$/,'').slice(0,80):'',lines:[]};secs.push(s)}s.lines.push(l)});
+  const pieces=[];
+  for(const x of secs){const t=x.lines.join('\n');if(!t.trim())continue;
+    (wcount(t)>target*1.15?cutText(t,target):[t]).forEach((p,j)=>pieces.push({text:p,head:x.head,start:!!x.head&&j===0,contd:j>0&&x.head}))}
+  const parts=[];let p=null;
+  for(const pc of pieces){const w=wcount(pc.text);
+    if(p&&((useQ&&pc.start&&p.heads.length>=8)||(p.words>=target*.25&&(p.words+w>target||(pc.start&&p.words>=target*.6))))){parts.push(p);p=null}
+    if(!p)p={texts:[],words:0,heads:[],contd:pc.contd||''};
+    p.texts.push(pc.text);p.words+=w;if(pc.start)p.heads.push(pc.head)}
+  if(p)parts.push(p);
+  if(parts.length>1&&parts[parts.length-1].words<target*.25&&(!useQ||parts[parts.length-1].heads.length+parts[parts.length-2].heads.length<=10)){const t=parts.pop(),l=parts[parts.length-1];l.texts.push(...t.texts);l.words+=t.words;l.heads.push(...t.heads)}
+  return parts.map(p=>({text:p.texts.join('\n'),words:p.words,heads:p.heads,contd:p.contd,
+    label:(p.contd?p.contd+' (contd.)':p.heads[0]||plain(p.texts[0]).split(' ').slice(0,8).join(' ')).slice(0,70)}))}
+const bulkParts=()=>A.raw.trim()?smartSplit(A.raw,A.size,A.mode):[];
+const partKey=p=>p.words+':'+p.text.slice(0,40)+'|'+p.text.slice(-40);
+function buildPrompt(i){
   const pl=A.paper?`Paper: ${paperName(A.paper)} — use "paper":"${A.paper}" for every item.`:'Choose the best paper code for each item.';
-  const raw=A.raw.trim()||'(paste content here)';
+  const parts=bulkParts(),bulk=parts.length>1,pi=clamp(i??A.cur,0,Math.max(0,parts.length-1)),pt=parts[pi];
+  const raw=(bulk?pt.text:A.raw).trim()||'(paste content here)';
+  const partLine=bulk?`\n- PART ${pi+1} OF ${parts.length}: I am sending a large set of ${A.mode==='notes'?'notes':'questions'} in parts. Process ONLY the text below and keep every item complete.${pt.contd?` It continues the topic "${pt.contd}" from the previous part — title that note "${pt.contd} (contd.)".`:''}`:'';
   if(A.mode==='notes'){
     const mode=A.style==='faithful'?'Restructure FAITHFULLY: keep every fact from my notes; fix language and organisation; do not drop anything. Add only a little essential context.':'Restructure AND ENRICH: keep every fact from my notes, then add high-value exam content an examiner rewards — data, committees, constitutional articles, schemes, reports, examples and Telangana-specific facts.';
     return`You are an expert mentor and examiner for TSPSC (TGPSC) Group-1 Mains, English medium. Convert my RAW NOTES into structured revision notes for my notes app.
@@ -626,7 +724,7 @@ TASK
 - ${pl}
 - ${mode}
 - Depth: ${A.depth}.
-- If the raw notes cover clearly different topics, split them into separate notes (one per topic).
+- If the raw notes cover clearly different topics, split them into separate notes (one per topic).${partLine}
 
 WRITING RULES
 - Exam-ready layout: ## sub-headings, short bullet points, no long paragraphs.
@@ -654,7 +752,7 @@ ${raw}
 TASK
 - ${pl}
 - ${mode}
-- Default: ${A.marks} marks, about ${A.words} words per answer (if a question states its own marks or word limit, use that).
+- Default: ${A.marks} marks, about ${A.words} words per answer (if a question states its own marks or word limit, use that).${partLine}
 
 ANSWER RULES
 - Identify the directive (Discuss, Explain, Analyse, Examine, Critically evaluate, Comment, Elucidate) and answer exactly what it asks.
@@ -742,7 +840,8 @@ function vAdd(v){
   </div>
   <div class="card steps">
     <div><span class="stepn">2</span><b>Copy the prompt into your AI</b></div>
-    <p class="small muted" style="margin:6px 0 10px">ChatGPT, Claude or Gemini — any works. Long notes? Send them in parts and import each reply.</p>
+    <p class="small muted" style="margin:6px 0 10px">ChatGPT, Claude or Gemini — any works. Long notes are split into parts automatically.</p>
+    <div id="abulk"></div>
     <div class="row"><button class="btn primary" id="acopy">Copy prompt</button><button class="btn" id="ashare">Share to app</button><button class="btn ghost" id="aview">Preview</button></div>
     <pre class="prompt hide" id="apv"></pre>
   </div>
@@ -754,9 +853,22 @@ function vAdd(v){
   </div>
   <div class="row" style="justify-content:center"><a class="btn ghost" data-go="#/edit/note/new">Write a note by hand</a><a class="btn ghost" data-go="#/edit/qa/new">Write a Q&amp;A by hand</a></div>`;
   $$('#amode button').forEach(b=>{b.classList.toggle('on',b.dataset.m===A.mode);b.onclick=()=>{A.mode=b.dataset.m;saveA();vAdd(v)}});
-  const wc=()=>{const w=(A.raw.match(/\S+/g)||[]).length;$('#awc').textContent=w?w+' words':''};wc();
+  const renderBulk=()=>{const el=$('#abulk'),parts=bulkParts(),n=parts.length,w=wcount(A.raw);
+    const keys=parts.map(partKey);A.done=A.done.filter(k=>keys.includes(k));if(A.cur>=n)A.cur=0;
+    const done=keys.map(k=>A.done.includes(k)),nd=done.filter(Boolean).length;
+    $('#acopy').textContent=n>1?`Copy part ${A.cur+1} prompt`:'Copy prompt';
+    $('#awc').textContent=w?w+' words'+(n>1?` · ${n} parts`:''):'';
+    if(w<600&&n<2){el.innerHTML='';return}
+    el.innerHTML=`<div class="bulk"><div class="row"><b class="small">${n>1?`Bulk mode · ${n} parts · ${nd} imported`:'Fits in one part'}</b><span class="spacer"></span><select id="asize" style="width:auto;padding:6px 8px">${Object.entries(SIZES).map(([k,l])=>`<option value="${k}" ${+k===A.size?'selected':''}>${l}</option>`).join('')}</select></div>
+    ${n>1?`<p class="small muted" style="margin:6px 0 8px">Split at ${A.mode==='qa'?'question':'topic'} breaks, never mid-sentence. For each part: Copy → paste the AI reply in step 3 → Save. The next part is picked automatically.</p><div class="progress"><i style="width:${nd/n*100}%"></i></div>
+    <div class="list">${parts.map((p,i)=>`<div class="item prt${i===A.cur?' on':''}" data-p="${i}"><div class="row" style="flex-wrap:nowrap"><div style="flex:1;min-width:0"><div class="t">${done[i]?'✓ ':''}Part ${i+1} · ${esc(p.label)}</div><div class="s">${p.words} words${p.heads.length>1?` · ${p.heads.length} ${A.mode==='qa'?'questions':'topics'}`:''}${done[i]?' · imported':''}</div></div><button class="btn${i===A.cur&&!done[i]?' primary':''}" data-pc="${i}">Copy</button></div></div>`).join('')}</div>`:''}</div>`;
+    $('#asize').onchange=e=>{A.size=+e.target.value;A.cur=0;saveA();renderBulk()};
+    $$('[data-p]',el).forEach(x=>x.onclick=()=>{A.cur=+x.dataset.p;saveA();renderBulk()});
+    $$('[data-pc]',el).forEach(b=>b.onclick=async e=>{e.stopPropagation();const i=+b.dataset.pc;A.cur=i;saveA();
+      toast(await copyText(buildPrompt(i))?`Part ${i+1} prompt copied — paste it in your AI`:'Copy failed; use Preview');renderBulk();if(!$('#apv').classList.contains('hide'))$('#apv').textContent=buildPrompt()})};
+  const wc=()=>{clearTimeout(wc.t);wc.t=setTimeout(renderBulk,250)};renderBulk();
   $('#araw').oninput=e=>{A.raw=e.target.value;saveA();wc()};
-  $('#apaste1').onclick=()=>pasteInto($('#araw'));$('#aclear1').onclick=()=>{A.raw='';$('#araw').value='';saveA();wc()};
+  $('#apaste1').onclick=()=>pasteInto($('#araw'));$('#aclear1').onclick=()=>{A.raw='';A.done=[];A.cur=0;$('#araw').value='';saveA();renderBulk()};
   $('#apaper').onchange=e=>{A.paper=e.target.value;saveA()};
   const bindSel=(id,k,num)=>{const el=$(id);if(!el)return;el.value=A[k];el.onchange=el.oninput=e=>{A[k]=num?+e.target.value:e.target.value;saveA()}};
   bindSel('#astyle','style');bindSel('#adepth','depth');bindSel('#acards','cards');bindSel('#amarks','marks',1);bindSel('#awords','words',1);
@@ -775,8 +887,14 @@ function vAdd(v){
     ${all.map((it,i)=>`<label class="pv"><input type="checkbox" data-i="${i}" ${it.x._on?'checked':''}><div><div style="color:var(--ink);font-size:15px">${esc(it.k==='n'?it.x.title:it.x.question)}</div><div class="small muted">${it.x.paper||'Unsorted'} · ${(Array.isArray(it.x._cards)?it.x._cards.length:0)} cards${it.k==='q'&&S.settings.autoQaCards&&!it.x._dup?' + outline':''}${it.x._dup?' · <b>already exists — will update</b>':''}</div></div></label>`).join('')}
     <div class="row end"><button class="btn primary" id="asave">Save to library</button></div>`;
     $$('input[data-i]',box).forEach(cb=>cb.onchange=()=>{all[+cb.dataset.i].x._on=cb.checked});
-    $('#asave',box).onclick=async()=>{const r=await commitImport(prep);A.reply='';A.parsed=null;saveA();
-      toast(`Saved ${r.nN+r.nQ} new, ${r.nU} updated, ${r.nC} cards`,3000);if(r.first)go(r.first);else vAdd(v)}};
+    $('#asave',box).onclick=async()=>{const r=await commitImport(prep);A.reply='';A.parsed=null;
+      const parts=bulkParts(),msg=`Saved ${r.nN+r.nQ} new, ${r.nU} updated, ${r.nC} cards`;
+      if(parts.length>1){const k=partKey(parts[A.cur]);if(!A.done.includes(k))A.done.push(k);
+        const left=parts.map((p,i)=>i).filter(i=>!A.done.includes(partKey(parts[i])));
+        if(left.length){const i=left.find(i=>i>A.cur)??left[0];A.cur=i;toast(`${msg}. Next: part ${i+1}`,3200)}
+        else{celebrate(`All ${parts.length} parts imported`,'📚');toast(msg,3000)}
+        saveA();vAdd(v);$('#abulk').scrollIntoView({behavior:'smooth',block:'center'});return}
+      saveA();toast(msg,3000);if(r.first)go(r.first);else vAdd(v)}};
 }
 
 /* ================= Review ================= */
@@ -811,7 +929,7 @@ function vReview(v){
     const tm=pool.filter(c=>c.state===2&&c.due>=dayEnd(now)&&c.due<dayEnd(now)+DAY).length;
     v.innerHTML=head+`<div class="card empty" style="color:var(--ink)"><div style="font-size:34px">✓</div><h3 style="margin:6px 0">${S.cards.length?'Done for now':'No cards yet'}</h3>
     <p class="small muted">${nl?`Next learning card ${new Date(nl.due).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}. `:''}${S.cards.length?`${tm} review${tm===1?'':'s'} due tomorrow.`:'Import notes or Q&A from the Add tab — flashcards are created automatically.'}</p>
-    ${R.done?`<p class="small">This session: ${R.done} card${R.done===1?'':'s'}</p>`:''}</div>
+    ${R.done?`<p class="small">This session: ${R.done} card${R.done===1?'':'s'}</p>`:''}${S.notes.length||S.qas.length?`<a class="btn primary" data-go="#/feed" style="margin-top:8px">▶ Keep going in the revision feed</a>`:''}</div>
     ${S.cards.length?`<h3>Study more</h3><div style="display:grid;gap:8px">${k.newTotal?`<button class="btn" id="more10">Add 10 more new cards today</button>`:''}<button class="btn" id="cram">Quick revision (weakest first, no scheduling)</button></div>`:`<a class="btn primary block" data-go="#/add">Add content</a>`}`;
     $('#deck').onchange=e=>{R.deck=e.target.value;R.undo=[];vReview(v)};
     if($('#more10'))$('#more10').onclick=async()=>{const t=dayKey();if(S.settings.extraNewDay!==t){S.settings.extraNewDay=t;S.settings.extraNew=0}S.settings.extraNew+=10;await saveSettings();vReview(v);updateBadge()};
@@ -842,7 +960,7 @@ async function answer(g,v){
   const nc={...o};if(g===1&&prev.state===2&&nc.lapses>=8&&!nc.leech){nc.leech=true;setTimeout(()=>toast('This card keeps slipping — try rewriting it simpler',3200),300)}
   const i=S.cards.findIndex(x=>x.id===c.id);S.cards[i]=nc;S.logs.push(log);
   await DB.put('cards',nc);await DB.put('logs',log);
-  R.undo.push({prev,logId:log.id});if(R.undo.length>20)R.undo.shift();R.lastGroup=c.group||c.id;R.done++;
+  R.undo.push({prev,logId:log.id});if(R.undo.length>20)R.undo.shift();R.lastGroup=c.group||c.id;R.done++;award(g===1?1:3);
   vReview(v);updateBadge();
 }
 async function undo(v){const u=R.undo.pop();if(!u)return;const i=S.cards.findIndex(x=>x.id===u.prev.id);if(i>=0)S.cards[i]=u.prev;S.logs=S.logs.filter(l=>l.id!==u.logId);
@@ -869,6 +987,88 @@ document.addEventListener('keydown',e=>{if(!location.hash.startsWith('#/review')
   if(R.shown&&/^[1-4]$/.test(e.key)){answer(+e.key,$('#view'))}
   else if(R.shown&&(e.key===' '||e.key==='Enter')){e.preventDefault();answer(3,$('#view'))}
   else if(e.key==='z'&&(e.ctrlKey||e.metaKey))undo($('#view'))});
+
+/* ================= Revision feed ================= */
+const F={slides:[],order:[],oi:0,combo:0,xp:0,retry:[],io:null};
+function chunks(src,max=650){const out=[];
+  for(const p of String(src||'').split(/\n(?=#{1,4}\s)/)){if(!p.trim())continue;if(p.length<=max){out.push(p);continue}
+    let cur='';for(const line of p.split('\n')){if(cur&&cur.length+line.length>max){out.push(cur);cur=''}cur+=(cur?'\n':'')+line}if(cur.trim())out.push(cur)}
+  return out}
+function feedOrder(){const seen=G.seen,t=x=>seen[x.id]||0;
+  const notes=S.notes.slice().sort((a,b)=>(revDue(b)-revDue(a))||(t(a)-t(b))||((a.rev?.last||0)-(b.rev?.last||0)));
+  const qas=S.qas.slice().sort((a,b)=>t(a)-t(b));const out=[];let qi=0;
+  notes.forEach((n,i)=>{out.push({kind:'note',x:n});if(i%2===1&&qi<qas.length)out.push({kind:'qa',x:qas[qi++]})});
+  while(qi<qas.length)out.push({kind:'qa',x:qas[qi++]});return out}
+function noteSlides(n){const read=[],T=n.title,id=n.id;
+  read.push({k:'read',tag:'New topic',title:paperName(n.paper),html:`<h2 style="margin-top:0">${esc(T)}</h2>${n.summary?`<blockquote>${inline(esc(n.summary))}</blockquote>`:''}${n.topic?`<p class="small muted">${esc(n.topic)}</p>`:''}`});
+  for(const c of chunks(n.content))read.push({k:'read',title:T,html:md(c)});
+  const kf=n.keyFacts||[];for(let i=0;i<kf.length;i+=4)read.push({k:'read',tag:'Key facts',title:T,html:ulist(kf.slice(i,i+4))});
+  if(n.telanganaAngle)read.push({k:'read',tag:'Telangana angle',title:T,html:md(n.telanganaAngle)});
+  if(n.mnemonics?.length)read.push({k:'read',tag:'Memory aid',title:T,html:ulist(n.mnemonics)});
+  if(n.pyqs?.length)read.push({k:'read',tag:'Could you answer this?',title:T,html:ulist(n.pyqs.slice(0,3))});
+  const qs=cardsOf(id).filter(c=>!c.suspended).sort((a,b)=>(curR(a)??0)-(curR(b)??0)).slice(0,4).map(c=>({k:'quiz',tag:'Quick check',card:c}));
+  const out=[];read.forEach((s,i)=>{out.push(s);if(i%2===1&&qs.length)out.push(qs.shift())});out.push(...qs);
+  out.push({k:'done',nid:id,title:T});return out}
+function qaSlides(q){const oc=qaOutlineCard(q,0);
+  const out=[{k:'quiz',tag:'Answer recall'+(q.marks?` · ${q.marks} marks`:''),card:oc}];
+  for(const c of chunks(q.body).slice(0,3))out.push({k:'read',tag:'Model answer',title:q.question,html:md(c)});
+  if(q.conclusion)out.push({k:'read',tag:'Way ahead',title:q.question,html:md(q.conclusion)});return out}
+function flashback(skip){const pool=S.cards.filter(c=>c.state&&!c.suspended&&c.sourceId!==skip).sort((a,b)=>(curR(a)??0)-(curR(b)??0)).slice(0,25);
+  return pool.length?{k:'quiz',tag:'Flashback',card:pool[Math.floor(Math.random()*pool.length)]}:null}
+function slideHTML(s,i){
+  const tag=(s.bonus?'⚡ 2× bonus · ':'')+(s.tag||'');
+  const head=`${tag?`<div class="ftag">${esc(tag)}</div>`:''}${s.title&&s.k!=='done'?`<div class="ftitle">${esc(s.title)}</div>`:''}`;
+  let body;
+  if(s.k==='quiz')body=`<div class="flash qface">${cardFace(s.card,false)}</div><div class="qctl"><button class="btn primary block" data-act="reveal">Tap to reveal</button></div>`;
+  else if(s.k==='done'){const n=byId('notes',s.nid),today=n&&n.rev?.last>=dayStart();
+    body=`<div class="empty" style="color:var(--ink);padding:16px 0"><div style="font-size:40px">✓</div><h3 style="margin:6px 0">Topic finished</h3><p class="small muted">${esc(s.title)}</p>
+    ${today?'<p class="small">Already revised today.</p>':'<button class="btn primary" data-act="rev">Mark revised · +15 XP</button>'}<div class="swipe">Swipe up for the next topic ↑</div></div>`}
+  else body=`<div class="reading">${s.html}</div>`;
+  return`<section class="fs${s.bonus?' bonus':''}" data-i="${i}"><div class="fs-in">${head}${body}${i===0?'<div class="swipe">Swipe up ↑</div>':''}</div></section>`}
+function updHud(){const t=todayXp();if(!$('#gfill'))return;$('#gfill').style.width=Math.min(100,t/G.goal*100)+'%';$('#hxp').textContent=`${t} / ${G.goal} XP`;
+  const m=feedMult();$('#hcombo').textContent=F.combo>=2?`🔥×${m}`:''}
+const feedMult=()=>Math.min(5,1+Math.floor(F.combo/3));
+function gain(n,s){const x=award(n*(s.bonus?2:1));F.xp+=x;floatXp(x,s.bonus);updHud();return x}
+function feedMore(){
+  if(F.oi>=F.order.length){F.order=feedOrder();F.oi=0;if(!F.order.length)return}
+  const it=F.order[F.oi++];G.seen[it.x.id]=Date.now();
+  const batch=it.kind==='note'?noteSlides(it.x):qaSlides(it.x);
+  if(F.retry.length)batch.splice(Math.min(2,batch.length),0,...F.retry.splice(0,2));
+  if(Math.random()<.5){const fb=flashback(it.x.id);if(fb)batch.splice(Math.min(3,batch.length),0,fb)}
+  for(const s of batch)if(s.k!=='done'&&Math.random()<.12)s.bonus=true;
+  const start=F.slides.length;F.slides.push(...batch);
+  $('#fslides').insertAdjacentHTML('beforeend',batch.map((s,j)=>slideHTML(s,start+j)).join(''));
+  $$('#fslides .fs').slice(start).forEach(el=>F.io.observe(el))}
+function vFeed(v){
+  document.body.classList.add('focus','feedon');
+  if(!S.notes.length&&!S.qas.length){v.innerHTML=`<div class="empty">Add some notes first — the feed is built from them.</div><a class="btn primary block" data-go="#/add">Add content</a>`;document.body.classList.remove('focus','feedon');return}
+  Object.assign(F,{slides:[],order:feedOrder(),oi:0,combo:0,xp:0,retry:[]});
+  v.innerHTML=`<div class="feed" id="feed"><div class="hud"><button class="iconbtn" id="fx" aria-label="Close feed"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div class="gbar"><i id="gfill"></i></div><span class="cnt" id="hxp"></span><span class="combo" id="hcombo"></span></div><div id="fslides"></div></div>`;
+  F.io=new IntersectionObserver(es=>{for(const e of es){const i=+e.target.dataset.i,s=F.slides[i];if(!s)continue;
+    if(e.isIntersecting){F.cur=i;clearTimeout(s._t);
+      if(s.k!=='quiz'&&!s.got)s._t=setTimeout(()=>{if(!location.hash.startsWith('#/feed')||s.got)return;s.got=true;gain(s.k==='done'?3:2,s)},1300);
+      if(i>=F.slides.length-4)feedMore()}
+    else clearTimeout(s._t)}},{root:$('#feed'),threshold:.6});
+  feedMore();if(F.slides.length<6)feedMore();updHud();
+  $('#fx').onclick=()=>{if(F.xp)toast(`+${F.xp} XP this session`);go('#/home')};
+  $('#fslides').addEventListener('click',async e=>{const sec=e.target.closest('.fs');if(!sec)return;const s=F.slides[+sec.dataset.i];
+    const b=e.target.closest('[data-act]'),act=b?b.dataset.act:(s.k==='quiz'&&!s.revealed&&e.target.closest('.qface')?'reveal':null);if(!act)return;
+    const ctl=$('.qctl',sec),next=()=>setTimeout(()=>sec.nextElementSibling?.scrollIntoView({behavior:'smooth'}),650);
+    if(act==='reveal'&&!s.revealed){s.revealed=true;$('.qface',sec).innerHTML=cardFace(s.card,true);
+      ctl.innerHTML=`<div class="grades"><button class="g1" data-act="miss"><b>Missed</b><small>see it again</small></button><button class="g3" data-act="knew"><b>Knew it</b><small>+${8*feedMult()*(s.bonus?2:1)} XP</small></button></div>`}
+    else if(act==='knew'&&!s.done){s.done=true;F.combo++;const x=gain(8*feedMult(),s);navigator.vibrate?.(12);
+      if(F.combo>(G.best||0)){G.best=F.combo;if(F.combo>=5&&F.combo%5===0)celebrate(`${F.combo} in a row — new best!`,'🔥')}else if(F.combo%5===0)toast(`🔥 ${F.combo} in a row`);
+      ctl.innerHTML=`<div class="ok">✓ +${x} XP${F.combo>=2?` · ${F.combo} in a row`:''}</div>`;updHud();next()}
+    else if(act==='miss'&&!s.done){s.done=true;F.combo=0;gain(1,s);F.retry.push({k:'quiz',tag:'Try again',card:s.card});
+      ctl.innerHTML=`<div class="ok" style="color:var(--muted)">It will come back in a few cards.</div>`;updHud();next()}
+    else if(act==='rev'){const n=byId('notes',s.nid);if(!n)return;markRevised(n);await upsert('notes',n,false);gain(15,s);b.outerHTML=`<p class="small">✓ Revised · next ${until(n.rev.next)}</p>`;next()}});
+}
+document.addEventListener('keydown',e=>{if(!location.hash.startsWith('#/feed')||/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;
+  const sec=$(`#fslides .fs[data-i="${F.cur||0}"]`);if(!sec)return;
+  if(e.key==='ArrowDown'||e.key==='j'){e.preventDefault();sec.nextElementSibling?.scrollIntoView({behavior:'smooth'})}
+  else if(e.key==='ArrowUp'||e.key==='k'){e.preventDefault();sec.previousElementSibling?.scrollIntoView({behavior:'smooth'})}
+  else if(e.key===' '||e.key==='Enter'){const b=$('[data-act="reveal"]',sec)||$('[data-act="knew"]',sec);if(b){e.preventDefault();b.click()}}
+  else if(e.key==='1'){$('[data-act="miss"]',sec)?.click()}else if(e.key==='2'){$('[data-act="knew"]',sec)?.click()}});
 
 /* ================= Answer practice ================= */
 const P={paper:'',pick:'weak',mode:'paper',qa:null,phase:'pick',t0:0,secs:0,text:'',score:0};
@@ -915,7 +1115,7 @@ function vPractice(v){
 /* ================= More / Stats / Settings / Backup / Help ================= */
 function vMore(v){
   v.innerHTML=`<div class="card list" style="padding:2px 14px">
-  ${[['#/practice','Answer practice','Timed writing with model-answer comparison'],['#/stats','Statistics','Retention, streak, heatmap, forecast'],['#/lib/cards','Browse cards','Edit, suspend, find leeches'],['#/backup','Backup & import','Export, restore, share, Anki export'],['#/settings','Settings','Theme, font size, review limits, exam date'],['#/help','How it works','Workflow and the review buttons']].map(([h,t,s])=>`<a class="item" data-go="${h}"><div class="t">${t}</div><div class="s">${s}</div></a>`).join('')}</div>
+  ${[['#/feed','Revision feed','Swipe through your notes, earn XP, keep the streak'],['#/practice','Answer practice','Timed writing with model-answer comparison'],['#/stats','Statistics','Retention, streak, heatmap, forecast'],['#/lib/cards','Browse cards','Edit, suspend, find leeches'],['#/backup','Backup & import','Export, restore, share, Anki export'],['#/settings','Settings','Theme, font size, review limits, exam date'],['#/help','How it works','Workflow and the review buttons']].map(([h,t,s])=>`<a class="item" data-go="${h}"><div class="t">${t}</div><div class="s">${s}</div></a>`).join('')}</div>
   <p class="small muted" style="text-align:center">${S.notes.length} notes · ${S.qas.length} questions · ${S.cards.length} cards</p>`;
 }
 function vStats(v){
@@ -948,6 +1148,7 @@ function vSettings(v){
   <div class="row"><div style="flex:1"><label>Maximum interval (days)</label><input type="number" id="mi" value="${s.maxIvl}" min="1"></div><div style="flex:1"><label>New day starts at (hour)</label><input type="number" id="ro" value="${s.rollover}" min="0" max="12"></div></div>
   <div class="switch"><span>Interval fuzz (spreads reviews out)</span><input type="checkbox" id="fz" ${s.fuzz?'checked':''}></div>
   <div class="switch"><span>Auto “recall the outline” card for each new question</span><input type="checkbox" id="aq" ${s.autoQaCards?'checked':''}></div>
+  <h3>Revision feed</h3><label>Daily XP goal (about 1 XP per 3 seconds of focused revision)</label><input type="number" id="xg" value="${G.goal}" min="20" step="10">
   <h3>Answer practice</h3><label>Minutes per mark</label><input type="number" id="mpm" step="0.1" value="${s.minPerMark}">
   <div class="row end" style="margin-top:16px"><button class="btn primary" id="ssave">Save settings</button></div>
   <h3>Reset</h3><div class="row"><button class="btn" id="rprog">Reset all review progress</button><button class="btn danger" id="wipe">Delete everything</button></div>`;
@@ -956,7 +1157,7 @@ function vSettings(v){
   $('#fs').oninput=e=>{$('#fsv').textContent=e.target.value+'px';document.documentElement.style.setProperty('--fs',e.target.value+'px')};
   $('#rt').oninput=e=>$('#rtv').textContent=e.target.value+'%';
   const steps=t=>t.split(/[\s,]+/).map(Number).filter(n=>n>0);
-  $('#ssave').onclick=async()=>{Object.assign(S.settings,{theme,fontSize:+$('#fs').value,examDate:$('#ex').value,retention:+$('#rt').value/100,newPerDay:Math.max(0,+$('#np').value||0),reviewsPerDay:Math.max(0,+$('#rp').value||0),learnSteps:steps($('#ls').value),relearnSteps:steps($('#rls').value),maxIvl:Math.max(1,+$('#mi').value||365),rollover:clamp(+$('#ro').value||0,0,12),fuzz:$('#fz').checked,autoQaCards:$('#aq').checked,minPerMark:Math.max(.2,+$('#mpm').value||1.2)});await saveSettings();toast('Settings saved');updateBadge()};
+  $('#ssave').onclick=async()=>{Object.assign(S.settings,{theme,fontSize:+$('#fs').value,examDate:$('#ex').value,retention:+$('#rt').value/100,newPerDay:Math.max(0,+$('#np').value||0),reviewsPerDay:Math.max(0,+$('#rp').value||0),learnSteps:steps($('#ls').value),relearnSteps:steps($('#rls').value),maxIvl:Math.max(1,+$('#mi').value||365),rollover:clamp(+$('#ro').value||0,0,12),fuzz:$('#fz').checked,autoQaCards:$('#aq').checked,minPerMark:Math.max(.2,+$('#mpm').value||1.2)});G.goal=Math.max(20,+$('#xg').value||150);await saveG();await saveSettings();toast('Settings saved');updateBadge()};
   $('#rprog').onclick=async()=>{if(!confirm('Reset every card to new and clear review history? Content stays.'))return;await upsertMany('cards',S.cards.map(resetCard));S.logs=[];await DB.clear('logs');toast('Progress reset');updateBadge()};
   $('#wipe').onclick=async()=>{if(!confirm('Delete ALL notes, questions, cards and history? Make a backup first.'))return;if(prompt('Type DELETE to confirm')!=='DELETE')return;for(const st of['notes','qas','cards','logs','attempts']){S[st]=[];await DB.clear(st)}toast('Everything deleted');go('#/home')};
 }
@@ -972,7 +1173,7 @@ function vBackup(v){
   <div class="card"><b>Export content</b><label>Paper</label><select id="bpaper">${paperOpts('','All papers')}</select>
    <div style="display:grid;gap:8px;margin-top:10px"><button class="btn" id="bpack">Shareable pack (.json, re-importable)</button><button class="btn" id="bmd">Readable notes (.md)</button><button class="btn" id="banki">Flashcards for Anki (.txt)</button></div>
    <p class="small muted">Anki: File → Import, separator Tab, allow HTML. Cloze rows go into a Cloze note type.</p></div>`;
-  const full=()=>JSON.stringify({type:'tspsc-backup',version:1,exported:Date.now(),settings:S.settings,notes:S.notes,qas:S.qas,cards:S.cards,logs:S.logs,attempts:S.attempts});
+  const full=()=>JSON.stringify({type:'tspsc-backup',version:1,exported:Date.now(),settings:S.settings,game:G,notes:S.notes,qas:S.qas,cards:S.cards,logs:S.logs,attempts:S.attempts});
   const mark=async()=>{S.settings.lastBackup=Date.now();await saveSettings()};
   $('#bdl').onclick=async()=>{download(`mains-backup-${stamp()}.json`,full());await mark();toast('Backup saved to Downloads')};
   $('#bsh').onclick=async()=>{await shareFile(`mains-backup-${stamp()}.json`,full());await mark()};
@@ -988,13 +1189,16 @@ function vBackup(v){
   $('#bimp').onclick=async()=>{const fl=await readFile('.json,.txt,application/json,text/plain');if(!fl)return;let o=null;try{o=JSON.parse(fl.text)}catch(e){}
     if(o&&o.type==='tspsc-backup'){const rep=confirm(`Backup from ${fmtDate(o.exported)}: ${o.notes.length} notes, ${o.qas.length} questions, ${o.cards.length} cards.\n\nOK = REPLACE everything on this phone\nCancel = MERGE (keep newer versions)`);
       for(const st of['notes','qas','cards','logs','attempts']){const inc=o[st]||[];if(rep){await DB.clear(st);S[st]=[];await upsertMany(st,inc)}else{const cur=new Map(S[st].map(x=>[x.id,x]));const take=inc.filter(x=>!cur.has(x.id)||(x.updated||0)>(cur.get(x.id).updated||0)||(st==='cards'&&(x.reps||0)>(cur.get(x.id).reps||0)));await upsertMany(st,take)}}
-      if(rep&&o.settings){S.settings={...DEF,...o.settings};await saveSettings()}toast('Backup restored');go('#/home');return}
+      if(rep&&o.settings){S.settings={...DEF,...o.settings};await saveSettings()}
+      if(o.game){if(rep)G={...G,...o.game};else{for(const[k,x]of Object.entries(o.game.days||{}))G.days[k]=Math.max(G.days[k]||0,x);G.xp=Math.max(G.xp,o.game.xp||0)}await saveG()}toast('Backup restored');go('#/home');return}
     try{const prep=prepareImport(parseAI(fl.text),'');const n=prep.notes.length+prep.qas.length;if(!confirm(`Import ${prep.notes.length} notes and ${prep.qas.length} questions?`+(prep.notes.concat(prep.qas).some(x=>x._dup)?' Existing items with the same title/question will be updated.':'')))return;const r=await commitImport(prep);toast(`Imported ${n} items, ${r.nC} cards`)}catch(e){toast(e.message,4000)}};
 }
 function vHelp(v){
   v.innerHTML=`<div class="reading" style="font-size:15px">
   <h3>Daily routine (under 2 hours)</h3><ol><li><b>Review</b> due cards first (10–25 min). Do it every day — skipping days is what breaks spaced repetition.</li><li><b>Revise</b> the notes listed under “Notes to revise”, tap <b>✓ Revised</b>. Notes come back after 1, 3, 7, 14, 30, 60, 120 days.</li><li><b>Practise</b> one timed answer.</li><li><b>Add</b> today’s new material.</li></ol>
+  <h3>Revision feed</h3><p>Tap <b>▶ Start revision feed</b> on Today and swipe up. Your notes come in short chunks, mixed with quick recall checks. Notes due for revision come first. You earn XP for reading (stay on a card for a moment) and more for each check you get right. Get several right in a row for a 🔥 multiplier (up to ×5). Gold cards give 2× XP. Cards you miss come back a few slides later. Hit your daily XP goal to keep the streak alive. The feed does not change flashcard schedules; only <b>Mark revised</b> updates a note's revision date.</p>
   <h3>Adding content</h3><p>Paste raw notes or Q&amp;A → copy the prompt → paste it in any AI → paste the reply back → <b>Check &amp; preview</b> → Save. Flashcards in the reply are created automatically. The app tolerates extra text around the JSON and can read several JSON blocks in one reply.</p>
+  <p><b>Bulk notes:</b> paste a whole chapter or a PDF's text at once. Long text is split into parts at headings / topic breaks (questions stay with their answers, at most 8 per part). Copy part 1, paste the AI's reply, save — the app ticks it off and moves to the next part. Change the part size if your AI cuts replies short.</p>
   <h3>The four buttons</h3><ul><li><b>Again</b> — forgot. Card comes back in minutes.</li><li><b>Hard</b> — recalled with real effort.</li><li><b>Good</b> — recalled correctly. Use this most.</li><li><b>Easy</b> — instant. Use sparingly.</li></ul>
   <p>Scheduling uses <b>FSRS</b> (the algorithm in modern Anki): it estimates each card’s memory stability and schedules it just before you would forget, at the recall rate you set (default 90%). Keyboard: Space = show / Good, 1–4 = grades.</p>
   <h3>Good cards</h3><ul><li>One fact per card; keep backs short.</li><li>Cloze for dates, articles, numbers: “Article {{c1::371D}} — special provisions for Andhra Pradesh”.</li><li>A card you keep failing becomes a <b>leech</b> — rewrite or split it (Library → Cards → Leeches).</li></ul>
@@ -1004,8 +1208,8 @@ function vHelp(v){
 
 /* ================= Boot ================= */
 (async function boot(){
-  try{await DB.open();const[notes,qas,cards,logs,attempts,settings]=await Promise.all([DB.all('notes'),DB.all('qas'),DB.all('cards'),DB.all('logs'),DB.all('attempts'),DB.getMeta('settings')]);
-    Object.assign(S,{notes,qas,cards,logs,attempts,settings:{...DEF,...(settings||{})}})}
+  try{await DB.open();const[notes,qas,cards,logs,attempts,settings,game]=await Promise.all([DB.all('notes'),DB.all('qas'),DB.all('cards'),DB.all('logs'),DB.all('attempts'),DB.getMeta('settings'),DB.getMeta('game')]);
+    Object.assign(S,{notes,qas,cards,logs,attempts,settings:{...DEF,...(settings||{})}});if(game)G={...G,...game,seen:game.seen||{},days:game.days||{}}}
   catch(e){$('#view').innerHTML=`<div class="empty">Storage is unavailable in this browser (${esc(e.message||e)}). Open the app in Chrome, not in private mode.</div>`;return}
   applyTheme();matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',applyTheme);
   render();
