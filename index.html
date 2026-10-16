@@ -180,6 +180,16 @@ body.feedon #exitfocus{display:none!important}
 @keyframes fall{to{transform:translateY(105vh) rotate(600deg)}}
 @keyframes pop{from{transform:scale(.6);opacity:0}}
 @media (prefers-reduced-motion:reduce){.cele i{display:none}.cele>div,.xpf{animation:none}.gbar i{transition:none}}
+.syu{border-bottom:1px solid var(--line)}.syu:last-child{border-bottom:0}
+.syh{display:flex;align-items:center;gap:8px;padding:10px 0;cursor:pointer}
+.syh .t{flex:1;font-weight:500}
+.syh .btn{padding:4px 8px;font-size:13px}
+.sypts{display:none;padding-bottom:6px}.syu.on .sypts{display:block}
+.sypt{display:flex;align-items:flex-start;gap:2px;padding:6px 0 6px 10px;border-left:2px solid var(--line);margin:2px 0;font-size:15px}
+.sypt span{flex:1;padding-top:3px}
+.sypt .iconbtn{flex:none}
+.idea .itext{font-size:15px;line-height:1.6}.idea .itext p{margin:4px 0}
+.idea .btn{padding:6px 10px;font-size:14px}
 </style>
 </head>
 <body>
@@ -195,6 +205,8 @@ body.feedon #exitfocus{display:none!important}
   <a href="#/lib" data-r="lib"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h4v16H5zM10 4h4v16h-4zM15.5 5l3.5-1 3 15-3.5 1z"/></svg>Library</a>
   <a href="#/add" data-r="add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8v8M8 12h8"/></svg>Add</a>
   <a href="#/review" data-r="review"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="14" height="12" rx="2"/><path d="M7 3h12a2 2 0 0 1 2 2v10"/></svg>Review<span class="badge hide" id="dueBadge"></span></a>
+  <a href="#/syl" data-r="syl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/></svg>Syllabus</a>
+  <a href="#/ideas" data-r="ideas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg>Ideas</a>
   <a href="#/more" data-r="more"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/></svg>More</a>
 </nav>
 <button class="btn" id="exitfocus">Exit focus</button>
@@ -236,8 +248,8 @@ function normPaper(p){
 
 /* ================= Storage ================= */
 const DB={db:null,
-  open(){return new Promise((res,rej)=>{const r=indexedDB.open('tspsc-mains',1);
-    r.onupgradeneeded=()=>{const d=r.result;for(const s of['notes','qas','cards','logs','attempts'])if(!d.objectStoreNames.contains(s))d.createObjectStore(s,{keyPath:'id'});if(!d.objectStoreNames.contains('meta'))d.createObjectStore('meta');};
+  open(){return new Promise((res,rej)=>{const r=indexedDB.open('tspsc-mains',2);
+    r.onupgradeneeded=()=>{const d=r.result;for(const s of['notes','qas','cards','logs','attempts','ideas'])if(!d.objectStoreNames.contains(s))d.createObjectStore(s,{keyPath:'id'});if(!d.objectStoreNames.contains('meta'))d.createObjectStore('meta');};
     r.onsuccess=()=>{this.db=r.result;res()};r.onerror=()=>rej(r.error)})},
   req(store,mode,fn){return new Promise((res,rej)=>{const t=this.db.transaction(store,mode);const o=t.objectStore(store);let out;const q=fn(o);if(q)q.onsuccess=()=>{out=q.result};t.oncomplete=()=>res(out);t.onerror=()=>rej(t.error);t.onabort=()=>rej(t.error)})},
   all(s){return this.req(s,'readonly',o=>o.getAll())},
@@ -250,7 +262,7 @@ const DB={db:null,
   setMeta(k,v){return this.req('meta','readwrite',o=>{o.put(v,k)})}
 };
 const DEF={theme:'auto',fontSize:17,retention:0.9,newPerDay:15,reviewsPerDay:200,learnSteps:[1,10],relearnSteps:[10],maxIvl:365,examDate:'',rollover:4,minPerMark:1.2,fuzz:true,autoQaCards:true,lastBackup:0,extraNew:0,extraNewDay:''};
-const S={notes:[],qas:[],cards:[],logs:[],attempts:[],settings:{...DEF}};
+const S={notes:[],qas:[],cards:[],logs:[],attempts:[],ideas:[],settings:{...DEF}};
 const byId=(store,id)=>S[store].find(x=>x.id===id);
 async function upsert(store,obj,touch=true){if(touch)obj.updated=Date.now();const a=S[store];const i=a.findIndex(x=>x.id===obj.id);if(i>=0)a[i]=obj;else a.push(obj);await DB.put(store,obj);askPersist()}
 async function upsertMany(store,list){const map=new Map(S[store].map((x,i)=>[x.id,i]));for(const o of list){if(map.has(o.id))S[store][map.get(o.id)]=o;else S[store].push(o)}await DB.putMany(store,list);askPersist()}
@@ -425,7 +437,7 @@ const revDue=n=>n.rev&&n.rev.next<dayEnd();
 
 /* ================= Router ================= */
 let tick=null;const R={deck:'all',card:null,pv:null,shown:false,t0:0,undo:[],lastGroup:'',cram:null,done:0};
-const TITLES={feed:'Feed',home:'Today',lib:'Library',add:'Add content',review:'Review',more:'More',note:'Note',qa:'Question',edit:'Edit',practice:'Answer practice',stats:'Statistics',settings:'Settings',backup:'Backup & import',help:'How it works'};
+const TITLES={feed:'Feed',home:'Today',lib:'Library',add:'Add content',review:'Review',more:'More',note:'Note',qa:'Question',edit:'Edit',practice:'Answer practice',stats:'Statistics',settings:'Settings',backup:'Backup & import',help:'How it works',syl:'TSPSC Mains syllabus',ideas:'My ideas'};
 function go(h){if(location.hash===h)render();else location.hash=h}
 window.addEventListener('hashchange',render);
 document.addEventListener('click',e=>{const a=e.target.closest('[data-go]');if(a){e.preventDefault();go(a.dataset.go)}});
@@ -437,9 +449,9 @@ function render(){
   const parts=(location.hash||'#/home').slice(2).split('/');const r=parts[0]||'home';
   $$('#nav a').forEach(a=>a.classList.toggle('on',a.dataset.r===r));
   $('#title').textContent=TITLES[r]||'Mains';
-  $('#back').classList.toggle('hide',['home','lib','add','review','more'].includes(r));
+  $('#back').classList.toggle('hide',['home','lib','add','review','syl','ideas','more'].includes(r));
   const v=$('#view');v.scrollTop=0;window.scrollTo(0,0);
-  const fn={feed:vFeed,home:vHome,lib:vLib,add:vAdd,review:vReview,more:vMore,note:vNote,qa:vQA,edit:vEdit,practice:vPractice,stats:vStats,settings:vSettings,backup:vBackup,help:vHelp}[r]||vHome;
+  const fn={feed:vFeed,home:vHome,lib:vLib,add:vAdd,review:vReview,more:vMore,note:vNote,qa:vQA,edit:vEdit,practice:vPractice,stats:vStats,settings:vSettings,backup:vBackup,help:vHelp,syl:vSyl,ideas:vIdeas}[r]||vHome;
   fn(v,parts.slice(1));updateBadge();
 }
 
@@ -1159,7 +1171,7 @@ function vSettings(v){
   const steps=t=>t.split(/[\s,]+/).map(Number).filter(n=>n>0);
   $('#ssave').onclick=async()=>{Object.assign(S.settings,{theme,fontSize:+$('#fs').value,examDate:$('#ex').value,retention:+$('#rt').value/100,newPerDay:Math.max(0,+$('#np').value||0),reviewsPerDay:Math.max(0,+$('#rp').value||0),learnSteps:steps($('#ls').value),relearnSteps:steps($('#rls').value),maxIvl:Math.max(1,+$('#mi').value||365),rollover:clamp(+$('#ro').value||0,0,12),fuzz:$('#fz').checked,autoQaCards:$('#aq').checked,minPerMark:Math.max(.2,+$('#mpm').value||1.2)});G.goal=Math.max(20,+$('#xg').value||150);await saveG();await saveSettings();toast('Settings saved');updateBadge()};
   $('#rprog').onclick=async()=>{if(!confirm('Reset every card to new and clear review history? Content stays.'))return;await upsertMany('cards',S.cards.map(resetCard));S.logs=[];await DB.clear('logs');toast('Progress reset');updateBadge()};
-  $('#wipe').onclick=async()=>{if(!confirm('Delete ALL notes, questions, cards and history? Make a backup first.'))return;if(prompt('Type DELETE to confirm')!=='DELETE')return;for(const st of['notes','qas','cards','logs','attempts']){S[st]=[];await DB.clear(st)}toast('Everything deleted');go('#/home')};
+  $('#wipe').onclick=async()=>{if(!confirm('Delete ALL notes, questions, cards and history? Make a backup first.'))return;if(prompt('Type DELETE to confirm')!=='DELETE')return;for(const st of['notes','qas','cards','logs','attempts','ideas']){S[st]=[];await DB.clear(st)}toast('Everything deleted');go('#/home')};
 }
 function noteToMd(n){return`# ${n.title}\n*${paperName(n.paper)}${n.topic?' · '+n.topic:''}*\n\n${n.summary?'> '+n.summary+'\n\n':''}${n.content||''}\n${n.keyFacts?.length?'\n## Key facts\n'+n.keyFacts.map(x=>'- '+x).join('\n')+'\n':''}${n.telanganaAngle?'\n## Telangana angle\n'+n.telanganaAngle+'\n':''}${n.mnemonics?.length?'\n## Memory aids\n'+n.mnemonics.map(x=>'- '+x).join('\n')+'\n':''}${n.pyqs?.length?'\n## Likely questions\n'+n.pyqs.map(x=>'- '+x).join('\n')+'\n':''}`}
 function qaToMd(q){return`## Q. ${q.question}\n*${paperName(q.paper)}${q.marks?' · '+q.marks+' marks':''}${q.wordLimit?' · '+q.wordLimit+' words':''}*\n\n${q.keywords?.length?'**Keywords:** '+q.keywords.join(', ')+'\n\n':''}${q.intro?q.intro+'\n\n':''}${q.body||''}\n\n${q.conclusion||''}\n${q.diagram?'\n**Diagram:** '+q.diagram+'\n':''}${q.valueAdd?.length?'\n**Value additions:**\n'+q.valueAdd.map(x=>'- '+x).join('\n')+'\n':''}`}
@@ -1167,13 +1179,13 @@ const cardRaw=id=>cardsOf(id).filter(c=>!c.group?.startsWith('outline-')).reduce
 function packNote(n){return{title:n.title,paper:n.paper,topic:n.topic,tags:n.tags,summary:n.summary,content:n.content,keyFacts:n.keyFacts,telanganaAngle:n.telanganaAngle,mnemonics:n.mnemonics,pyqs:n.pyqs,cards:cardRaw(n.id)}}
 function packQA(q){return{question:q.question,paper:q.paper,topic:q.topic,tags:q.tags,marks:q.marks,wordLimit:q.wordLimit,directive:q.directive,keywords:q.keywords,answer:{intro:q.intro,body:q.body,conclusion:q.conclusion},diagram:q.diagram,valueAdd:q.valueAdd,cards:cardRaw(q.id)}}
 function vBackup(v){
-  v.innerHTML=`<div class="card"><b>Full backup</b><p class="small muted" style="margin:4px 0 10px">Everything — notes, Q&amp;A, cards, review history, attempts and settings. Last backup: ${ago(S.settings.lastBackup)}.</p>
+  v.innerHTML=`<div class="card"><b>Full backup</b><p class="small muted" style="margin:4px 0 10px">Everything — notes, Q&amp;A, cards, ideas, review history, attempts and settings. Last backup: ${ago(S.settings.lastBackup)}.</p>
    <div class="row"><button class="btn primary" id="bdl">Download</button><button class="btn" id="bsh">Share (Drive, WhatsApp…)</button></div></div>
   <div class="card"><b>Restore / import a file</b><p class="small muted" style="margin:4px 0 10px">Accepts a full backup, a shared notes/Q&amp;A pack, or a saved AI reply.</p><button class="btn" id="bimp">Choose file</button></div>
   <div class="card"><b>Export content</b><label>Paper</label><select id="bpaper">${paperOpts('','All papers')}</select>
    <div style="display:grid;gap:8px;margin-top:10px"><button class="btn" id="bpack">Shareable pack (.json, re-importable)</button><button class="btn" id="bmd">Readable notes (.md)</button><button class="btn" id="banki">Flashcards for Anki (.txt)</button></div>
    <p class="small muted">Anki: File → Import, separator Tab, allow HTML. Cloze rows go into a Cloze note type.</p></div>`;
-  const full=()=>JSON.stringify({type:'tspsc-backup',version:1,exported:Date.now(),settings:S.settings,game:G,notes:S.notes,qas:S.qas,cards:S.cards,logs:S.logs,attempts:S.attempts});
+  const full=()=>JSON.stringify({type:'tspsc-backup',version:1,exported:Date.now(),settings:S.settings,game:G,notes:S.notes,qas:S.qas,cards:S.cards,logs:S.logs,attempts:S.attempts,ideas:S.ideas});
   const mark=async()=>{S.settings.lastBackup=Date.now();await saveSettings()};
   $('#bdl').onclick=async()=>{download(`mains-backup-${stamp()}.json`,full());await mark();toast('Backup saved to Downloads')};
   $('#bsh').onclick=async()=>{await shareFile(`mains-backup-${stamp()}.json`,full());await mark()};
@@ -1188,7 +1200,7 @@ function vBackup(v){
     download(`mains-anki-${tag()}-${stamp()}.txt`,rows.join('\n'),'text/plain')};
   $('#bimp').onclick=async()=>{const fl=await readFile('.json,.txt,application/json,text/plain');if(!fl)return;let o=null;try{o=JSON.parse(fl.text)}catch(e){}
     if(o&&o.type==='tspsc-backup'){const rep=confirm(`Backup from ${fmtDate(o.exported)}: ${o.notes.length} notes, ${o.qas.length} questions, ${o.cards.length} cards.\n\nOK = REPLACE everything on this phone\nCancel = MERGE (keep newer versions)`);
-      for(const st of['notes','qas','cards','logs','attempts']){const inc=o[st]||[];if(rep){await DB.clear(st);S[st]=[];await upsertMany(st,inc)}else{const cur=new Map(S[st].map(x=>[x.id,x]));const take=inc.filter(x=>!cur.has(x.id)||(x.updated||0)>(cur.get(x.id).updated||0)||(st==='cards'&&(x.reps||0)>(cur.get(x.id).reps||0)));await upsertMany(st,take)}}
+      for(const st of['notes','qas','cards','logs','attempts','ideas']){const inc=o[st]||[];if(rep){await DB.clear(st);S[st]=[];await upsertMany(st,inc)}else{const cur=new Map(S[st].map(x=>[x.id,x]));const take=inc.filter(x=>!cur.has(x.id)||(x.updated||0)>(cur.get(x.id).updated||0)||(st==='cards'&&(x.reps||0)>(cur.get(x.id).reps||0)));await upsertMany(st,take)}}
       if(rep&&o.settings){S.settings={...DEF,...o.settings};await saveSettings()}
       if(o.game){if(rep)G={...G,...o.game};else{for(const[k,x]of Object.entries(o.game.days||{}))G.days[k]=Math.max(G.days[k]||0,x);G.xp=Math.max(G.xp,o.game.xp||0)}await saveG()}toast('Backup restored');go('#/home');return}
     try{const prep=prepareImport(parseAI(fl.text),'');const n=prep.notes.length+prep.qas.length;if(!confirm(`Import ${prep.notes.length} notes and ${prep.qas.length} questions?`+(prep.notes.concat(prep.qas).some(x=>x._dup)?' Existing items with the same title/question will be updated.':'')))return;const r=await commitImport(prep);toast(`Imported ${n} items, ${r.nC} cards`)}catch(e){toast(e.message,4000)}};
@@ -1206,10 +1218,159 @@ function vHelp(v){
   <h3>Keep your data safe</h3><p>Everything is stored on this phone only. Download a backup weekly (More → Backup) and keep it in Drive.</p></div>`;
 }
 
+/* ================= Syllabus (TSPSC Group-I Mains) ================= */
+// Each unit: [title, [points]]. Points are kept short so one copy = one prompt topic.
+const SYL={
+GE:[['General English (Qualifying, 150 marks, Class X standard)',[
+  ['Reading and writing',['Reading comprehension: unseen passage with questions','Précis writing','Essay writing on a given topic','Letter writing: formal and informal','Report writing / dialogue writing']],
+  ['Grammar and usage',['Spotting errors in sentences','Articles, prepositions, conjunctions','Tenses and subject–verb agreement','Active and passive voice','Direct and indirect speech','Sentence transformation and correction']],
+  ['Vocabulary',['Synonyms and antonyms','Idioms and phrases','One-word substitution','Words often confused / spelling']]]]],
+P1:[['Section I',[
+  ['Contemporary social issues and social problems',['Caste, gender, poverty and inequality in contemporary India','Urbanisation, migration and their social effects','Women empowerment and gender justice','Youth, unemployment and social change']],
+  ['Economic growth and justice',['Growth versus equitable distribution','Inclusive growth and welfare state','Agrarian distress and rural development','Role of the state and markets']],
+  ['Dynamics of Indian political democracy',['Federalism and centre–state relations','Electoral politics, coalition and regional parties','Role of civil society and media in democracy','Rights, duties and the rule of law']]]],
+ ['Section II',[
+  ['Historical and cultural heritage of India',['Unity in diversity: India\'s composite culture','Contribution of Telangana to Indian culture','Freedom struggle and its values','Art, architecture, literature and festivals']],
+  ['Science and technology',['Science, technology and society','Digital India and technology for governance','Space, energy and health missions','Ethics of emerging technologies (AI, biotech)']],
+  ['Education and human resource development',['Role of education in nation building','NEP 2020 and school/higher education reforms','Skill development and employability','Health, nutrition and human capital']]]],
+ ['Section III',[
+  ['Telangana: development and identity',['Telangana movement: identity, self-respect and self-rule','Development issues and problems of Telangana','Water, funds and jobs (Neellu, Nidhulu, Niyamakalu)','Welfare schemes and their impact']],
+  ['Environment and sustainable development',['Climate change and India\'s response','Environment versus development','Disaster management and resilience','Sustainable development goals']],
+  ['General / philosophical themes',['Ethics and values in public life','Globalisation and its impact on Indian society','Role of media and social media','Essay on current events of national and state importance']]]]],
+P2:[['Section I · Social and cultural history of India',[
+  ['Ancient India',['Indus Valley Civilisation: features, social and cultural life','Early and later Vedic civilisation: society, religion, polity','Religious movements of 6th century BC: Jainism and Buddhism and their contribution','Mauryas: administration, Ashoka\'s Dhamma, art and architecture','Guptas: golden age — literature, science, art and architecture','Pallavas, Chalukyas and Cholas: art, architecture and culture','Harsha and the Rajput age']],
+  ['Medieval India',['Advent of Islam and the Delhi Sultanate: socio-cultural conditions','Sufi and Bhakti movements: saints and impact','Vijayanagara empire: society, culture and architecture','Mughals: society, language, literature, art and architecture','Rise of the Marathas and their contribution to culture']],
+  ['Modern India',['Advent of Europeans and establishment of British rule','Revolt of 1857: causes, nature and results','Changes in administration and socio-economic policies of the British','Socio-religious reform movements of the 19th century (Brahmo Samaj, Arya Samaj, Satyashodhak Samaj etc.)','Indian National Movement: moderate, extremist and Gandhian phases','Role of Gandhi, Nehru, Ambedkar, Patel and Subhas Chandra Bose','Anti-caste and Dalit movements: Phule, Ambedkar, Periyar, Narayana Guru']]]],
+ ['Section II · Social and cultural history of Telangana',[
+  ['Ancient and medieval Telangana',['Satavahanas: society, religion, language, literature, art and architecture','Ikshvakus, Vishnukundins, Mudigonda and Vemulavada Chalukyas: socio-cultural conditions','Kakatiyas: polity, society, economy, irrigation (tanks), art and architecture (Ramappa, Thousand Pillar Temple)','Rachakonda and Devarakonda Velamas: culture and literature','Qutb Shahis: Hyderabad city, Indo-Persian culture, Golconda, Charminar','Fairs, festivals and composite culture: Moharram, Urs, Jataras, Bonalu, Bathukamma, Sammakka–Saralamma']],
+  ['Asaf Jahi period (1724–1948)',['Foundation of the Asaf Jahi dynasty; Nizam–British relations','Salar Jung reforms: revenue, judiciary, administration','Socio-cultural awakening: Arya Samaj, Andhra Jana Sangham, Andhra Mahasabha, library movement','Telugu press, literature and education under the Nizams','Adi-Hindu movement and Bhagya Reddy Varma','Tribal revolts: Ramji Gond, Kumuram Bheem (Jal–Jangal–Zameen)','Telangana peasant armed struggle (1946–51): causes, course and results','Hyderabad State Congress, Stand-still Agreement, Razakars and Police Action (1948)']]]],
+ ['Section III · Geography of India and Telangana',[
+  ['Physical geography of India',['Location, physiography: Himalayas, Northern Plains, Peninsular Plateau, coasts and islands','Drainage systems: Himalayan and Peninsular rivers','Climate: monsoon mechanism, seasons, El Niño / La Niña','Soils: types, distribution and conservation','Natural vegetation, forests and wildlife conservation']],
+  ['Economic and human geography of India',['Mineral and energy resources and their distribution','Agriculture: cropping patterns, irrigation, green revolution','Industries: location factors and major industrial regions','Transport and communication networks','Population: growth, distribution, density, migration, urbanisation']],
+  ['Geography of Telangana',['Location, physiography and geology of Telangana (Deccan plateau)','Rivers and drainage: Godavari, Krishna and their tributaries','Climate, rainfall and droughts in Telangana','Soils, forests and wildlife sanctuaries of Telangana','Mineral resources: coal (Singareni), limestone, granite','Agriculture, irrigation projects and tanks in Telangana','Population, urbanisation and districts of Telangana']],
+  ['Environment and disasters',['Environmental degradation and conservation','Natural disasters: floods, droughts, cyclones, earthquakes — management in India and Telangana']]]]],
+P3:[['Section I · Indian society, structure, issues and social movements',[
+  ['Indian society',['Salient features of Indian society: family, marriage, kinship','Caste: features, changes and caste in politics','Tribe: features and problems of tribal communities','Ethnicity, religion and women in Indian society']],
+  ['Social exclusion',['Social exclusion and vulnerable groups: concept','Caste-based exclusion and untouchability','Gender-based exclusion and discrimination','Tribes, disabled persons and minorities: exclusion and rights']],
+  ['Social issues',['Poverty and unemployment','Child labour and child rights','Migration and urbanisation','Violence against women and gender issues','Communalism, regionalism and casteism','Substance abuse and youth issues','Issues of the elderly and the disabled']],
+  ['Social movements',['Peasant movements','Tribal movements','Dalit and Backward Class movements','Women\'s movements','Environmental movements (Chipko, Narmada Bachao etc.)','Human rights and civil liberties movements']],
+  ['Telangana-specific social issues',['Vetti (forced labour), Jogini, Devadasi systems','Child labour, girl child and female foeticide in Telangana','Fluorosis (Nalgonda) and public health issues','Migration (Gulf, Mumbai) and farmers\' distress / suicides','Handloom weavers and artisan communities']],
+  ['Social policies and welfare',['Affirmative action and reservations for SC, ST, BC','Welfare programmes for women, minorities and the disabled','Employment and poverty alleviation programmes (MGNREGA etc.)','Welfare schemes of Telangana: Aasara pensions, Kalyana Lakshmi, Dalit Bandhu etc.']]]],
+ ['Section II · Indian Constitution',[
+  ['Constitution: evolution and features',['Evolution of the Constitution: Government of India Acts, Constituent Assembly','Salient features of the Constitution and the Preamble','Fundamental Rights','Directive Principles of State Policy','Fundamental Duties','Amendment procedure and basic structure doctrine']],
+  ['Federalism and the Union',['Distinctive features of Indian federalism','Distribution of legislative, executive and financial powers between Union and States','Centre–State relations: Sarkaria, Punchhi commissions','Union executive: President, Vice-President, Prime Minister and Council of Ministers','Parliament: composition, powers and functions','State executive and legislature: Governor, Chief Minister, State Legislature']],
+  ['Local government and elections',['73rd and 74th Amendments: Panchayati Raj and urban local bodies','Panchayati Raj in Telangana (Telangana Panchayat Raj Act 2018)','Electoral system, Election Commission and electoral reforms','Anti-defection law (Tenth Schedule)']],
+  ['Judiciary and special provisions',['Judicial system: Supreme Court and High Courts','Judicial review, judicial activism and PIL','Special provisions for SC, ST, BC, women and minorities','Article 371D and special provisions for Telangana / Andhra Pradesh','Constitutional bodies: CAG, Finance Commission, UPSC, NCSC, NCST, NCBC','Statutory bodies: NHRC, CVC, Lokpal and Lokayuktas']]]],
+ ['Section III · Governance',[
+  ['Governance and public administration',['Good governance: concepts and dimensions','E-governance: initiatives in India and Telangana (Mee Seva, T-App Folio)','Transparency and accountability: RTI Act, Citizen\'s Charter, social audit','Civil services: role in a democracy, reforms','Ethics and integrity in public life; corruption and anti-corruption measures']],
+  ['Civil society and development',['Role of NGOs, SHGs and civil society in development','Grievance redressal mechanisms','Public policy: formulation, implementation and evaluation','Rights issues: human rights, consumer rights, right to education']]]]],
+P4:[['Section I · Indian economy: issues and challenges',[
+  ['Growth and development',['Concepts of growth and development; national income and its measurement','GDP, GNP, per capita income; base year revision','Human Development Index and other development indices']],
+  ['Poverty and unemployment',['Poverty: concepts, measurement (Tendulkar, Rangarajan, MPI)','Unemployment: types, measurement and policies','Poverty alleviation and employment programmes']],
+  ['Planning and policy',['Economic planning in India: Five-Year Plans — objectives and achievements','NITI Aayog and its role','Economic reforms of 1991: liberalisation, privatisation, globalisation']],
+  ['Public finance and money',['Union budget: structure, deficits and fiscal policy','Taxation: direct and indirect taxes, GST','Finance Commission and fiscal federalism','FRBM Act and fiscal consolidation','Money, banking and RBI: monetary policy instruments','Inflation: causes, measurement and control']],
+  ['Sectors of the economy',['Agriculture: productivity, MSP, credit, marketing, farm reforms','Industry: industrial policy, MSMEs, Make in India','Services sector and IT','Foreign trade, balance of payments and FDI']]]],
+ ['Section II · Economy and development of Telangana',[
+  ['Hyderabad State and undivided AP',['Economy of Hyderabad State under the Nizams','Telangana in undivided Andhra Pradesh (1956–2014): deprivations','Water (Bachawat Tribunal, irrigation share), funds (Lalit, Bhargava, Wanchoo committees) and jobs (Mulki rules, GO 610)']],
+  ['Land reforms in Telangana',['Abolition of intermediaries: Jagirdari, Inamdari, Deshmukhi','Tenancy reforms and Hyderabad Tenancy and Agricultural Lands Act 1950','Land ceiling and distribution of surplus land','Land alienation in Scheduled Areas (1/70 regulation)','Dharani and land records modernisation']],
+  ['Sectors of Telangana economy',['GSDP, per capita income and sector-wise growth of Telangana','Agriculture and allied sectors: cropping pattern, irrigation, Mission Kakatiya, Kaleshwaram','Rythu Bandhu, Rythu Bima and farmer welfare','Industry: TS-iPASS, industrial corridors, MSMEs','Services and IT sector in Hyderabad','Telangana state budget and finances']]]],
+ ['Section III · Issues of development and change',[
+  ['Development dynamics',['Regional inequalities in India and Telangana','Social inequalities: caste, gender, religion','Development-induced displacement and rehabilitation (R&R)','Inclusive growth and economic empowerment of weaker sections']],
+  ['Sustainable development',['Sustainable development: concept and measurement','Sustainable Development Goals (SDGs) and India\'s progress','Environment and economy: pollution, natural resource management','Climate change and green growth']],
+  ['Reforms and change',['Economic reforms and their impact on growth, poverty and inequality','Rural development and Panchayati Raj institutions','Urban development and Smart Cities']]]]],
+P5:[['Section I · Role and impact of science and technology',[
+  ['Science and technology policy',['Science and technology policies of India','Major S&T institutions: ISRO, DRDO, CSIR, DAE','Research and innovation ecosystem; startups (T-Hub, WE-Hub)']],
+  ['Space and defence',['Indian space programme: satellites, launch vehicles, Chandrayaan, Mangalyaan, Gaganyaan','Applications of space technology in development','Defence technology: missiles, DRDO programmes, indigenisation']],
+  ['Information and communication technology',['ICT and e-governance; Digital India','Cyber security and data protection','Artificial intelligence, robotics, IoT, blockchain','Telangana IT initiatives and digital services']],
+  ['Energy',['Conventional and non-conventional energy sources','India\'s energy policy and energy security','Nuclear energy programme of India','Solar, wind and green hydrogen missions']]]],
+ ['Section II · Modern trends in application of knowledge of science',[
+  ['Health and biotechnology',['Biotechnology: applications in agriculture, health and industry','GM crops and biosafety','Genetic engineering, stem cells, genomics','Communicable and non-communicable diseases; vaccines','Public health programmes in India and Telangana']],
+  ['Nanotechnology and new materials',['Nanotechnology: applications and concerns','Advanced materials and their uses']],
+  ['Environment and disaster management',['Environmental pollution: air, water, soil, noise','Climate change, global warming and international agreements','Biodiversity and its conservation','Waste management: solid, e-waste, plastic','Disaster management: concepts, NDMA, Sendai framework']],
+  ['Intellectual property and ethics',['Intellectual Property Rights: patents, copyrights, GI tags (Telangana GI products)','Ethical issues in science and technology']]]],
+ ['Section III · Data interpretation and problem solving',[
+  ['Data interpretation',['Analysis of tables, bar diagrams, line graphs and pie charts','Measures of central tendency: mean, median, mode','Measures of dispersion: range, standard deviation','Ratios, percentages and averages','Simple and compound interest, profit and loss']],
+  ['Problem solving and reasoning',['Number series and letter series','Coding–decoding','Logical reasoning: syllogisms, statements and conclusions','Data sufficiency','Problem solving and decision making','Probability and permutations (basic)']]]]],
+P6:[['Section I · The idea of Telangana (1948–1970)',[
+  ['Historical background',['Telangana as a distinct historical and cultural entity','Hyderabad State under the Asaf Jahis; Mulki rules (1919)','Police Action (1948), military rule and Vellodi administration','1952 elections and the Burgula Ramakrishna Rao ministry','Mulki agitation (1952) and City College incident']],
+  ['Formation of Andhra Pradesh',['Formation of Andhra State (1953)','States Reorganisation Commission (Fazal Ali) and its views on Telangana (para 386)','Gentlemen\'s Agreement (1956) and its safeguards','Formation of Andhra Pradesh (1 November 1956)','Telangana Regional Committee and its functioning','Violation of safeguards: jobs, funds, water, education']]]],
+ ['Section II · Mobilisation phase (1969–1990)',[
+  ['1969 Telangana movement',['Causes of the 1969 agitation: surplus funds, jobs, Mulki rules','Students\' movement and Telangana Praja Samithi; Marri Chenna Reddy','Government responses: All-Party Accord, 8-Point and 5-Point formulas','Supreme Court verdict on Mulki rules (1972)','Jai Andhra movement (1972–73)']],
+  ['After 1973',['Six-Point Formula (1973) and Article 371D','Presidential Order (1975) and zonal system','GO 610 (1985) and violations; Girglani Commission','Rise of regional politics, Telugu Desam and its effect on Telangana','Naxalite movement and its impact','Cultural and literary expressions of Telangana identity']]]],
+ ['Section III · Towards formation of Telangana state (1991–2014)',[
+  ['Revival of the movement',['Globalisation and its impact on Telangana: agriculture, artisans, migration','Intellectual revival: Prof. Jayashankar, Telangana Jana Sabha, Telangana Aikya Vedika','Formation of TRS (2001) and political mobilisation','Role of students, employees, lawyers, writers and artists (Dhoom Dhaam)','Congress–TRS alliance (2004) and Pranab Mukherjee Committee']],
+  ['Final phase',['KCR\'s fast (2009) and Union Home Minister\'s statement of 9 December 2009','Srikrishna Committee: terms of reference and report','Telangana Joint Action Committee (JAC)','Million March, Sakala Janula Samme, Sagara Haram, Chalo Assembly','Sacrifices and self-immolations of youth','AP Reorganisation Act 2014; formation of Telangana on 2 June 2014','Post-2014: Telangana\'s development path and pending bifurcation issues']]]]]
+};
+const SY={paper:'P2',q:'',ctx:true,open:{}};
+try{Object.assign(SY,JSON.parse(localStorage.getItem('mains-syl')||'{}'))}catch(e){}
+const saveSY=()=>{try{localStorage.setItem('mains-syl',JSON.stringify(SY))}catch(e){}};
+const sylText=(p,s,u,pt)=>SY.ctx?`${paperName(p)} › ${s} › ${u}: ${pt}`:pt;
+function vSyl(v){
+  const ids=Object.keys(SYL);if(!SYL[SY.paper])SY.paper='P2';
+  v.innerHTML=`<div class="chips" id="sypap">${ids.map(id=>`<button class="chip${id===SY.paper&&!SY.q?' on':''}" data-p="${id}">${id}</button>`).join('')}</div>
+  <input type="search" id="syq" placeholder="Search all papers (e.g. Kakatiya, GST, 371D)" value="${esc(SY.q)}">
+  <div class="switch small"><span>Copy with paper &amp; section (better for AI prompts)</span><input type="checkbox" id="syctx" ${SY.ctx?'checked':''}></div>
+  <div id="sylist"></div>
+  <p class="small muted" style="text-align:center;margin-top:16px">Based on the TSPSC Group-I Mains syllabus. Check the latest official notification for exact wording.</p>`;
+  const draw=()=>{const q=SY.q.trim().toLowerCase();let h='';const pts=[];
+    for(const p of q?ids:[SY.paper]){const secs=SYL[p];let ph='';
+      secs.forEach(([s,units],si)=>{let sh='';
+        units.forEach(([u,list],ui)=>{const hit=q?list.filter(pt=>(pt+' '+u+' '+s).toLowerCase().includes(q)):list;if(!hit.length)return;
+          const key=p+'.'+si+'.'+ui,open=q||SY.open[key];
+          sh+=`<div class="syu${open?' on':''}"><div class="syh" data-k="${key}"><span class="t">${esc(u)}</span><span class="small muted">${hit.length}</span><button class="btn ghost sycp" data-all="${pts.length}" data-n="${hit.length}" aria-label="Copy unit">Copy all</button></div>
+          <div class="sypts">${hit.map(pt=>{pts.push([p,s,u,pt]);const i=pts.length-1;return`<div class="sypt"><span>${esc(pt)}</span><button class="iconbtn" data-c="${i}" aria-label="Copy point"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button><button class="iconbtn" data-u="${i}" aria-label="Use in Add"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></div>`}).join('')}</div></div>`});
+        if(sh)ph+=`<div class="sec"><div class="h">${esc(s)}</div><div class="card" style="padding:4px 12px">${sh}</div></div>`});
+      if(ph)h+=(q?`<h3>${esc(paperName(p))}</h3>`:`<h3 style="margin-top:4px">${esc(paperName(p))}</h3>`)+ph}
+    $('#sylist').innerHTML=h||'<div class="empty">No syllabus point matches.</div>';
+    $$('#sylist .syh').forEach(el=>el.onclick=e=>{if(e.target.closest('button')||SY.q)return;const k=el.dataset.k;SY.open[k]=!SY.open[k];saveSY();el.parentNode.classList.toggle('on',!!SY.open[k])});
+    $$('#sylist [data-c]').forEach(b=>b.onclick=async()=>{const[p,s,u,pt]=pts[+b.dataset.c];toast(await copyText(sylText(p,s,u,pt))?'Copied':'Could not copy')});
+    $$('#sylist .sycp').forEach(b=>b.onclick=async()=>{const a=+b.dataset.all,sl=pts.slice(a,a+ +b.dataset.n);const[p,s,u]=sl[0];
+      const t=SY.ctx?`${paperName(p)} › ${s} › ${u}\n`+sl.map(x=>'- '+x[3]).join('\n'):sl.map(x=>'- '+x[3]).join('\n');toast(await copyText(t)?`Copied ${sl.length} points`:'Could not copy')});
+    $$('#sylist [data-u]').forEach(b=>b.onclick=()=>{const[p,s,u,pt]=pts[+b.dataset.u];const line='Syllabus topic: '+sylText(p,s,u,pt);
+      A.mode='notes';A.paper=p==='GE'?'GE':p;A.raw=A.raw.trim()?A.raw.trim()+'\n\n'+line:line;saveA();toast('Added to Add content');go('#/add')});
+  };
+  $$('#sypap .chip').forEach(b=>b.onclick=()=>{SY.paper=b.dataset.p;SY.q='';saveSY();vSyl(v)});
+  $('#syq').oninput=e=>{SY.q=e.target.value;saveSY();$$('#sypap .chip').forEach(c=>c.classList.toggle('on',!SY.q&&c.dataset.p===SY.paper));draw()};
+  $('#syctx').onchange=e=>{SY.ctx=e.target.checked;saveSY()};
+  draw();
+}
+
+/* ================= Ideas: quick personal notes ================= */
+const ID={q:'',paper:''};
+function vIdeas(v){
+  const q=ID.q.trim().toLowerCase();
+  const list=S.ideas.filter(x=>(!ID.paper||x.paper===ID.paper)&&(!q||(x.text+' '+(x.tags||[]).join(' ')).toLowerCase().includes(q))).sort((a,b)=>(b.pinned?1:0)-(a.pinned?1:0)||b.updated-a.updated);
+  v.innerHTML=`<div class="card">
+    <textarea id="inew" rows="4" placeholder="An idea, a quote, a data point, an answer angle, a link…"></textarea>
+    <div class="row" style="margin-top:8px"><select id="ipaper" style="flex:1;min-width:140px">${paperOpts(ID.paper,'No paper')}</select><input type="text" id="itags" placeholder="Tags, comma separated" style="flex:1;min-width:140px"></div>
+    <div class="row end" style="margin-top:8px"><button class="btn" id="ipaste">Paste</button><button class="btn primary" id="iadd">Save idea</button></div></div>
+  <div class="row" style="margin-bottom:10px;flex-wrap:nowrap"><input type="search" id="iq" placeholder="Search ideas" value="${esc(ID.q)}" style="flex:1;min-width:0"><select id="ifp" style="width:auto;flex:none"><option value="">All</option>${PAPERS.map(p=>`<option value="${p.id}" ${p.id===ID.paper?'selected':''}>${p.id}</option>`).join('')}</select></div>
+  <div id="ilist">${list.length?list.map(x=>`<div class="card idea" data-id="${x.id}">
+    <div class="itext">${md(x.text)}</div>
+    <div class="small muted" style="margin-top:6px">${x.pinned?'📌 ':''}${x.paper?`<span class="tag">${x.paper}</span>`:''}${(x.tags||[]).map(t=>`<span class="tag">#${esc(t)}</span>`).join('')}${fmtDate(x.updated)}</div>
+    <div class="row" style="margin-top:6px;gap:2px"><button class="btn ghost" data-a="copy">Copy</button><button class="btn ghost" data-a="use">Use in Add</button><button class="btn ghost" data-a="pin">${x.pinned?'Unpin':'Pin'}</button><button class="btn ghost" data-a="edit">Edit</button><span class="spacer"></span><button class="btn ghost danger" data-a="del">Delete</button></div></div>`).join('')
+    :`<div class="empty">${S.ideas.length?'No idea matches.':'No ideas yet. Jot down anything worth using in an answer or essay.'}</div>`}</div>`;
+  const tags=s=>s.split(',').map(t=>t.trim().replace(/^#/,'')).filter(Boolean);
+  $('#ipaste').onclick=()=>pasteInto($('#inew'));
+  $('#iadd').onclick=async()=>{const t=$('#inew').value.trim();if(!t)return toast('Write something first');
+    await upsert('ideas',{id:uid(),created:Date.now(),text:t,paper:$('#ipaper').value,tags:tags($('#itags').value),pinned:false});toast('Idea saved');vIdeas(v)};
+  $('#iq').oninput=e=>{ID.q=e.target.value;const p=e.target.selectionStart;vIdeas(v);const i=$('#iq');i.focus();i.setSelectionRange(p,p)};
+  $('#ifp').onchange=e=>{ID.paper=e.target.value;vIdeas(v)};
+  $$('#ilist .idea').forEach(el=>{const x=byId('ideas',el.dataset.id);
+    el.querySelectorAll('[data-a]').forEach(b=>b.onclick=async()=>{const a=b.dataset.a;
+      if(a==='copy')toast(await copyText(x.text)?'Copied':'Could not copy');
+      else if(a==='use'){A.mode='notes';if(x.paper)A.paper=x.paper;A.raw=A.raw.trim()?A.raw.trim()+'\n\n'+x.text:x.text;saveA();toast('Added to Add content');go('#/add')}
+      else if(a==='pin'){x.pinned=!x.pinned;await upsert('ideas',x);vIdeas(v)}
+      else if(a==='del'){if(!confirm('Delete this idea?'))return;await removeMany('ideas',[x.id]);toast('Deleted');vIdeas(v)}
+      else if(a==='edit')modal(`<h3>Edit idea</h3><textarea id="et" rows="8">${esc(x.text)}</textarea><label>Paper</label><select id="ep">${paperOpts(x.paper,'No paper')}</select><label>Tags</label><input type="text" id="eg" value="${esc((x.tags||[]).join(', '))}">
+        <div class="row end" style="margin-top:12px"><button class="btn" data-close>Cancel</button><button class="btn primary" id="es">Save</button></div>`,m=>{
+        $('#es',m).onclick=async()=>{const t=$('#et',m).value.trim();if(!t)return toast('Idea is empty');Object.assign(x,{text:t,paper:$('#ep',m).value,tags:tags($('#eg',m).value)});await upsert('ideas',x);closeModal();vIdeas(v)}})})});
+}
+
 /* ================= Boot ================= */
 (async function boot(){
-  try{await DB.open();const[notes,qas,cards,logs,attempts,settings,game]=await Promise.all([DB.all('notes'),DB.all('qas'),DB.all('cards'),DB.all('logs'),DB.all('attempts'),DB.getMeta('settings'),DB.getMeta('game')]);
-    Object.assign(S,{notes,qas,cards,logs,attempts,settings:{...DEF,...(settings||{})}});if(game)G={...G,...game,seen:game.seen||{},days:game.days||{}}}
+  try{await DB.open();const[notes,qas,cards,logs,attempts,ideas,settings,game]=await Promise.all([DB.all('notes'),DB.all('qas'),DB.all('cards'),DB.all('logs'),DB.all('attempts'),DB.all('ideas'),DB.getMeta('settings'),DB.getMeta('game')]);
+    Object.assign(S,{notes,qas,cards,logs,attempts,ideas,settings:{...DEF,...(settings||{})}});if(game)G={...G,...game,seen:game.seen||{},days:game.days||{}}}
   catch(e){$('#view').innerHTML=`<div class="empty">Storage is unavailable in this browser (${esc(e.message||e)}). Open the app in Chrome, not in private mode.</div>`;return}
   applyTheme();matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',applyTheme);
   render();
