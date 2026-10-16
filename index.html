@@ -261,7 +261,7 @@ const DB={db:null,
   getMeta(k){return this.req('meta','readonly',o=>o.get(k))},
   setMeta(k,v){return this.req('meta','readwrite',o=>{o.put(v,k)})}
 };
-const DEF={theme:'auto',fontSize:17,retention:0.9,newPerDay:15,reviewsPerDay:200,learnSteps:[1,10],relearnSteps:[10],maxIvl:365,examDate:'',rollover:4,minPerMark:1.2,fuzz:true,autoQaCards:true,lastBackup:0,extraNew:0,extraNewDay:''};
+const DEF={theme:'auto',fontSize:17,retention:0.9,newPerDay:15,reviewsPerDay:200,learnSteps:[1,10],relearnSteps:[10],maxIvl:365,examDate:'',rollover:4,minPerMark:1.2,fuzz:true,autoQaCards:true,lastBackup:0,extraNew:0,extraNewDay:'',tts:false,ttsRate:1,ttsVoice:'',ttsAuto:0};
 const S={notes:[],qas:[],cards:[],logs:[],attempts:[],ideas:[],settings:{...DEF}};
 const byId=(store,id)=>S[store].find(x=>x.id===id);
 async function upsert(store,obj,touch=true){if(touch)obj.updated=Date.now();const a=S[store];const i=a.findIndex(x=>x.id===obj.id);if(i>=0)a[i]=obj;else a.push(obj);await DB.put(store,obj);askPersist()}
@@ -353,6 +353,7 @@ function srcOf(c){return c.sourceType==='note'?byId('notes',c.sourceId):c.source
 function deckCards(deck){
   if(!deck||deck==='all')return S.cards;
   if(deck==='flag')return S.cards.filter(c=>c.flagged);
+  if(deck==='aw')return S.cards.filter(c=>c.sourceType==='deck');
   if(deck==='star')return S.cards.filter(c=>{const s=srcOf(c);return s&&s.starred});
   if(deck.startsWith('src:')){const id=deck.slice(4);return S.cards.filter(c=>c.sourceId===id)}
   return S.cards.filter(c=>c.paper===deck);
@@ -437,7 +438,7 @@ const revDue=n=>n.rev&&n.rev.next<dayEnd();
 
 /* ================= Router ================= */
 let tick=null;const R={deck:'all',card:null,pv:null,shown:false,t0:0,undo:[],lastGroup:'',cram:null,done:0};
-const TITLES={feed:'Feed',home:'Today',lib:'Library',add:'Add content',review:'Review',more:'More',note:'Note',qa:'Question',edit:'Edit',practice:'Answer practice',stats:'Statistics',settings:'Settings',backup:'Backup & import',help:'How it works',syl:'TSPSC Mains syllabus',ideas:'My ideas'};
+const TITLES={feed:'Feed',home:'Today',lib:'Library',add:'Add content',review:'Review',more:'More',note:'Note',qa:'Question',edit:'Edit',practice:'Answer practice',stats:'Statistics',settings:'Settings',backup:'Backup & import',help:'How it works',syl:'TSPSC Mains syllabus',ideas:'My ideas',deck:'Answer-writing deck'};
 function go(h){if(location.hash===h)render();else location.hash=h}
 window.addEventListener('hashchange',render);
 document.addEventListener('click',e=>{const a=e.target.closest('[data-go]');if(a){e.preventDefault();go(a.dataset.go)}});
@@ -445,13 +446,13 @@ $('#back').onclick=()=>history.length>1?history.back():go('#/home');
 $('#searchbtn').onclick=()=>{L.focusSearch=true;go('#/lib')};
 $('#exitfocus').onclick=()=>document.body.classList.remove('focus');
 function render(){
-  clearInterval(tick);tick=null;closeModal();document.body.classList.remove('focus','feedon');if(F.io){F.io.disconnect();F.io=null}
+  clearInterval(tick);tick=null;closeModal();TTS.stop();TTS.wake(false);document.body.classList.remove('focus','feedon');if(F.io){F.io.disconnect();F.io=null}
   const parts=(location.hash||'#/home').slice(2).split('/');const r=parts[0]||'home';
   $$('#nav a').forEach(a=>a.classList.toggle('on',a.dataset.r===r));
   $('#title').textContent=TITLES[r]||'Mains';
   $('#back').classList.toggle('hide',['home','lib','add','review','syl','ideas','more'].includes(r));
   const v=$('#view');v.scrollTop=0;window.scrollTo(0,0);
-  const fn={feed:vFeed,home:vHome,lib:vLib,add:vAdd,review:vReview,more:vMore,note:vNote,qa:vQA,edit:vEdit,practice:vPractice,stats:vStats,settings:vSettings,backup:vBackup,help:vHelp,syl:vSyl,ideas:vIdeas}[r]||vHome;
+  const fn={feed:vFeed,home:vHome,lib:vLib,add:vAdd,review:vReview,more:vMore,note:vNote,qa:vQA,edit:vEdit,practice:vPractice,stats:vStats,settings:vSettings,backup:vBackup,help:vHelp,syl:vSyl,ideas:vIdeas,deck:vDeck}[r]||vHome;
   fn(v,parts.slice(1));updateBadge();
 }
 
@@ -678,7 +679,8 @@ const A={mode:'notes',paper:'',depth:'Standard',style:'faithful',marks:10,words:
 try{Object.assign(A,JSON.parse(localStorage.getItem('mains-add')||'{}'),{parsed:null})}catch(e){}
 const saveA=()=>{try{const{parsed,...rest}=A;localStorage.setItem('mains-add',JSON.stringify(rest))}catch(e){}};
 const PAPER_CODES='Paper codes: GE = General English, P1 = General Essay, P2 = History, Culture & Geography, P3 = Indian Society, Constitution & Governance, P4 = Economy & Development, P5 = Science & Technology and Data Interpretation, P6 = Telangana Movement & State Formation.';
-const CARD_RULES=n=>`FLASHCARDS (${n} per item): test the facts most likely to be asked — dates, articles, committees, numbers, names, causes/effects, definitions. Mix "basic" cards (front = a precise question, back = a short answer under 25 words) and "cloze" cards (a sentence with {{c1::hidden text}}; use c2, c3… for extra blanks in the same sentence). One fact per card. No yes/no questions. Back must be self-contained.`;
+const CARD_RULES=n=>`FLASHCARDS (${n} per item): test the facts most likely to be asked — dates, articles, committees, numbers, names, causes/effects, definitions. Mix "basic" cards (front = a precise question, back = a short answer under 25 words) and "cloze" cards (a sentence with {{c1::hidden text}}; use c2, c3… for extra blanks in the same sentence). One fact per card. No yes/no questions. Back must be self-contained.
+ANSWER-WRITING CARDS: about a third of the cards must train answer writing, not just recall. Use fronts like "Dimensions to cover: <likely question>" (back = 4–6 dimension words), "Value addition for <topic>" (back = the article / committee / judgement / scheme / data with source), "One-line intro for <topic>" or "Way forward for <topic>" (back = one exam-ready sentence), "Telangana angle for <topic>" (back = the state-specific fact or scheme). These backs may run to 40 words; write them as short comma-separated points.`;
 const PLAIN_RULES=`LANGUAGE — SIMPLE AND CLEAR (very important)
 - Write in plain, simple English that a student can revise quickly and an evaluator can read and mark at a glance.
 - Short sentences (ideally under 20 words), one idea per sentence or bullet.
@@ -910,7 +912,7 @@ function vAdd(v){
 }
 
 /* ================= Review ================= */
-function deckOptions(){const o=[['all','All cards'],...PAPERS.filter(p=>S.cards.some(c=>c.paper===p.id)).map(p=>[p.id,p.id+' · '+p.name.replace(/^Paper \w+ · /,'')]),['star','Starred notes & Q&A'],['flag','Flagged cards']];
+function deckOptions(){const o=[['all','All cards'],...PAPERS.filter(p=>S.cards.some(c=>c.paper===p.id)).map(p=>[p.id,p.id+' · '+p.name.replace(/^Paper \w+ · /,'')]),...(S.cards.some(c=>c.sourceType==='deck')?[['aw','Answer-writing deck']]:[]),['star','Starred notes & Q&A'],['flag','Flagged cards']];
   if(R.deck.startsWith('src:')){const s=byId('notes',R.deck.slice(4))||byId('qas',R.deck.slice(4));o.push([R.deck,'This item: '+((s&&(s.title||s.question))||'').slice(0,40)])}
   return o.map(([v,l])=>{const c=counts(v);const n=c.learn+c.review+c.newLeft;return`<option value="${v}" ${v===R.deck?'selected':''}>${esc(l)}${n?' ('+n+')':''}</option>`}).join('')}
 function nextCard(){
@@ -926,11 +928,12 @@ function nextCard(){
   return pool.filter(c=>(c.state===1||c.state===3)&&c.due<=now+20*MIN).sort((a,b)=>a.due-b.due)[0]||null;
 }
 function cardFace(c,reveal){
-  const s=srcOf(c);
+  const s=srcOf(c)||(c.sourceType==='deck'?{title:awName(c.sourceId)}:null);
   if(c.type==='cloze')return clozeHTML(c.text,c.cloze,reveal)+(reveal&&c.back?`<hr class="divider">${md(c.back)}`:'')+(s?`<div class="src">${esc((s.title||s.question||'').slice(0,90))}</div>`:'');
   return md(c.front)+(reveal?`<hr class="divider">${md(c.back)}`:'')+(s?`<div class="src">${esc((s.title||s.question||'').slice(0,90))}</div>`:'');
 }
 function vReview(v){
+  TTS.stop();
   if(R.cram)return vCram(v);
   R.card=R.forced||nextCard();R.forced=null;R.shown=false;R.t0=Date.now();
   const k=counts(R.deck);
@@ -941,7 +944,7 @@ function vReview(v){
     const tm=pool.filter(c=>c.state===2&&c.due>=dayEnd(now)&&c.due<dayEnd(now)+DAY).length;
     v.innerHTML=head+`<div class="card empty" style="color:var(--ink)"><div style="font-size:34px">✓</div><h3 style="margin:6px 0">${S.cards.length?'Done for now':'No cards yet'}</h3>
     <p class="small muted">${nl?`Next learning card ${new Date(nl.due).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}. `:''}${S.cards.length?`${tm} review${tm===1?'':'s'} due tomorrow.`:'Import notes or Q&A from the Add tab — flashcards are created automatically.'}</p>
-    ${R.done?`<p class="small">This session: ${R.done} card${R.done===1?'':'s'}</p>`:''}${S.notes.length||S.qas.length?`<a class="btn primary" data-go="#/feed" style="margin-top:8px">▶ Keep going in the revision feed</a>`:''}</div>
+    ${R.done?`<p class="small">This session: ${R.done} card${R.done===1?'':'s'}</p>`:''}${S.notes.length||S.qas.length?`<a class="btn primary" data-go="#/feed" style="margin-top:8px">▶ Keep going in the revision feed</a>`:''}${S.cards.some(c=>c.sourceType==='deck')?'':`<a class="btn${S.notes.length||S.qas.length?'':' primary'}" data-go="#/deck" style="margin-top:8px">Add the TSPSC answer-writing deck</a>`}</div>
     ${S.cards.length?`<h3>Study more</h3><div style="display:grid;gap:8px">${k.newTotal?`<button class="btn" id="more10">Add 10 more new cards today</button>`:''}<button class="btn" id="cram">Quick revision (weakest first, no scheduling)</button></div>`:`<a class="btn primary block" data-go="#/add">Add content</a>`}`;
     $('#deck').onchange=e=>{R.deck=e.target.value;R.undo=[];vReview(v)};
     if($('#more10'))$('#more10').onclick=async()=>{const t=dayKey();if(S.settings.extraNewDay!==t){S.settings.extraNewDay=t;S.settings.extraNew=0}S.settings.extraNew+=10;await saveSettings();vReview(v);updateBadge()};
@@ -952,11 +955,11 @@ function vReview(v){
   v.innerHTML=head+`<div class="progress"><i style="width:${R.done/tot*100}%"></i></div>
   <article class="flash" id="face">${cardFace(c,false)}</article>
   <div id="ctrl"><button class="btn primary block" id="show" style="margin-top:12px">Show answer</button></div>
-  <div class="rv-tools"><button id="undo" ${R.undo.length?'':'disabled'}>↶ Undo</button><button id="edit">Edit</button><button id="flag">${c.flagged?'⚑ Unflag':'⚐ Flag'}</button><button id="susp">Suspend</button>${srcOf(c)?'<button id="src">Open source</button>':''}</div>`;
+  <div class="rv-tools"><button id="undo" ${R.undo.length?'':'disabled'}>↶ Undo</button><button id="edit">Edit</button><button id="flag">${c.flagged?'⚑ Unflag':'⚐ Flag'}</button><button id="susp">Suspend</button>${srcOf(c)?'<button id="src">Open source</button>':''}<button id="tts">${S.settings.tts?'🔊 Read aloud: on':'🔈 Read aloud'}</button>${S.settings.tts?'<button id="say">↻ Repeat</button>':''}</div>`;
   const show=()=>{if(R.shown)return;R.shown=true;$('#face').innerHTML=cardFace(c,true);const now=Date.now();R.pv=preview(c,now);
     const names={1:'Again',2:'Hard',3:'Good',4:'Easy'};
     $('#ctrl').innerHTML=`<div class="grades">${[1,2,3,4].map(g=>`<button class="g${g}" data-g="${g}"><b>${names[g]}</b><small>${ivlLabel(R.pv[g],now)}</small></button>`).join('')}</div>`;
-    $$('#ctrl [data-g]').forEach(b=>b.onclick=()=>answer(+b.dataset.g,v))};
+    $$('#ctrl [data-g]').forEach(b=>b.onclick=()=>answer(+b.dataset.g,v));ttsCard(c,true)};
   $('#show').onclick=show;$('#face').onclick=()=>{if(!R.shown)show()};
   $('#deck').onchange=e=>{R.deck=e.target.value;R.undo=[];R.done=0;vReview(v)};
   $('#undo').onclick=()=>undo(v);
@@ -964,8 +967,12 @@ function vReview(v){
   $('#flag').onclick=async()=>{c.flagged=!c.flagged;await upsert('cards',c,false);$('#flag').textContent=c.flagged?'⚑ Unflag':'⚐ Flag'};
   $('#susp').onclick=async()=>{c.suspended=true;await upsert('cards',c,false);toast('Suspended');vReview(v);updateBadge()};
   if($('#src'))$('#src').onclick=()=>go(`#/${c.sourceType}/${c.sourceId}`);
-  R.show=show;
+  $('#tts').onclick=()=>ttsModal(()=>vReviewKeep(v));
+  if($('#say'))$('#say').onclick=()=>{clearTimeout(TTS.t);ttsCard(c,R.shown,R.shown?null:show)};
+  R.show=show;R.say=()=>$('#say')&&$('#say').click();ttsCard(c,false,show);
 }
+// Re-render the same card (e.g. after changing read-aloud settings) without skipping it.
+function vReviewKeep(v){if(R.card&&!R.cram)R.forced=R.card;vReview(v)}
 async function answer(g,v){
   const c=R.card,o=R.pv&&R.pv[g];if(!c||!o)return;const now=Date.now();
   const prev={...c},log={id:uid(),cardId:c.id,t:now,g,prevState:c.state||0,ivl:o.state===2?o.ivl:0,ms:Math.min(now-R.t0,120000),day:dayKey(now)};
@@ -984,17 +991,19 @@ function vCram(v){
   const C=R.cram;if(!C.q.length){v.innerHTML=`<div class="empty">No studied cards in this deck yet.</div><button class="btn block" id="cx">Back</button>`;$('#cx').onclick=()=>{R.cram=null;vReview(v)};return}
   if(C.i>=C.q.length){v.innerHTML=`<div class="card empty" style="color:var(--ink)"><h3>Quick revision done</h3><p class="small muted">Recalled ${C.ok} of ${C.q.length} on first try. Schedules were not changed.</p></div><button class="btn block" id="cx">Back to review</button>`;$('#cx').onclick=()=>{R.cram=null;vReview(v)};return}
   const c=byId('cards',C.q[C.i]);if(!c){C.i++;return vCram(v)}
-  v.innerHTML=`<div class="row" style="margin-bottom:12px"><b class="small">Quick revision</b><span class="spacer"></span><span class="small muted">${C.i+1} / ${C.q.length}</span><button class="btn ghost" id="cx">End</button></div>
+  v.innerHTML=`<div class="row" style="margin-bottom:12px"><b class="small">Quick revision</b><span class="spacer"></span><span class="small muted">${C.i+1} / ${C.q.length}</span><button class="btn ghost" id="ctts">${S.settings.tts?'🔊':'🔈'}</button><button class="btn ghost" id="cx">End</button></div>
   <article class="flash" id="face">${cardFace(c,false)}</article><div id="ctrl"><button class="btn primary block" id="show" style="margin-top:12px">Show answer</button></div>`;
-  $('#cx').onclick=()=>{R.cram=null;vReview(v)};
-  const show=()=>{$('#face').innerHTML=cardFace(c,true);$('#ctrl').innerHTML=`<div class="grades" style="grid-template-columns:1fr 1fr"><button class="g1" id="miss"><b>Missed</b><small>see again</small></button><button class="g3" id="got"><b>Got it</b><small>next</small></button></div>`;
+  $('#cx').onclick=()=>{R.cram=null;vReview(v)};$('#ctts').onclick=()=>ttsModal(()=>vCram(v));
+  const show=()=>{clearTimeout(TTS.t);$('#face').innerHTML=cardFace(c,true);$('#ctrl').innerHTML=`<div class="grades" style="grid-template-columns:1fr 1fr"><button class="g1" id="miss"><b>Missed</b><small>see again</small></button><button class="g3" id="got"><b>Got it</b><small>next</small></button></div>`;
     $('#miss').onclick=()=>{C.q.push(c.id);C.q.splice(C.i,1);C.first=C.first||{};C.first[c.id]=1;vCram(v)};
-    $('#got').onclick=()=>{if(!(C.first&&C.first[c.id]))C.ok++;C.i++;vCram(v)};R.show=null};
-  $('#show').onclick=show;$('#face').onclick=show;R.show=show;
+    $('#got').onclick=()=>{if(!(C.first&&C.first[c.id]))C.ok++;C.i++;vCram(v)};R.show=null;
+    ttsCard(c,true,null,+S.settings.ttsAuto?()=>{C.i++;vCram(v)}:null)};
+  $('#show').onclick=show;$('#face').onclick=show;R.show=show;TTS.stop();ttsCard(c,false,show);
 }
 document.addEventListener('keydown',e=>{if(!location.hash.startsWith('#/review')||$('#modal').classList.contains('on')||/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;
   if(R.cram){if((e.key===' '||e.key==='Enter')&&$('#show')){e.preventDefault();$('#show').click()}else if(e.key==='1'&&$('#miss'))$('#miss').click();else if((e.key==='2'||e.key===' ')&&$('#got')){e.preventDefault();$('#got').click()}return}
   if(!R.card)return;
+  if(e.key==='r'){R.say&&R.say();return}
   if(!R.shown&&(e.key===' '||e.key==='Enter')){e.preventDefault();R.show&&R.show();return}
   if(R.shown&&/^[1-4]$/.test(e.key)){answer(+e.key,$('#view'))}
   else if(R.shown&&(e.key===' '||e.key==='Enter')){e.preventDefault();answer(3,$('#view'))}
@@ -1127,7 +1136,7 @@ function vPractice(v){
 /* ================= More / Stats / Settings / Backup / Help ================= */
 function vMore(v){
   v.innerHTML=`<div class="card list" style="padding:2px 14px">
-  ${[['#/feed','Revision feed','Swipe through your notes, earn XP, keep the streak'],['#/practice','Answer practice','Timed writing with model-answer comparison'],['#/stats','Statistics','Retention, streak, heatmap, forecast'],['#/lib/cards','Browse cards','Edit, suspend, find leeches'],['#/backup','Backup & import','Export, restore, share, Anki export'],['#/settings','Settings','Theme, font size, review limits, exam date'],['#/help','How it works','Workflow and the review buttons']].map(([h,t,s])=>`<a class="item" data-go="${h}"><div class="t">${t}</div><div class="s">${s}</div></a>`).join('')}</div>
+  ${[['#/deck','Answer-writing deck','Ready-made TSPSC cards: directives, articles, Telangana facts, quotes'],['#/feed','Revision feed','Swipe through your notes, earn XP, keep the streak'],['#/practice','Answer practice','Timed writing with model-answer comparison'],['#/stats','Statistics','Retention, streak, heatmap, forecast'],['#/lib/cards','Browse cards','Edit, suspend, find leeches'],['#/backup','Backup & import','Export, restore, share, Anki export'],['#/settings','Settings','Theme, font size, review limits, exam date'],['#/help','How it works','Workflow and the review buttons']].map(([h,t,s])=>`<a class="item" data-go="${h}"><div class="t">${t}</div><div class="s">${s}</div></a>`).join('')}</div>
   <p class="small muted" style="text-align:center">${S.notes.length} notes · ${S.qas.length} questions · ${S.cards.length} cards</p>`;
 }
 function vStats(v){
@@ -1217,6 +1226,255 @@ function vHelp(v){
   <h3>Before the exam</h3><p>Set the exam date in Settings — no card is scheduled after it. Use <b>Quick revision</b> on the Review screen to run through your weakest cards without changing schedules.</p>
   <h3>Keep your data safe</h3><p>Everything is stored on this phone only. Download a backup weekly (More → Backup) and keep it in Drive.</p></div>`;
 }
+
+/* ================= Answer-writing deck (built-in cards) ================= */
+// Card = [front, back] (basic) or a string with {{c1::…}} (cloze). Backs are short, answer-ready value additions.
+const AW=[
+{id:'aw-dir',paper:'',name:'Directives & answer structure',desc:'What each directive asks, intro/conclusion types, dimensions to cover',cards:[
+ ["Directive: DISCUSS — what must the answer do?","Cover the topic from several sides through argument — causes, effects, pros and cons — and end with a reasoned view."],
+ ["Directive: EXPLAIN — what must the answer do?","Make clear HOW and WHY something happens: give reasons, causes and the mechanism, with examples."],
+ ["Directive: ANALYSE — what must the answer do?","Break the issue into its parts, show how they relate, and draw a conclusion from that breakdown."],
+ ["Directive: CRITICALLY EXAMINE / EVALUATE — what must the answer do?","Weigh merits AND demerits with evidence, then give a balanced, clear judgement. One-sided answers lose marks."],
+ ["Directive: EXAMINE — what must the answer do?","Probe the issue in depth, test the facts and their links, and state what follows from them."],
+ ["Directive: COMMENT — what must the answer do?","Give your opinion on the statement, backed by facts; brief and to the point."],
+ ["Directive: ELUCIDATE — what must the answer do?","Explain in detail and make it clear with examples and illustrations."],
+ ["Directive: DESCRIBE vs ENUMERATE","Describe = detailed account of features, no judgement. Enumerate = list the points briefly, one by one."],
+ ["Word split for a Mains answer","Intro ≈ 10–15% · Body ≈ 70–80% · Conclusion ≈ 10–15%. Stay within the word limit."],
+ ["6 ways to open an answer (intro types)","1. Definition 2. Data point 3. Constitutional article 4. Recent event/news 5. Quote 6. Historical background."],
+ ["5 ways to close an answer (conclusion types)","1. Way forward 2. Constitutional value (Preamble) 3. SDG link 4. Committee/scheme recommendation 5. Balanced, optimistic vision."],
+ ["Dimensions checklist for any analytical question","Political · Economic · Social · Technological · Legal/Constitutional · Environmental · Administrative · Ethical · International · Telangana angle."],
+ ["Stakeholders to cover in a governance question","Citizens · State/Union govt · Local bodies · Judiciary · Market/private sector · Civil society & NGOs · Media."],
+ ["Value additions that fetch marks","Articles · SC judgements · Committees/commissions · Data with source · Schemes · Reports/indices · Examples · Diagram/map/flowchart."],
+ ["Where to add the Telangana angle","State schemes, local examples, Telangana Socio-Economic Outlook data, history of the movement, district-level cases."],
+ ["Cheap diagrams that earn marks","Flowchart (cause→effect) · Hub-and-spoke (dimensions) · Table (compare) · Timeline (history) · Rough map (Telangana/India)."],
+ ["Answering a 'critically' question — 3-part body","1. Positives/arguments for 2. Limitations/arguments against 3. Balanced assessment — then way forward."]]},
+{id:'aw-const',paper:'P3',name:'Constitution: key articles',desc:'Articles to quote in polity, society and governance answers',cards:[
+ "Article {{c1::12}} defines 'State' for the purpose of Fundamental Rights.",
+ "Article {{c1::13}} makes laws inconsistent with Fundamental Rights void — the basis of judicial review.",
+ "Article {{c1::14}}: equality before law and equal protection of laws.",
+ "Article {{c1::15}} prohibits discrimination on grounds of religion, race, caste, sex or place of birth.",
+ "Article {{c1::15(4)}} allows special provisions for socially and educationally backward classes, SCs and STs.",
+ "Article {{c1::16(4)}} allows reservation in public employment for backward classes not adequately represented.",
+ "Article {{c1::17}} abolishes untouchability.",
+ "Article {{c1::19}} guarantees six freedoms, including speech and expression.",
+ "Article {{c1::21}}: protection of life and personal liberty.",
+ "Article {{c1::21A}}: free and compulsory education for children aged 6–14 ({{c2::86th}} Amendment, 2002).",
+ "Article {{c1::32}} — right to constitutional remedies; Ambedkar called it the 'heart and soul' of the Constitution.",
+ "Article {{c1::39A}}: equal justice and free legal aid.",
+ "Article {{c1::40}} directs the State to organise village panchayats.",
+ "Article {{c1::44}}: Uniform Civil Code (DPSP).",
+ "Article {{c1::46}}: promote educational and economic interests of SCs, STs and weaker sections.",
+ "Article {{c1::47}}: raise nutrition and standard of living, improve public health.",
+ "Article {{c1::48A}}: protect and improve the environment, forests and wildlife.",
+ "Article {{c1::51A}} lists Fundamental Duties, added by the {{c2::42nd}} Amendment (1976).",
+ "Article {{c1::3}} empowers Parliament to form new States — used to create Telangana in 2014.",
+ "Article {{c1::243}} (Part IX) deals with Panchayats — {{c2::73rd}} Amendment, 1992.",
+ "Part IXA (Article {{c1::243P}} onwards) deals with Municipalities — {{c2::74th}} Amendment, 1992.",
+ "Article {{c1::280}}: Finance Commission, constituted every five years.",
+ "Article {{c1::324}}: Election Commission of India.",
+ "Article {{c1::338}}: National Commission for Scheduled Castes; {{c2::338A}}: for Scheduled Tribes.",
+ "Article {{c1::338B}}: National Commission for Backward Classes (constitutional status by the {{c2::102nd}} Amendment, 2018).",
+ "Article {{c1::356}}: President's Rule in a State.",
+ "Article {{c1::368}}: power of Parliament to amend the Constitution.",
+ "Article {{c1::371D}}: special provisions for Andhra Pradesh and Telangana on public employment and education ({{c2::32nd}} Amendment, 1973).",
+ "Article {{c1::279A}}: GST Council, created by the {{c2::101st}} Amendment (2016).",
+ "Article {{c1::350A}}: instruction in the mother tongue at the primary stage."]},
+{id:'aw-cases',paper:'P3',name:'Landmark judgements & amendments',desc:'Cases and amendments that strengthen polity answers',cards:[
+ ["Kesavananda Bharati case (1973)","Parliament can amend the Constitution but cannot alter its BASIC STRUCTURE."],
+ ["Maneka Gandhi case (1978)","Article 21: procedure must be 'fair, just and reasonable'; linked Articles 14, 19 and 21."],
+ ["Minerva Mills case (1980)","Balance between Fundamental Rights and DPSPs is part of the basic structure; limited amending power."],
+ ["Olga Tellis case (1985)","Right to livelihood is part of the right to life (Article 21)."],
+ ["Indra Sawhney case (1992)","Upheld OBC reservation; 50% ceiling on reservations; excluded the 'creamy layer'."],
+ ["S.R. Bommai case (1994)","Article 356 is subject to judicial review; secularism is part of the basic structure."],
+ ["Vishaka case (1997)","Guidelines against sexual harassment at the workplace (later the POSH Act, 2013)."],
+ ["K.S. Puttaswamy case (2017)","Right to privacy is a Fundamental Right under Article 21."],
+ ["Shayara Bano case (2017)","Instant triple talaq declared unconstitutional."],
+ ["Navtej Singh Johar case (2018)","Decriminalised consensual same-sex relations (read down Section 377 IPC)."],
+ ["103rd Amendment (2019)","10% reservation for Economically Weaker Sections (EWS) — Articles 15(6) and 16(6)."],
+ ["106th Amendment (2023) — Nari Shakti Vandan Adhiniyam","One-third of seats in Lok Sabha and State Assemblies reserved for women (after delimitation)."],
+ ["42nd Amendment (1976) — 'mini-Constitution'","Added 'Socialist', 'Secular', 'Integrity' to the Preamble and Fundamental Duties (Art. 51A)."],
+ ["86th Amendment (2002)","Made education a Fundamental Right (Art. 21A) and added a parental duty under Art. 51A(k)."]]},
+{id:'aw-tgm',paper:'P6',name:'Telangana movement: timeline',desc:'Dates and events for Paper VI answers',cards:[
+ "The Nizam's Mulki rules, giving jobs to locals, were codified in {{c1::1919}}.",
+ "Police Action ('Operation {{c1::Polo}}') merged Hyderabad State into India in September {{c2::1948}}.",
+ "The Mulki agitation and the City College firing took place in {{c1::1952}}.",
+ "Andhra State was formed on 1 October {{c1::1953}}, after Potti Sriramulu's fast unto death.",
+ "The States Reorganisation Commission was headed by {{c1::Fazal Ali}}; para {{c2::386}} of its report favoured keeping Telangana separate for some time.",
+ "The {{c1::Gentlemen's Agreement}} of 1956 promised safeguards to Telangana before the merger.",
+ "Andhra Pradesh was formed on 1 November {{c1::1956}}.",
+ ["Safeguards promised in the Gentlemen's Agreement (1956)","Regional Council for Telangana, Mulki rules for jobs, Telangana surplus funds spent in Telangana, Deputy CM from Telangana."],
+ "The {{c1::1969}} agitation was led by students and the Telangana Praja Samithi under {{c2::Marri Chenna Reddy}}.",
+ "The Supreme Court upheld the Mulki rules in {{c1::1972}}, which triggered the {{c2::Jai Andhra}} movement.",
+ "The {{c1::Six-Point Formula}} (1973) led to Article {{c2::371D}} and the Presidential Order of {{c3::1975}}.",
+ "{{c1::GO 610}} (1985) ordered repatriation of non-local employees; the {{c2::Girglani}} Commission (2001) studied its violations.",
+ "{{c1::Prof. K. Jayashankar}} is called the ideologue of the Telangana movement.",
+ "TRS was founded on 27 April {{c1::2001}} by {{c2::K. Chandrasekhar Rao}}.",
+ "KCR's fast began on 29 November 2009; the Union Home Minister's statement on {{c1::9 December 2009}} announced the process for Telangana.",
+ "The {{c1::Srikrishna}} Committee (2010) examined the Telangana question and gave six options.",
+ "Telangana JAC protests: Million March (2011), {{c1::Sakala Janula Samme}} (2011), Sagara Haram (2012), Chalo Assembly (2013).",
+ "The slogan of the movement: {{c1::Neellu}} (water), {{c2::Nidhulu}} (funds), {{c3::Niyamakalu}} (jobs).",
+ "Telangana was formed on {{c1::2 June 2014}} under the {{c2::Andhra Pradesh Reorganisation Act}}, 2014.",
+ ["Role of culture in the Telangana movement","Dhoom Dhaam cultural programmes, songs of Gaddar and Goreti Venkanna, Bathukamma and Bonalu as symbols of identity."]]},
+{id:'aw-tgh',paper:'P2',name:'Telangana history & culture',desc:'Dynasties, reformers and cultural facts for Paper II',cards:[
+ "The Satavahana king {{c1::Hala}} compiled the Prakrit anthology {{c2::Gathasaptasati}}.",
+ "{{c1::Gautamiputra Satakarni}} was the greatest Satavahana ruler.",
+ "The Ikshvakus ruled from {{c1::Vijayapuri}} (Nagarjunakonda), a major Buddhist centre.",
+ "The Kakatiya capital was {{c1::Orugallu}} (Warangal).",
+ "{{c1::Rudrama Devi}} was the Kakatiya queen whose rule was praised by Marco Polo.",
+ "The {{c1::Ramappa}} temple at Palampet (Mulugu) became a UNESCO World Heritage Site in {{c2::2021}}.",
+ "The Thousand Pillar Temple at {{c1::Hanamkonda}} was built by the Kakatiyas.",
+ ["Kakatiya contribution to irrigation","Built large tanks — Pakhal, Ramappa, Laknavaram — inspiration for Mission Kakatiya."],
+ "Hyderabad was founded in {{c1::1591}} by {{c2::Muhammad Quli Qutb Shah}}, who also built the Charminar.",
+ "The Asaf Jahi dynasty was founded in {{c1::1724}} by Nizam-ul-Mulk.",
+ "{{c1::Osmania University}} (1918) was founded by Mir Osman Ali Khan, with Urdu as the medium.",
+ "{{c1::Salar Jung I}} reformed revenue, justice and district administration of Hyderabad State.",
+ "{{c1::Suravaram Pratapa Reddy}} started the Golconda Patrika and presided over the first Andhra Mahasabha (1930).",
+ "{{c1::Sri Krishnadevaraya Andhra Bhasha Nilayam}} (1901) was the first Telugu library in Hyderabad.",
+ "{{c1::Bhagya Reddy Varma}} led the Adi-Hindu movement for Dalit self-respect.",
+ "{{c1::Kumuram Bheem}} led the Gond struggle with the slogan 'Jal, Jangal, Zameen'.",
+ "{{c1::Chakali Ilamma}} of Palakurthi became a symbol of the Telangana peasant armed struggle.",
+ "{{c1::Doddi Komaraiah}} (1946) is remembered as the first martyr of the Telangana armed struggle.",
+ "The {{c1::Sammakka–Saralamma}} Jatara at Medaram is one of Asia's largest tribal fairs, held every two years.",
+ "{{c1::Bathukamma}} is Telangana's floral festival celebrated by women; it is the state festival.",
+ "Poet {{c1::Dasarathi Krishnamacharyulu}} wrote 'Naa Telangana Koti Ratnala Veena'.",
+ "{{c1::Kaloji Narayana Rao}}'s birthday, 9 September, is observed as Telangana Language Day."]},
+{id:'aw-tgs',paper:'P4',name:'Telangana schemes & economy',desc:'State schemes and facts for P3/P4 value addition',cards:[
+ ["Mission Kakatiya (2015)","Restoration of minor irrigation tanks — revives the Kakatiya tank system, raises groundwater."],
+ ["Mission Bhagiratha","Safe, piped drinking water to every household; key answer to fluorosis in Nalgonda."],
+ ["Kaleshwaram Lift Irrigation Project","Multi-stage lift irrigation on the Godavari (Medigadda barrage onwards); cite with debate on cost and damage."],
+ ["Rythu Bandhu (2018)","Per-acre investment support to farmers each season; continued as Rythu Bharosa under the present government. [verify amount]"],
+ ["Rythu Bima","Life insurance of ₹5 lakh for farmers aged 18–59, premium paid by the State."],
+ ["Kalyana Lakshmi / Shaadi Mubarak","Financial assistance for the marriage of girls from poor families."],
+ ["Aasara pensions","Social security pensions for the elderly, widows, disabled persons, beedi workers, weavers and others."],
+ ["Dalit Bandhu (2021)","Grant of ₹10 lakh per SC family for self-employment; pilot in Huzurabad."],
+ ["Telanganaku Haritha Haram (2015)","Mass afforestation drive to raise green cover."],
+ ["TS-iPASS (2014)","Single-window industrial clearance with time-bound approvals and self-certification."],
+ ["T-Hub and WE-Hub","T-Hub: startup innovation hub in Hyderabad. WE-Hub: incubator for women entrepreneurs."],
+ ["Dharani portal (2020)","Integrated land records portal; replaced by Bhu Bharati under the present government. [verify]"],
+ ["Six guarantees of the present Telangana government","Mahalakshmi, Rythu Bharosa, Gruha Jyothi, Indiramma Indlu, Yuva Vikasam, Cheyutha."],
+ ["Mahalakshmi scheme","Free travel for women in TGSRTC buses (and other benefits)."],
+ ["Gruha Jyothi","Free electricity up to 200 units per month for households."],
+ "The Krishna water dispute was first decided by the {{c1::Bachawat}} Tribunal (KWDT-I); KWDT-II was headed by {{c2::Brijesh Kumar}}.",
+ "Telangana has {{c1::33}} districts.",
+ ["Best data source for Telangana answers","Telangana Socio-Economic Outlook (Planning Dept, released with the State Budget)."]]},
+{id:'aw-eco',paper:'P4',name:'Indian economy & governance',desc:'Institutions, laws and committees for P3/P4',cards:[
+ "{{c1::NITI Aayog}} replaced the Planning Commission on 1 January 2015.",
+ "GST was rolled out on {{c1::1 July 2017}} under the {{c2::101st}} Constitutional Amendment.",
+ "The 15th Finance Commission, chaired by {{c1::N.K. Singh}}, kept states' share of the divisible pool at {{c2::41}}%.",
+ "The 16th Finance Commission is chaired by {{c1::Arvind Panagariya}}.",
+ "The {{c1::FRBM}} Act, 2003 set targets for fiscal deficit and debt.",
+ "Under flexible inflation targeting, RBI targets CPI inflation of {{c1::4}}% ± {{c2::2}}%, set by a 6-member {{c3::Monetary Policy Committee}}.",
+ "MGNREGA (2005) guarantees {{c1::100}} days of wage employment per rural household per year.",
+ "The National Food Security Act was passed in {{c1::2013}}.",
+ "The RTI Act was passed in {{c1::2005}}; the Lokpal and Lokayuktas Act in {{c2::2013}}.",
+ "The 2nd Administrative Reforms Commission (2005) was chaired by {{c1::Veerappa Moily}}.",
+ "Centre–State relations were studied by the {{c1::Sarkaria}} Commission (1983) and the {{c2::Punchhi}} Commission (2007).",
+ "Poverty estimates for 2011–12: Tendulkar method {{c1::21.9}}%, Rangarajan method {{c2::29.5}}%.",
+ "NITI Aayog estimates about {{c1::24.8 crore}} people escaped multidimensional poverty between 2013–14 and 2022–23.",
+ "Land acquisition is governed by the {{c1::RFCTLARR}} Act, 2013 (fair compensation, R&R, social impact assessment).",
+ ["1991 reforms in three words","Liberalisation, Privatisation, Globalisation (LPG) — after the balance-of-payments crisis."]]},
+{id:'aw-st',paper:'P5',name:'Science & technology',desc:'Missions and facts for Paper V',cards:[
+ "Chandrayaan-3 landed near the lunar south pole on {{c1::23 August 2023}}, now National Space Day.",
+ "{{c1::Aditya-L1}} (2023) is India's first solar mission, placed at the Lagrange point L1.",
+ "Mangalyaan made India the first country to reach Mars orbit on its {{c1::first}} attempt (2014).",
+ "{{c1::Gaganyaan}} is India's human spaceflight programme.",
+ "India's net-zero target year is {{c1::2070}} (announced at COP26, Glasgow).",
+ "The National Green Hydrogen Mission (2023) targets {{c1::5 million tonnes}} of production per year by 2030.",
+ "India's updated NDC aims for {{c1::50}}% of installed power capacity from non-fossil sources by 2030.",
+ "The {{c1::Digital Personal Data Protection}} Act was passed in 2023.",
+ "Ayushman Bharat PM-JAY gives health cover of {{c1::₹5 lakh}} per family per year.",
+ "{{c1::Mission Indradhanush}} (2014) aims at full immunisation of children and pregnant women.",
+ "The National {{c1::Quantum}} Mission was approved in 2023.",
+ ["GI tags from Telangana (any 6)","Pochampally Ikat, Gadwal sarees, Nirmal toys, Karimnagar silver filigree, Cheriyal scroll paintings, Hyderabad Haleem, Pembarthi brassware, Adilabad Dokra."],
+ ["Use of space technology in Telangana governance","Crop and land-use mapping, tank restoration monitoring, disaster warning, Dharani/land surveys, Telangana State Remote Sensing Applications Centre (TRAC)."]]},
+{id:'aw-quotes',paper:'P1',name:'Quotes for intros & conclusions',desc:'Short, reliable quotes for essays and answers',cards:[
+ ["Ambedkar — social democracy","'Political democracy cannot last unless there lies at the base of it social democracy.' Use: equality, social justice, caste."],
+ ["Ambedkar — slogan","'Educate, agitate, organise.' Use: Dalit movements, empowerment."],
+ ["Gandhi — poverty","'Poverty is the worst form of violence.' Use: poverty, welfare, development."],
+ ["Gandhi's talisman","Recall the face of the poorest person you have seen and ask if your step will help them. Use: policy, ethics, conclusion."],
+ ["Amartya Sen — development","'Development as freedom' — expanding people's capabilities, not just income. Use: HDI, growth vs development."],
+ ["Kautilya — good governance","'In the happiness of his subjects lies the king's happiness.' Use: governance, welfare state."],
+ ["Nehru — 'Tryst with Destiny' (1947)","Freedom as a pledge to end poverty, ignorance, disease and inequality of opportunity. Use: nation building."],
+ ["Vivekananda — youth","'Arise, awake, and stop not till the goal is reached.' Use: youth, education, HRD."],
+ ["Telangana movement slogan","'Neellu, Nidhulu, Niyamakalu' — water, funds, jobs. Use: any P6 or Telangana development answer."],
+ ["Dasarathi — Telangana pride","'Naa Telangana Koti Ratnala Veena' — Telangana as a veena of a crore gems. Use: Telangana culture, essay intros."],
+ ["Preamble values for a conclusion","Justice — social, economic and political; Liberty; Equality; Fraternity assuring dignity and unity."],
+ ["Sabka Saath, Sabka Vikas / Antyodaya","Inclusive growth reaching the last person. Use: welfare and inclusion conclusions."]]}
+];
+const awName=id=>(AW.find(d=>d.id===id)||{}).name||'Answer-writing deck';
+const awCards=d=>d.cards.map(x=>typeof x==='string'?{type:'cloze',text:x}:{type:'basic',front:x[0],back:x[1]});
+const awHave=id=>S.cards.filter(c=>c.sourceType==='deck'&&c.sourceId===id);
+async function awInstall(ids){let n=0;const out=[];const t0=Date.now();
+  for(const id of ids){const d=AW.find(x=>x.id===id);const raw=awCards(d),have=awHave(id);
+    const keys=new Set(have.map(c=>plain(c.type==='cloze'?c.text+'#'+c.cloze:c.front).toLowerCase()));
+    for(const c of cardsFromRaw(raw,{kind:'deck',id,paper:d.paper},t0+n)){const k=plain(c.type==='cloze'?c.text+'#'+c.cloze:c.front).toLowerCase();if(keys.has(k))continue;keys.add(k);out.push(c);n++}}
+  if(out.length)await upsertMany('cards',out);return n}
+function vDeck(v){
+  const rows=AW.map(d=>{const h=awHave(d.id).length,tot=cardsFromRaw(awCards(d),{kind:'deck',id:d.id,paper:d.paper}).length;return{d,h,tot}});
+  const left=rows.filter(r=>r.h<r.tot);
+  v.innerHTML=`<p class="small muted" style="margin-top:0">Ready-made flashcards built for TSPSC Mains answer writing: directives, structure, articles, judgements, Telangana facts, schemes and quotes. Add a set and it joins your normal reviews.</p>
+  ${left.length?`<button class="btn primary block" id="awall" style="margin-bottom:12px">Add all sets (${left.reduce((s,r)=>s+r.tot-r.h,0)} cards)</button>`:''}
+  <div class="card list" style="padding:2px 14px">${rows.map(({d,h,tot})=>`<div class="item" style="cursor:default"><div class="row" style="flex-wrap:nowrap"><div style="flex:1;min-width:0"><div class="t">${esc(d.name)}</div><div class="s">${d.paper?`<span class="tag">${d.paper}</span>`:''}${tot} cards · ${esc(d.desc)}</div></div>
+    ${h>=tot?`<button class="btn" data-rv="${d.id}">Review</button>`:`<button class="btn primary" data-add="${d.id}">${h?'Update':'Add'}</button>`}</div>
+    <div class="row" style="margin-top:4px"><button class="btn ghost small" data-pv="${d.id}" style="padding:4px 0">Preview</button>${h?`<span class="small muted">${h} added</span><span class="spacer"></span><button class="btn ghost danger small" data-rm="${d.id}" style="padding:4px 0">Remove</button>`:''}</div></div>`).join('')}</div>
+  <p class="small muted">Facts marked [verify] change with government decisions — check the latest before quoting. Edit any card from Review → Edit.</p>`;
+  const after=n=>{toast(n?`Added ${n} cards`:'Already up to date');updateBadge();vDeck(v)};
+  if($('#awall'))$('#awall').onclick=async()=>after(await awInstall(AW.map(d=>d.id)));
+  $$('[data-add]',v).forEach(b=>b.onclick=async()=>after(await awInstall([b.dataset.add])));
+  $$('[data-rv]',v).forEach(b=>b.onclick=()=>{R.deck='aw';R.cram=null;R.done=0;go('#/review')});
+  $$('[data-rm]',v).forEach(b=>b.onclick=async()=>{if(!confirm('Remove this set and its review history from your cards?'))return;await removeMany('cards',awHave(b.dataset.rm).map(c=>c.id));toast('Removed');updateBadge();vDeck(v)});
+  $$('[data-pv]',v).forEach(b=>b.onclick=()=>{const d=AW.find(x=>x.id===b.dataset.pv);
+    modal(`<h3>${esc(d.name)}</h3>${awCards(d).map(c=>`<div class="card small" style="margin-bottom:8px">${c.type==='cloze'?clozeHTML(c.text,0,false).replace(/<\/?p>/g,''):`<b>${esc(c.front)}</b><div class="muted">${esc(c.back)}</div>`}</div>`).join('')}<div class="row end"><button class="btn" data-close>Close</button></div>`)});
+}
+
+/* ================= Read aloud (TTS) for review ================= */
+const TTS={tok:0,lock:null,
+  ok:()=>'speechSynthesis'in window,
+  voices(){return this.ok()?speechSynthesis.getVoices().filter(v=>/^en/i.test(v.lang)):[]},
+  voice(){const vs=this.voices(),s=S.settings.ttsVoice;return vs.find(v=>v.voiceURI===s)||vs.find(v=>/en[-_]IN/i.test(v.lang))||vs.find(v=>/en[-_]GB/i.test(v.lang))||vs[0]||null},
+  clean(t){return plain(String(t||'').replace(/\{\{c\d+::([\s\S]*?)(?:::[\s\S]*?)?\}\}/g,'$1'))
+    .replace(/\bArts?\.\s*/g,m=>/s/.test(m[3])?'Articles ':'Article ').replace(/\s&\s/g,' and ').replace(/→/g,' leads to ').replace(/(\d)\s*[–-]\s*(\d)/g,'$1 to $2').replace(/±/g,' plus or minus ').replace(/₹\s?/g,'rupees ').replace(/·/g,', ').replace(/\[verify[^\]]*\]/gi,'').replace(/\s+/g,' ').trim()},
+  // Chrome cuts long utterances; speak sentence-sized chunks one after another.
+  say(text,done){if(!this.ok())return;const tok=++this.tok;speechSynthesis.cancel();
+    const parts=this.clean(text).match(/[^.!?;:]+[.!?;:]*\s*/g)||[];const chunks=[];
+    for(const p of parts){const l=chunks[chunks.length-1];if(l&&(l+p).length<180)chunks[chunks.length-1]=l+p;else chunks.push(p)}
+    const next=i=>{if(tok!==this.tok)return;if(i>=chunks.length){done&&done();return}
+      const u=new SpeechSynthesisUtterance(chunks[i]);const vo=this.voice();if(vo){u.voice=vo;u.lang=vo.lang}else u.lang='en-IN';u.rate=S.settings.ttsRate||1;
+      u.onend=()=>next(i+1);u.onerror=e=>{if(e.error!=='interrupted'&&e.error!=='canceled')next(i+1)};speechSynthesis.speak(u)};
+    if(!chunks.length){done&&done();return}next(0)},
+  stop(){this.tok++;clearTimeout(this.t);if(this.ok())speechSynthesis.cancel()},
+  async wake(on){try{if(on&&!this.lock&&navigator.wakeLock)this.lock=await navigator.wakeLock.request('screen');else if(!on&&this.lock){await this.lock.release();this.lock=null}}catch(e){}}
+};
+if(TTS.ok())speechSynthesis.onvoiceschanged=()=>{};
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&S.settings.tts&&location.hash.startsWith('#/review')){TTS.lock=null;TTS.wake(true)}});
+// What to say for the question side and the answer side of a card.
+function cardSpeech(c,reveal){
+  if(c.type==='cloze'){
+    if(!reveal)return String(c.text||'').replace(/\{\{c(\d+)::([\s\S]*?)(?:::([\s\S]*?))?\}\}/g,(m,n,a,h)=>+n===c.cloze?(h?` blank, hint: ${h}. `:' blank '):a);
+    const ans=[...String(c.text).matchAll(/\{\{c(\d+)::([\s\S]*?)(?:::[\s\S]*?)?\}\}/g)].filter(m=>+m[1]===c.cloze).map(m=>m[2]).join(', ');
+    return'Answer: '+ans+'. '+(c.back?c.back:'')}
+  return reveal?(c.back||''):(c.front||'')}
+function ttsModal(after){
+  const s=S.settings,vs=TTS.voices(),cur=TTS.voice();
+  modal(`<h3>Read aloud</h3>${TTS.ok()?'':'<p class="small" style="color:var(--again)">This browser has no speech support. Use Chrome.</p>'}
+    <div class="switch"><span>Read cards aloud in Review</span><input type="checkbox" id="t_on" ${s.tts?'checked':''}></div>
+    <label>Voice</label><select id="t_v">${vs.length?vs.map(v=>`<option value="${esc(v.voiceURI)}" ${cur&&v.voiceURI===cur.voiceURI?'selected':''}>${esc(v.name)} (${esc(v.lang)})</option>`).join(''):'<option value="">Default</option>'}</select>
+    <label>Speed: <b id="t_rv">${s.ttsRate||1}×</b></label><input type="range" id="t_r" min="0.6" max="1.6" step="0.1" value="${s.ttsRate||1}" style="width:100%">
+    <label>Hands-free: show the answer automatically after</label><select id="t_a">${[[0,'Off — I tap Show answer'],[3,'3 seconds'],[5,'5 seconds'],[8,'8 seconds'],[12,'12 seconds'],[20,'20 seconds']].map(([k,l])=>`<option value="${k}" ${+k===+(s.ttsAuto||0)?'selected':''}>${l}</option>`).join('')}</select>
+    <p class="small muted">Hands-free reads the question, waits for you to recall, then reads the answer. You still grade each card (keys 1–4 or tap). In Quick revision it moves to the next card by itself — good for listening on the go. The screen stays on while it runs.</p>
+    <div class="row end" style="margin-top:12px"><button class="btn" id="t_test">Test voice</button><button class="btn primary" id="t_save">Save</button></div>`,m=>{
+    $('#t_r',m).oninput=e=>{$('#t_rv',m).textContent=e.target.value+'×';S.settings.ttsRate=+e.target.value};
+    $('#t_v',m).onchange=e=>{S.settings.ttsVoice=e.target.value};
+    $('#t_test',m).onclick=()=>TTS.say('Article 21 protects life and personal liberty. Telangana was formed on 2 June 2014.');
+    $('#t_save',m).onclick=async()=>{Object.assign(S.settings,{tts:$('#t_on',m).checked,ttsVoice:$('#t_v',m).value,ttsRate:+$('#t_r',m).value,ttsAuto:+$('#t_a',m).value});
+      await saveSettings();TTS.stop();TTS.wake(S.settings.tts);closeModal();after&&after()}});
+}
+// Speak the current card; in hands-free mode reveal after the think time. onAnswerDone runs after the answer is read.
+function ttsCard(c,reveal,onReveal,onAnswerDone){
+  if(!S.settings.tts||!TTS.ok())return;TTS.wake(true);
+  TTS.say(cardSpeech(c,reveal),()=>{const a=+S.settings.ttsAuto||0;
+    if(!reveal&&a&&onReveal)TTS.t=setTimeout(onReveal,a*1000);
+    else if(reveal&&onAnswerDone)TTS.t=setTimeout(onAnswerDone,1500)})}
 
 /* ================= Syllabus (TSPSC Group-I Mains) ================= */
 // Each unit: [title, [points]]. Points are kept short so one copy = one prompt topic.
