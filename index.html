@@ -191,6 +191,8 @@ body.feedon #exitfocus{display:none!important}
 .idea .itext{font-size:15px;line-height:1.6}.idea .itext p{margin:4px 0}
 .idea .btn{padding:6px 10px;font-size:14px}
 .vc{text-align:center;font-size:13px;color:var(--muted);min-height:20px;margin-top:8px}
+.gs{float:right;margin:-12px -8px 6px 10px;display:inline-flex;align-items:center;gap:2px;border:1px solid var(--line);background:var(--bg);color:var(--muted);border-radius:16px;padding:4px 8px;cursor:pointer;font-size:12px;line-height:1}
+.gs:active{background:var(--soft)}.gs b{font-weight:700;color:var(--accent)}
 </style>
 </head>
 <body>
@@ -928,8 +930,19 @@ function nextCard(){
   if(revs.length)return notLast(revs);if(news.length)return notLast(news);
   return pool.filter(c=>(c.state===1||c.state===3)&&c.due<=now+20*MIN).sort((a,b)=>a.due-b.due)[0]||null;
 }
+// Search text for a card's question side: cloze blank removed (keeps the answer hidden), outline hint dropped.
+function cardQuery(c){const t=c.type==='cloze'?String(c.text||'').replace(/\{\{c(\d+)::([\s\S]*?)(?:::[\s\S]*?)?\}\}/g,(m,n,a)=>+n===c.cloze?' ':a)
+  :String(c.front||'').replace(/\n+_Recall the answer outline[^\n]*_/,'');return plain(t).slice(0,300)}
+const GS_BTN=c=>`<button class="gs" data-cid="${c.id}" aria-label="Copy and search on Google" title="Copy &amp; search on Google"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M20 20l-4.5-4.5"/></svg><b>G</b></button>`;
+// Capture phase so the tap doesn't also flip the card underneath.
+document.addEventListener('click',e=>{const b=e.target.closest('.gs');if(!b)return;e.stopPropagation();e.preventDefault();
+  const c=byId('cards',b.dataset.cid);if(!c)return;const q=cardQuery(c);
+  window.open('https://www.google.com/search?q='+encodeURIComponent(q),'_blank','noopener');
+  copyText(q).then(ok=>toast(ok?'Copied — searching Google':'Searching Google'))},true);
 function cardFace(c,reveal){
   const s=srcOf(c)||(c.sourceType==='deck'?{title:awName(c.sourceId)}:null);
+  return GS_BTN(c)+cardFaceBody(c,reveal,s)}
+function cardFaceBody(c,reveal,s){
   if(c.type==='cloze')return clozeHTML(c.text,c.cloze,reveal)+(reveal&&c.back?`<hr class="divider">${md(c.back)}`:'')+(s?`<div class="src">${esc((s.title||s.question||'').slice(0,90))}</div>`:'');
   return md(c.front)+(reveal?`<hr class="divider">${md(c.back)}`:'')+(s?`<div class="src">${esc((s.title||s.question||'').slice(0,90))}</div>`:'');
 }
