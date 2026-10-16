@@ -190,6 +190,7 @@ body.feedon #exitfocus{display:none!important}
 .sypt .iconbtn{flex:none}
 .idea .itext{font-size:15px;line-height:1.6}.idea .itext p{margin:4px 0}
 .idea .btn{padding:6px 10px;font-size:14px}
+.vc{text-align:center;font-size:13px;color:var(--muted);min-height:20px;margin-top:8px}
 </style>
 </head>
 <body>
@@ -261,7 +262,7 @@ const DB={db:null,
   getMeta(k){return this.req('meta','readonly',o=>o.get(k))},
   setMeta(k,v){return this.req('meta','readwrite',o=>{o.put(v,k)})}
 };
-const DEF={theme:'auto',fontSize:17,retention:0.9,newPerDay:15,reviewsPerDay:200,learnSteps:[1,10],relearnSteps:[10],maxIvl:365,examDate:'',rollover:4,minPerMark:1.2,fuzz:true,autoQaCards:true,lastBackup:0,extraNew:0,extraNewDay:'',tts:false,ttsRate:1,ttsVoice:'',ttsAuto:0};
+const DEF={theme:'auto',fontSize:17,retention:0.9,newPerDay:15,reviewsPerDay:200,learnSteps:[1,10],relearnSteps:[10],maxIvl:365,examDate:'',rollover:4,minPerMark:1.2,fuzz:true,autoQaCards:true,lastBackup:0,extraNew:0,extraNewDay:'',tts:false,ttsRate:1,ttsVoice:'',ttsAuto:0,voiceCmd:false};
 const S={notes:[],qas:[],cards:[],logs:[],attempts:[],ideas:[],settings:{...DEF}};
 const byId=(store,id)=>S[store].find(x=>x.id===id);
 async function upsert(store,obj,touch=true){if(touch)obj.updated=Date.now();const a=S[store];const i=a.findIndex(x=>x.id===obj.id);if(i>=0)a[i]=obj;else a.push(obj);await DB.put(store,obj);askPersist()}
@@ -954,12 +955,14 @@ function vReview(v){
   const c=R.card,tot=Math.max(1,R.done+k.newLeft+k.learn+k.review);
   v.innerHTML=head+`<div class="progress"><i style="width:${R.done/tot*100}%"></i></div>
   <article class="flash" id="face">${cardFace(c,false)}</article>
-  <div id="ctrl"><button class="btn primary block" id="show" style="margin-top:12px">Show answer</button></div>
-  <div class="rv-tools"><button id="undo" ${R.undo.length?'':'disabled'}>↶ Undo</button><button id="edit">Edit</button><button id="flag">${c.flagged?'⚑ Unflag':'⚐ Flag'}</button><button id="susp">Suspend</button>${srcOf(c)?'<button id="src">Open source</button>':''}<button id="tts">${S.settings.tts?'🔊 Read aloud: on':'🔈 Read aloud'}</button>${S.settings.tts?'<button id="say">↻ Repeat</button>':''}</div>`;
+  <div id="ctrl"><button class="btn primary block" id="show" style="margin-top:12px">Show answer</button></div><div id="vc" class="vc"></div>
+  <div class="rv-tools"><button id="undo" ${R.undo.length?'':'disabled'}>↶ Undo</button><button id="edit">Edit</button><button id="flag">${c.flagged?'⚑ Unflag':'⚐ Flag'}</button><button id="susp">Suspend</button>${srcOf(c)?'<button id="src">Open source</button>':''}<button id="tts">${S.settings.tts||S.settings.voiceCmd?'🔊 Voice mode: on':'🔈 Voice mode'}</button>${S.settings.tts?'<button id="say">↻ Repeat</button>':''}</div>`;
   const show=()=>{if(R.shown)return;R.shown=true;$('#face').innerHTML=cardFace(c,true);const now=Date.now();R.pv=preview(c,now);
     const names={1:'Again',2:'Hard',3:'Good',4:'Easy'};
     $('#ctrl').innerHTML=`<div class="grades">${[1,2,3,4].map(g=>`<button class="g${g}" data-g="${g}"><b>${names[g]}</b><small>${ivlLabel(R.pv[g],now)}</small></button>`).join('')}</div>`;
-    $$('#ctrl [data-g]').forEach(b=>b.onclick=()=>answer(+b.dataset.g,v));ttsCard(c,true)};
+    $$('#ctrl [data-g]').forEach(b=>b.onclick=()=>answer(+b.dataset.g,v));ttsCard(c,true,null,null,gradeCmds())};
+  const gradeCmds=()=>({repeat:()=>ttsCard(c,true,null,null,gradeCmds()),again:()=>answer(1,v),hard:()=>answer(2,v),good:()=>answer(3,v),easy:()=>answer(4,v)});
+  const askCmds=()=>({repeat:()=>ttsCard(c,false,show,null,askCmds()),show});
   $('#show').onclick=show;$('#face').onclick=()=>{if(!R.shown)show()};
   $('#deck').onchange=e=>{R.deck=e.target.value;R.undo=[];R.done=0;vReview(v)};
   $('#undo').onclick=()=>undo(v);
@@ -968,8 +971,8 @@ function vReview(v){
   $('#susp').onclick=async()=>{c.suspended=true;await upsert('cards',c,false);toast('Suspended');vReview(v);updateBadge()};
   if($('#src'))$('#src').onclick=()=>go(`#/${c.sourceType}/${c.sourceId}`);
   $('#tts').onclick=()=>ttsModal(()=>vReviewKeep(v));
-  if($('#say'))$('#say').onclick=()=>{clearTimeout(TTS.t);ttsCard(c,R.shown,R.shown?null:show)};
-  R.show=show;R.say=()=>$('#say')&&$('#say').click();ttsCard(c,false,show);
+  if($('#say'))$('#say').onclick=()=>R.shown?ttsCard(c,true,null,null,gradeCmds()):ttsCard(c,false,show,null,askCmds());
+  R.show=show;R.say=()=>$('#say')&&$('#say').click();ttsCard(c,false,show,null,askCmds());
 }
 // Re-render the same card (e.g. after changing read-aloud settings) without skipping it.
 function vReviewKeep(v){if(R.card&&!R.cram)R.forced=R.card;vReview(v)}
@@ -991,14 +994,17 @@ function vCram(v){
   const C=R.cram;if(!C.q.length){v.innerHTML=`<div class="empty">No studied cards in this deck yet.</div><button class="btn block" id="cx">Back</button>`;$('#cx').onclick=()=>{R.cram=null;vReview(v)};return}
   if(C.i>=C.q.length){v.innerHTML=`<div class="card empty" style="color:var(--ink)"><h3>Quick revision done</h3><p class="small muted">Recalled ${C.ok} of ${C.q.length} on first try. Schedules were not changed.</p></div><button class="btn block" id="cx">Back to review</button>`;$('#cx').onclick=()=>{R.cram=null;vReview(v)};return}
   const c=byId('cards',C.q[C.i]);if(!c){C.i++;return vCram(v)}
-  v.innerHTML=`<div class="row" style="margin-bottom:12px"><b class="small">Quick revision</b><span class="spacer"></span><span class="small muted">${C.i+1} / ${C.q.length}</span><button class="btn ghost" id="ctts">${S.settings.tts?'🔊':'🔈'}</button><button class="btn ghost" id="cx">End</button></div>
-  <article class="flash" id="face">${cardFace(c,false)}</article><div id="ctrl"><button class="btn primary block" id="show" style="margin-top:12px">Show answer</button></div>`;
+  v.innerHTML=`<div class="row" style="margin-bottom:12px"><b class="small">Quick revision</b><span class="spacer"></span><span class="small muted">${C.i+1} / ${C.q.length}</span><button class="btn ghost" id="ctts">${S.settings.tts||S.settings.voiceCmd?'🔊':'🔈'}</button><button class="btn ghost" id="cx">End</button></div>
+  <article class="flash" id="face">${cardFace(c,false)}</article><div id="ctrl"><button class="btn primary block" id="show" style="margin-top:12px">Show answer</button></div><div id="vc" class="vc"></div>`;
   $('#cx').onclick=()=>{R.cram=null;vReview(v)};$('#ctts').onclick=()=>ttsModal(()=>vCram(v));
   const show=()=>{clearTimeout(TTS.t);$('#face').innerHTML=cardFace(c,true);$('#ctrl').innerHTML=`<div class="grades" style="grid-template-columns:1fr 1fr"><button class="g1" id="miss"><b>Missed</b><small>see again</small></button><button class="g3" id="got"><b>Got it</b><small>next</small></button></div>`;
     $('#miss').onclick=()=>{C.q.push(c.id);C.q.splice(C.i,1);C.first=C.first||{};C.first[c.id]=1;vCram(v)};
     $('#got').onclick=()=>{if(!(C.first&&C.first[c.id]))C.ok++;C.i++;vCram(v)};R.show=null;
-    ttsCard(c,true,null,+S.settings.ttsAuto?()=>{C.i++;vCram(v)}:null)};
-  $('#show').onclick=show;$('#face').onclick=show;R.show=show;TTS.stop();ttsCard(c,false,show);
+    const next=+S.settings.ttsAuto?()=>{C.i++;vCram(v)}:null;
+    const cmds=()=>({repeat:()=>ttsCard(c,true,null,next,cmds()),got:()=>$('#got').click(),miss:()=>$('#miss').click()});
+    ttsCard(c,true,null,next,cmds())};
+  const ask=()=>({repeat:()=>ttsCard(c,false,show,null,ask()),show});
+  $('#show').onclick=show;$('#face').onclick=show;R.show=show;TTS.stop();ttsCard(c,false,show,null,ask());
 }
 document.addEventListener('keydown',e=>{if(!location.hash.startsWith('#/review')||$('#modal').classList.contains('on')||/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;
   if(R.cram){if((e.key===' '||e.key==='Enter')&&$('#show')){e.preventDefault();$('#show').click()}else if(e.key==='1'&&$('#miss'))$('#miss').click();else if((e.key==='2'||e.key===' ')&&$('#got')){e.preventDefault();$('#got').click()}return}
@@ -1442,11 +1448,11 @@ const TTS={tok:0,lock:null,
       const u=new SpeechSynthesisUtterance(chunks[i]);const vo=this.voice();if(vo){u.voice=vo;u.lang=vo.lang}else u.lang='en-IN';u.rate=S.settings.ttsRate||1;
       u.onend=()=>next(i+1);u.onerror=e=>{if(e.error!=='interrupted'&&e.error!=='canceled')next(i+1)};speechSynthesis.speak(u)};
     if(!chunks.length){done&&done();return}next(0)},
-  stop(){this.tok++;clearTimeout(this.t);if(this.ok())speechSynthesis.cancel()},
+  stop(){this.tok++;clearTimeout(this.t);if(this.ok())speechSynthesis.cancel();VC.stop()},
   async wake(on){try{if(on&&!this.lock&&navigator.wakeLock)this.lock=await navigator.wakeLock.request('screen');else if(!on&&this.lock){await this.lock.release();this.lock=null}}catch(e){}}
 };
 if(TTS.ok())speechSynthesis.onvoiceschanged=()=>{};
-document.addEventListener('visibilitychange',()=>{if(!document.hidden&&S.settings.tts&&location.hash.startsWith('#/review')){TTS.lock=null;TTS.wake(true)}});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&(S.settings.tts||S.settings.voiceCmd)&&location.hash.startsWith('#/review')){TTS.lock=null;TTS.wake(true)}});
 // What to say for the question side and the answer side of a card.
 function cardSpeech(c,reveal){
   if(c.type==='cloze'){
@@ -1456,8 +1462,10 @@ function cardSpeech(c,reveal){
   return reveal?(c.back||''):(c.front||'')}
 function ttsModal(after){
   const s=S.settings,vs=TTS.voices(),cur=TTS.voice();
-  modal(`<h3>Read aloud</h3>${TTS.ok()?'':'<p class="small" style="color:var(--again)">This browser has no speech support. Use Chrome.</p>'}
+  modal(`<h3>Voice mode</h3>${TTS.ok()?'':'<p class="small" style="color:var(--again)">This browser has no speech support. Use Chrome.</p>'}
     <div class="switch"><span>Read cards aloud in Review</span><input type="checkbox" id="t_on" ${s.tts?'checked':''}></div>
+    <div class="switch"><span>Rate by speaking (voice commands)</span><input type="checkbox" id="t_vc" ${s.voiceCmd?'checked':''} ${VC.ok()?'':'disabled'}></div>
+    <p class="small muted" style="margin:6px 0 0">${VC.ok()?'After the answer, say <b>Again</b>, <b>Hard</b>, <b>Good</b> or <b>Easy</b> (or 1–4). Before it, say <b>Show</b>; say <b>Repeat</b> to hear the card again. In Quick revision say <b>Got it</b> or <b>Missed</b>. Needs internet and microphone permission; anything unclear is ignored, never guessed.':'Voice commands need Chrome (this browser has no speech recognition).'}</p>
     <label>Voice</label><select id="t_v">${vs.length?vs.map(v=>`<option value="${esc(v.voiceURI)}" ${cur&&v.voiceURI===cur.voiceURI?'selected':''}>${esc(v.name)} (${esc(v.lang)})</option>`).join(''):'<option value="">Default</option>'}</select>
     <label>Speed: <b id="t_rv">${s.ttsRate||1}×</b></label><input type="range" id="t_r" min="0.6" max="1.6" step="0.1" value="${s.ttsRate||1}" style="width:100%">
     <label>Hands-free: show the answer automatically after</label><select id="t_a">${[[0,'Off — I tap Show answer'],[3,'3 seconds'],[5,'5 seconds'],[8,'8 seconds'],[12,'12 seconds'],[20,'20 seconds']].map(([k,l])=>`<option value="${k}" ${+k===+(s.ttsAuto||0)?'selected':''}>${l}</option>`).join('')}</select>
@@ -1466,15 +1474,59 @@ function ttsModal(after){
     $('#t_r',m).oninput=e=>{$('#t_rv',m).textContent=e.target.value+'×';S.settings.ttsRate=+e.target.value};
     $('#t_v',m).onchange=e=>{S.settings.ttsVoice=e.target.value};
     $('#t_test',m).onclick=()=>TTS.say('Article 21 protects life and personal liberty. Telangana was formed on 2 June 2014.');
-    $('#t_save',m).onclick=async()=>{Object.assign(S.settings,{tts:$('#t_on',m).checked,ttsVoice:$('#t_v',m).value,ttsRate:+$('#t_r',m).value,ttsAuto:+$('#t_a',m).value});
-      await saveSettings();TTS.stop();TTS.wake(S.settings.tts);closeModal();after&&after()}});
+    $('#t_save',m).onclick=async()=>{Object.assign(S.settings,{tts:$('#t_on',m).checked,voiceCmd:$('#t_vc',m).checked,ttsVoice:$('#t_v',m).value,ttsRate:+$('#t_r',m).value,ttsAuto:+$('#t_a',m).value});
+      await saveSettings();TTS.stop();TTS.wake(S.settings.tts||S.settings.voiceCmd);closeModal();after&&after()}});
 }
 // Speak the current card; in hands-free mode reveal after the think time. onAnswerDone runs after the answer is read.
-function ttsCard(c,reveal,onReveal,onAnswerDone){
-  if(!S.settings.tts||!TTS.ok())return;TTS.wake(true);
-  TTS.say(cardSpeech(c,reveal),()=>{const a=+S.settings.ttsAuto||0;
-    if(!reveal&&a&&onReveal)TTS.t=setTimeout(onReveal,a*1000);
-    else if(reveal&&onAnswerDone)TTS.t=setTimeout(onAnswerDone,1500)})}
+// cmds: {show,repeat,again,hard,good,easy,got,miss} handlers to listen for once speaking is done.
+function ttsCard(c,reveal,onReveal,onAnswerDone,cmds){
+  const st=S.settings,talk=st.tts&&TTS.ok(),hear=st.voiceCmd&&VC.ok()&&cmds;
+  VC.stop();clearTimeout(TTS.t);if(!talk&&!hear)return;TTS.wake(true);
+  if(cmds&&!talk)delete cmds.repeat;
+  const after=()=>{const a=+st.ttsAuto||0;
+    if(!reveal&&a&&onReveal&&talk)TTS.t=setTimeout(onReveal,a*1000);
+    if(hear)VC.listen(cmds,reveal?onAnswerDone:null);
+    else if(reveal&&onAnswerDone&&talk)TTS.t=setTimeout(onAnswerDone,1500)};
+  if(talk)TTS.say(cardSpeech(c,reveal),after);else after()}
+
+/* ================= Voice commands (speech recognition) ================= */
+const VC={tok:0,rec:null,
+  Ctor:()=>window.SpeechRecognition||window.webkitSpeechRecognition,
+  ok(){return!!this.Ctor()},
+  LABEL:{show:'Show',repeat:'Repeat',again:'Again',hard:'Hard',good:'Good',easy:'Easy',got:'Got it',miss:'Missed'},
+  // Checked in this order; EXACT words only count as the whole utterance (easily misheard inside sentences).
+  WORDS:{repeat:['repeat','say again','read again','once more'],
+    show:['show','show answer','answer','reveal','flip','open'],
+    again:['again','wrong','forgot','forget','no','fail','one','1'],
+    hard:['hard','difficult','tough','two','2'],
+    good:['good','ok','okay','correct','right','yes','three','3'],
+    easy:['easy','perfect','very easy','four','4'],
+    miss:['missed','miss','again','wrong','no','forgot'],
+    got:['got it','got','yes','good','correct','right','easy','ok','okay']},
+  EXACT:{again:['won'],hard:['to','too'],good:['tree','free'],easy:['for','fore']},
+  match(t,cmds){t=t.toLowerCase().replace(/[.,!?]/g,' ').replace(/\s+/g,' ').trim();
+    for(const k of Object.keys(this.WORDS)){if(!cmds[k])continue;
+      if((this.EXACT[k]||[]).includes(t))return k;
+      if(this.WORDS[k].some(w=>(' '+t+' ').includes(' '+w+' ')))return k}
+    return null},
+  ui(t){const el=$('#vc');if(el)el.textContent=t},
+  stop(){this.tok++;clearTimeout(this.t);if(this.rec){const r=this.rec;this.rec=null;try{r.abort()}catch(e){}}this.ui('')},
+  // Listen until a command is heard or ms passes; the browser stops after each silence, so restart until then.
+  listen(cmds,onTimeout,ms=15000){this.stop();const tok=this.tok,end=Date.now()+ms,C=this.Ctor();
+    const hint='🎤 Say '+Object.keys(cmds).map(k=>this.LABEL[k]).join(' · ');
+    const start=()=>{if(tok!==this.tok)return;
+      if(Date.now()>end){this.rec=null;this.ui('🎤 Not heard — tap to continue');onTimeout&&onTimeout();return}
+      const r=new C();this.rec=r;r.lang='en-IN';r.interimResults=true;r.maxAlternatives=5;r.continuous=false;let done=false;
+      r.onresult=e=>{if(tok!==this.tok||done)return;const alts=[];for(const res of e.results)for(const a of res)alts.push(a.transcript);
+        for(const a of alts){const k=this.match(a,cmds);if(k){done=true;this.stop();this.ui('🎤 '+this.LABEL[k]);navigator.vibrate?.(20);cmds[k]();return}}
+        if(alts[0])this.ui(hint+' — heard “'+alts[0].trim()+'”')};
+      r.onerror=e=>{if(tok!==this.tok)return;
+        if(/not-allowed|service-not-allowed|audio-capture/.test(e.error)){this.tok++;this.rec=null;this.ui(e.error==='audio-capture'?'🎤 No microphone found':'🎤 Microphone blocked — allow it for this site')}
+        else if(e.error==='network'){this.tok++;this.rec=null;this.ui('🎤 Voice needs internet — tap to rate')}};
+      r.onend=()=>{if(tok!==this.tok||done)return;this.t=setTimeout(start,150)};
+      try{r.start();this.ui(hint)}catch(e){this.t=setTimeout(start,400)}};
+    start()}
+};
 
 /* ================= Syllabus (TSPSC Group-I Mains) ================= */
 // Each unit: [title, [points]]. Points are kept short so one copy = one prompt topic.
