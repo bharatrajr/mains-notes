@@ -1514,18 +1514,35 @@ const TTS={tok:0,lock:null,
   voice(){const vs=this.voices(),s=S.settings.ttsVoice;return vs.find(v=>v.voiceURI===s)||vs.find(v=>/en[-_]IN/i.test(v.lang))||vs.find(v=>/en[-_]GB/i.test(v.lang))||vs[0]||null},
   clean(t){return plain(String(t||'').replace(/\{\{c\d+::([\s\S]*?)(?:::[\s\S]*?)?\}\}/g,'$1'))
     .replace(/\bArts?\.\s*/g,m=>/s/.test(m[3])?'Articles ':'Article ').replace(/\s&\s/g,' and ').replace(/→/g,' leads to ').replace(/(\d)\s*[–-]\s*(\d)/g,'$1 to $2').replace(/±/g,' plus or minus ').replace(/₹\s?/g,'rupees ').replace(/·/g,', ').replace(/\[verify[^\]]*\]/gi,'').replace(/\s+/g,' ').trim()},
-  // Chrome cuts long utterances; speak sentence-sized chunks one after another.
-  say(text,done){if(!this.ok())return;const tok=++this.tok;speechSynthesis.cancel();
+  errText(e){return e==='not-allowed'?'Android blocked speech that started by itself. Tap the 🔈 button to start it.'
+    :/voice|language|synthesis/.test(e)?'No working voice. In Android Settings → Text-to-speech output, choose "Speech Services by Google" and download English (India).'
+    :e==='audio-busy'||e==='audio-hardware'?'Another app is using the speaker. Close it and try again.':'Speech failed ('+e+').'},
+  // Chrome cuts long utterances, so speak sentence-sized chunks one after another.
+  // Android Chrome quirks handled here: speak() straight after cancel() is dropped, so wait a moment;
+  // an utterance that gets garbage-collected never fires onend, so keep a reference and run a watchdog;
+  // a selected voice that isn't installed fails, so retry with the default voice; the engine can stay paused after backgrounding, so resume().
+  say(text,done){if(!this.ok())return;const tok=++this.tok,sy=speechSynthesis,busy=sy.speaking||sy.pending;if(busy)sy.cancel();clearTimeout(this.dog);this.lastErr='';
     const parts=this.clean(text).match(/[^.!?;:]+[.!?;:]*\s*/g)||[];const chunks=[];
     for(const p of parts){const l=chunks[chunks.length-1];if(l&&(l+p).length<180)chunks[chunks.length-1]=l+p;else chunks.push(p)}
-    const next=i=>{if(tok!==this.tok)return;if(i>=chunks.length){done&&done();return}
-      const u=new SpeechSynthesisUtterance(chunks[i]);const vo=this.voice();if(vo){u.voice=vo;u.lang=vo.lang}else u.lang='en-IN';u.rate=S.settings.ttsRate||1;
-      u.onend=()=>next(i+1);u.onerror=e=>{if(e.error!=='interrupted'&&e.error!=='canceled')next(i+1)};speechSynthesis.speak(u)};
-    if(!chunks.length){done&&done();return}next(0)},
-  stop(){this.tok++;clearTimeout(this.t);if(this.ok())speechSynthesis.cancel();VC.stop()},
+    let plainVoice=false,heard=false;
+    const next=i=>{if(tok!==this.tok)return;clearTimeout(this.dog);if(i>=chunks.length){this.u=null;done&&done();return}
+      const rate=S.settings.ttsRate||1,u=new SpeechSynthesisUtterance(chunks[i]),vo=plainVoice?null:this.voice();
+      u.lang='en-IN';if(vo)try{u.voice=vo;u.lang=vo.lang}catch(e){plainVoice=true}u.rate=rate;
+      let moved=false;const adv=()=>{if(moved||tok!==this.tok)return;moved=true;next(i+1)};
+      u.onstart=()=>{heard=true};u.onend=adv;
+      u.onerror=e=>{if(tok!==this.tok||e.error==='interrupted'||e.error==='canceled')return;
+        if(vo&&!plainVoice&&e.error!=='not-allowed'){plainVoice=true;moved=true;next(i);return}
+        this.lastErr=e.error;if(!heard)toast(this.errText(e.error),6000);adv()};
+      this.u=u;
+      const chk=()=>{if(tok!==this.tok||moved)return;if(sy.speaking||sy.pending)this.dog=setTimeout(chk,800);else adv()};
+      this.dog=setTimeout(chk,1500);
+      try{sy.resume()}catch(e){}sy.speak(u)};
+    if(!chunks.length){done&&done();return}
+    if(busy)this.dog=setTimeout(()=>next(0),250);else next(0)},
+  stop(){this.tok++;clearTimeout(this.t);clearTimeout(this.dog);this.u=null;if(this.ok())speechSynthesis.cancel();VC.stop()},
   async wake(on){try{if(on&&!this.lock&&navigator.wakeLock)this.lock=await navigator.wakeLock.request('screen');else if(!on&&this.lock){await this.lock.release();this.lock=null}}catch(e){}}
 };
-if(TTS.ok())speechSynthesis.onvoiceschanged=()=>{};
+if(TTS.ok()){speechSynthesis.getVoices();speechSynthesis.onvoiceschanged=()=>{const sel=$('#t_v');if(!sel||sel.options.length>1)return;const vs=TTS.voices(),cur=TTS.voice();if(vs.length)sel.innerHTML=vs.map(v=>`<option value="${esc(v.voiceURI)}" ${cur&&v.voiceURI===cur.voiceURI?'selected':''}>${esc(v.name)} (${esc(v.lang)})</option>`).join('')}}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&(S.settings.tts||S.settings.voiceCmd)&&location.hash.startsWith('#/review')||S.settings.feedTts&&location.hash.startsWith('#/feed')){TTS.lock=null;TTS.wake(true)}});
 // Visible text of rendered markdown, with list items and lines turned into sentences.
 const elSpeech=el=>el?el.innerText.split(/\n+/).map(t=>t.trim()).filter(Boolean).map(t=>t===t.toUpperCase()?t[0]+t.slice(1).toLowerCase():t).map(t=>/[.!?;:]$/.test(t)?t:t+'.').join(' '):'';
@@ -1546,10 +1563,13 @@ function ttsModal(after,ctx){
     <label>Speed: <b id="t_rv">${s.ttsRate||1}×</b></label><input type="range" id="t_r" min="0.6" max="1.6" step="0.1" value="${s.ttsRate||1}" style="width:100%">
     <label>Hands-free: show the answer automatically after</label><select id="t_a">${[[0,'Off — I tap Show answer'],[3,'3 seconds'],[5,'5 seconds'],[8,'8 seconds'],[12,'12 seconds'],[20,'20 seconds']].map(([k,l])=>`<option value="${k}" ${+k===+(s.ttsAuto||0)?'selected':''}>${l}</option>`).join('')}</select>
     <p class="small muted">Hands-free reads the question, waits for you to recall, then reads the answer. You still grade each card (keys 1–4 or tap). In Quick revision it moves to the next card by itself, and in the feed it reads each slide and swipes on by itself — good for listening on the go. The screen stays on while it runs.</p>
-    <div class="row end" style="margin-top:12px"><button class="btn" id="t_test">Test voice</button><button class="btn primary" id="t_save">Save</button></div>`,m=>{
+    <p class="small muted" id="t_res" style="margin:10px 0 0;min-height:18px"></p><div class="row end" style="margin-top:8px"><button class="btn" id="t_test">Test voice</button><button class="btn primary" id="t_save">Save</button></div>`,m=>{
     $('#t_r',m).oninput=e=>{$('#t_rv',m).textContent=e.target.value+'×';S.settings.ttsRate=+e.target.value};
     $('#t_v',m).onchange=e=>{S.settings.ttsVoice=e.target.value};
-    $('#t_test',m).onclick=()=>TTS.say('Article 21 protects life and personal liberty. Telangana was formed on 2 June 2014.');
+    $('#t_test',m).onclick=()=>{const r=$('#t_res',m);if(!TTS.ok()){r.textContent='✗ This browser has no speech support. Open the app in Chrome.';return}
+      const n=speechSynthesis.getVoices().length,en=TTS.voices().length;r.textContent='Speaking… ('+en+' English voices of '+n+')';
+      TTS.say('Article 21 protects life and personal liberty. Telangana was formed on 2 June 2014.',()=>{
+        r.innerHTML=TTS.lastErr?'✗ '+esc(TTS.errText(TTS.lastErr)):(n?'✓ Finished. If you heard nothing, turn up <b>media volume</b> and check silent mode.':'✗ The phone reports no voices. In Android Settings → Text-to-speech output, choose "Speech Services by Google" and download English (India), then reopen the app.')})};
     $('#t_save',m).onclick=async()=>{Object.assign(S.settings,{[key]:$('#t_on',m).checked,voiceCmd:$('#t_vc',m).checked,ttsVoice:$('#t_v',m).value,ttsRate:+$('#t_r',m).value,ttsAuto:+$('#t_a',m).value});
       await saveSettings();TTS.stop();TTS.wake(fd?S.settings.feedTts:S.settings.tts||S.settings.voiceCmd);closeModal();after&&after()}});
 }
