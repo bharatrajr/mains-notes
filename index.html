@@ -215,7 +215,8 @@ body.storyon main{padding-top:0}
 .theend{text-align:center;font-family:Georgia,serif;color:var(--gold);letter-spacing:.3em;font-size:13px;margin:34px 0 16px}
 .kit{border:2px solid var(--gold);border-radius:16px;padding:16px;margin:0 0 12px;background:var(--surface);scroll-margin-top:70px}
 .kit .q{font-size:18px;font-weight:600;line-height:1.4;margin-top:4px}
-.genres{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+.genres{display:grid;grid-template-rows:repeat(2,auto);grid-auto-flow:column;grid-auto-columns:calc((100% - 16px)/3.3);gap:8px;margin-bottom:10px;overflow-x:auto;scrollbar-width:none;scroll-snap-type:x proximity;padding-bottom:2px}
+.genres button{scroll-snap-align:start}
 .genres button{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:10px 4px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:12px;color:var(--ink);line-height:1.2}
 .genres button b{font-size:24px;font-weight:400}
 .genres button.on{border-color:var(--gold);box-shadow:inset 0 0 0 1px var(--gold);background:var(--soft)}
@@ -228,6 +229,8 @@ body.storyon main{padding-top:0}
 .book .pr{height:3px;background:rgba(255,255,255,.3);border-radius:2px;margin-top:8px}.book .pr i{display:block;height:100%;background:#fff;border-radius:2px}
 .rq{border-bottom:1px solid var(--line);padding:11px 0;cursor:pointer}.rq:last-child{border-bottom:0}.rq .a{display:none;margin-top:6px;color:var(--good);font-weight:500}.rq.on .a{display:block}
 .rq:not(.on)::after{content:'tap to reveal';display:block;font-size:11px;color:var(--muted);margin-top:2px}
+.vf{font-family:system-ui,sans-serif;font-size:.7em;font-weight:600;color:var(--hard);background:color-mix(in srgb,var(--hard) 14%,transparent);border-radius:5px;padding:0 4px;vertical-align:1px}
+.stbadge{display:inline-block;margin-top:12px;font-size:11px;letter-spacing:.04em;background:rgba(255,255,255,.18);border-radius:20px;padding:3px 10px}
 .storyhook{display:flex;gap:12px;align-items:center;text-decoration:none;color:var(--ink);border-color:var(--gold)}
 @media (prefers-reduced-motion:reduce){.cursor{animation:none}}
 </style>
@@ -1756,7 +1759,7 @@ const AI={provider:'claude',claudeKey:'',openaiKey:'',claudeModel:'claude-opus-5
 try{Object.assign(AI,JSON.parse(localStorage.getItem('mains-ai')||'{}'))}catch(e){}
 const saveAI=()=>{try{localStorage.setItem('mains-ai',JSON.stringify(AI))}catch(e){}};
 const aiReady=()=>!!(AI.provider==='openai'?AI.openaiKey:AI.claudeKey);
-const ST={genre:'thriller',src:'syl',paper:'',custom:'',len:'regular',lang:'en',fs:2};
+const ST={genre:'thriller',src:'syl',paper:'',unit:'',point:'',custom:'',len:'regular',lang:'en',fs:2,web:true};
 try{Object.assign(ST,JSON.parse(localStorage.getItem('mains-st')||'{}'))}catch(e){}
 const saveST=()=>{try{localStorage.setItem('mains-st',JSON.stringify(ST))}catch(e){}};
 const GENRES=[
@@ -1765,8 +1768,19 @@ const GENRES=[
   ['ias','🏛️','Collector\'s diary','A young IAS officer solving real problems in a Telangana district','#24406e','#2e7a4e'],
   ['court','⚖️','Courtroom drama','Two lawyers argue it out, the bench decides','#3d2c2e','#a4651c'],
   ['village','🌾','Village saga','One Telangana family living through it across generations','#2f5a36','#b5651d'],
-  ['comic','😂','Comedy','Laugh-out-loud, but every joke carries a fact','#c0392b','#e67e22']];
+  ['comic','😂','Comedy','Laugh-out-loud, but every joke carries a fact','#c0392b','#e67e22'],
+  ['spy','🕶️','Spy mission','An undercover agent races the clock, and the intel is the syllabus','#111827','#374151'],
+  ['ghost','👻','Ghost story','A spirit who lived through history tells what really happened','#1b1b2f','#4a3f6b'],
+  ['scifi','🚀','Sci-fi 2047','Students in Viksit Bharat 2047 look back at how we got here','#0b3d91','#00a6a6'],
+  ['love','💌','Love story','Two people, a slow romance, and the topic shapes their lives','#9d174d','#e11d74'],
+  ['movie','🎬','Tollywood script','A blockbuster screenplay with scenes, dialogues and an interval twist','#7c2d12','#c2410c'],
+  ['talk','🎙️','Talk show','A TV anchor interviews experts and real stakeholders in a heated debate','#14532d','#65a30d'],
+  ['folk','🪔','Grandma\'s tale','Ammamma tells it under the neem tree, folk-tale style','#713f12','#ca8a04'],
+  ['news','📰','Breaking news','A reporter chases the story live, from ground reports to the editor\'s desk','#1e3a5f','#b91c1c'],
+  ['quest','🗺️','Treasure hunt','Friends follow clues across Telangana; each clue is a fact','#064e3b','#a16207'],
+  ['letters','✉️','Letters & diaries','Told through letters, diary entries and telegrams of the time','#57534e','#a8a29e']];
 const genreOf=id=>GENRES.find(g=>g[0]===id)||GENRES[0];
+const SURPRISE=['random','🎲','Surprise me','A different story type every time','#444','#888'];
 const LENS={quick:[700,'Quick'],regular:[1200,'Regular'],long:[2000,'Long']};
 const GEN={};// story id -> {text, ctrl, on}
 
@@ -1776,21 +1790,28 @@ async function sseRead(res,on){const rd=res.body.getReader(),dec=new TextDecoder
       if(!line.startsWith('data:'))continue;const d=line.slice(5).trim();if(!d||d==='[DONE]')continue;let j;try{j=JSON.parse(d)}catch(e){continue}on(j)}}}
 async function apiErr(r){let m='';try{const j=await r.json();m=j.error?.message||''}catch(e){}
   return(r.status===401?'The API key was rejected. ':r.status===429?'Rate limit or no credit left. ':r.status===404?'Model not found. ':'')+(m||'HTTP '+r.status)}
-async function aiStream(system,user,onText,signal){
+// opts.web: let Claude check facts with web search first. opts.onStatus(text): progress line for the reader.
+async function aiStream(system,user,onText,signal,opts={}){
   if(AI.provider==='openai'){
     const r=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',signal,headers:{'content-type':'application/json',authorization:'Bearer '+AI.openaiKey},
       body:JSON.stringify({model:AI.openaiModel||'gpt-5-mini',stream:true,messages:[{role:'system',content:system},{role:'user',content:user}]})});
     if(!r.ok)throw new Error(await apiErr(r));
     await sseRead(r,j=>{if(j.error)throw new Error(j.error.message||'Stream error');const t=j.choices?.[0]?.delta?.content;if(t)onText(t)});return}
-  const model=AI.claudeModel||'claude-opus-5-5',fb=!/haiku/.test(model);
+  const model=AI.claudeModel||'claude-opus-5-5';let fb=!/haiku/.test(model);
+  let web=!!opts.web&&!/haiku/.test(model);
   const send=withFb=>fetch('https://api.anthropic.com/v1/messages',{method:'POST',signal,
     headers:{'content-type':'application/json','x-api-key':AI.claudeKey,'anthropic-version':'2026-10-21','anthropic-dangerous-direct-browser-access':'true',...(withFb?{'anthropic-beta':'server-side-fallback-2026-07-01'}:{})},
-    body:JSON.stringify({model,max_tokens:16000,stream:true,output_config:{effort:'low'},system,messages:[{role:'user',content:user}],...(withFb?{fallbacks:'default'}:{})})});
+    body:JSON.stringify({model,max_tokens:16000,stream:true,output_config:{effort:'medium'},system,messages:[{role:'user',content:user}],
+      ...(web?{tools:[{type:'web_search_20260209',name:'web_search',max_uses:4}]}:{}),...(withFb?{fallbacks:'default'}:{})})});
   let r=await send(fb);
-  if(!r.ok&&fb&&r.status===400){const t=await r.clone().text();if(/fallback|beta/i.test(t))r=await send(false)}
+  if(!r.ok&&r.status===400){const t=await r.clone().text();
+    if(fb&&/fallback|beta/i.test(t)){fb=false;r=await send(false)}
+    if(!r.ok&&web&&/web_search|tool/i.test(await r.clone().text())){web=false;r=await send(fb)}}
   if(!r.ok)throw new Error(await apiErr(r));
   let stop='';
-  await sseRead(r,j=>{if(j.type==='content_block_delta'&&j.delta?.type==='text_delta')onText(j.delta.text);
+  await sseRead(r,j=>{if(j.type==='content_block_start'&&j.content_block?.type==='server_tool_use')opts.onStatus?.('🔎 Checking facts on the web…');
+    else if(j.type==='content_block_start'&&j.content_block?.type==='web_search_tool_result')opts.onStatus?.('📚 Reading sources…');
+    else if(j.type==='content_block_delta'&&j.delta?.type==='text_delta')onText(j.delta.text);
     else if(j.type==='message_delta'&&j.delta?.stop_reason)stop=j.delta.stop_reason;
     else if(j.type==='error')throw new Error(j.error?.message||'Stream error')});
   if(stop==='refusal')throw new Error('The model declined this topic. Try another topic or genre.');
@@ -1800,8 +1821,15 @@ function storyPrompt(o){
   const g=genreOf(o.genre),words=(LENS[o.len]||LENS.regular)[0];
   const system=`You are a gifted storyteller and a TSPSC Group-I Mains mentor. You write short fiction so gripping that aspirants read it for pleasure, and finish it able to write a full Mains answer on the topic.
 
+Accuracy comes first. The reader will write these facts in a government exam, so one wrong date or number costs real marks.
+- The characters, dialogue and plot are fiction. Every real-world fact is not: historical events, dates, real people, places, articles, acts, amendments, judgments, schemes, committees, commissions and statistics must be real and correct as stated.
+- Never invent a fact, number, date, quote, scheme, committee, report or court case, and never put invented words in a real person's mouth as if they were said. Real people may appear only doing what they actually did.
+- Prefer fewer, well-established facts over many shaky ones. If you are not certain of a figure or date, leave it out, or keep it and add [verify] right after it.
+- For statistics, use official sources (Census 2011, Economic Survey of India, Telangana Socio-Economic Outlook, NFHS, RBI) and say the source and year in the text.
+- Time travel, sci-fi and fantasy framings are only the wrapper: the history and facts inside must stay accurate, and real outcomes must not be changed.
+- Weave facts into dialogue, clues and scenes, never as a lecture.
+${o.web?'- Before writing anything, use web search to confirm the key dates, figures and provisions for this topic (prefer government, PIB, PRS, Telangana government and reputed newspaper sources). Do all searching first, then output only the story in the format below, with no text before the title.\n':''}
 How to write:
-- Every fact, date, article, act, scheme, committee and number must be accurate and exam-relevant. Weave them into dialogue, clues and scenes, never as a lecture. If you are unsure of a number, add [verify] after it.
 - Indian and Telangana settings, names and texture. Vivid scenes, real stakes, a twist, and end every chapter on a hook.
 - Let the plot walk naturally through what a model answer needs: background, causes, key provisions or features, impact, criticism, the Telangana angle, and the way forward.
 - Plain markdown. Use **bold** for the 6-10 terms an examiner looks for.
@@ -1826,6 +1854,9 @@ HOOKS:
 RECALL:
 Q: <short question> | A: <short answer>
 (exactly 5 lines)
+FACTS:
+- <one real fact used in the story, with its year or source>
+(list every real fact the story relies on, 8-15 lines; nothing fictional here)
 CAST: <main characters in one line>
 TEASER: <one-line cliffhanger for the next episode>`;
   let user=`Genre: ${g[2]}: ${g[3]}.\nTopic: ${o.topic}\n${o.paper?'Paper: '+paperName(o.paper)+'\n':''}Story length: about ${words} words (the answer kit is extra).`;
@@ -1834,16 +1865,20 @@ TEASER: <one-line cliffhanger for the next episode>`;
   return[system,user];
 }
 function parseStory(raw){
-  const parts=String(raw||'').split(/^\s*=+\s*ANSWER KIT\s*=+\s*$/m);const a=parts[0],b=parts.slice(1).join('\n');
+  let src=String(raw||'');const h1=src.search(/^#(?!#)\s/m);if(h1>0)src=src.slice(h1);
+  const parts=src.split(/^\s*=+\s*ANSWER KIT\s*=+\s*$/m);const a=parts[0],b=parts.slice(1).join('\n');
   let title='';const body=a.replace(/^\s*#(?!#)\s*(.+)$/m,(m,t)=>{if(!title)title=t.replace(/\*+/g,'').trim();return''}).trim();
   if(!b.trim())return{title,body,kit:null};
-  const KEYS=['QUESTION','MARKS','KEYWORDS','INTRO','BODY','CONCLUSION','HOOKS','RECALL','CAST','TEASER'],kit={};let k=null;
+  const KEYS=['QUESTION','MARKS','KEYWORDS','INTRO','BODY','CONCLUSION','HOOKS','RECALL','FACTS','CAST','TEASER'],kit={};let k=null;
   for(const line of b.split('\n')){const m=line.match(/^\s*\**([A-Z]+)\**\s*:\**\s*(.*)$/);if(m&&KEYS.includes(m[1])){k=m[1];kit[k]=m[2]?[m[2]]:[]}else if(k)kit[k].push(line)}
   const t=x=>(kit[x]||[]).join('\n').trim(),list=x=>t(x).split('\n').map(s=>s.replace(/^\s*([-*•]|\d+[.)])\s*/,'').trim()).filter(Boolean);
   return{title,body,kit:{question:t('QUESTION'),marks:parseInt(t('MARKS'))||15,keywords:t('KEYWORDS').split(/[;,]/).map(s=>s.trim()).filter(Boolean),
     intro:t('INTRO'),body:t('BODY'),conclusion:t('CONCLUSION'),hooks:list('HOOKS'),
-    recall:list('RECALL').map(s=>{const m=s.match(/Q\s*[:.]\s*(.+?)\s*\|\s*A\s*[:.]\s*(.+)/i);return m?{q:m[1],a:m[2]}:null}).filter(Boolean),cast:t('CAST'),teaser:t('TEASER')}};
+    recall:list('RECALL').map(s=>{const m=s.match(/Q\s*[:.]\s*(.+?)\s*\|\s*A\s*[:.]\s*(.+)/i);return m?{q:m[1],a:m[2]}:null}).filter(Boolean),facts:list('FACTS'),cast:t('CAST'),teaser:t('TEASER')}};
 }
+// The unit / point chosen in the story form, if they still exist in SYL.
+function sylSel(){const secs=SYL[ST.paper];if(!secs||ST.paper==='GE'||ST.unit==='')return{};const[si,ui]=String(ST.unit).split('.').map(Number);
+  const unit=secs[si]?.[1]?.[ui];if(!unit)return{};const point=ST.point!==''?unit[1][+ST.point]:'';return{unit,point:point||''}}
 function sylPoints(paper){const out=[];for(const[p,secs]of Object.entries(SYL)){if(p==='GE'||(paper&&p!==paper))continue;for(const[,units]of secs)for(const[u,pts]of units)for(const pt of pts)out.push({paper:p,topic:u+': '+pt})}return out}
 const pickOne=a=>a[Math.floor(Math.random()*a.length)];
 function pickTopic(){
@@ -1851,7 +1886,8 @@ function pickTopic(){
   if(ST.src==='mine'){const ns=S.notes.filter(n=>!ST.paper||n.paper===ST.paper);if(!ns.length)return null;
     const told=new Set(S.stories.map(x=>x.noteId)),due=ns.filter(revDue),fresh=ns.filter(n=>!told.has(n.id));
     const n=pickOne(due.length?due:fresh.length?fresh:ns);return{topic:n.title+(n.topic?' ('+n.topic+')':''),paper:n.paper,noteId:n.id,context:noteToMd(n).slice(0,6000)}}
-  let pts=sylPoints(ST.paper);if(!pts.length)return null;const used=new Set(S.stories.map(x=>x.topic)),f=pts.filter(x=>!used.has(x.topic));return pickOne(f.length?f:pts);
+  const sel=sylSel();if(sel.point)return{paper:ST.paper,topic:sel.unit[0]+': '+sel.point};
+  let pts=sel.unit?sel.unit[1].map(pt=>({paper:ST.paper,topic:sel.unit[0]+': '+pt})):sylPoints(ST.paper);if(!pts.length)return null;const used=new Set(S.stories.map(x=>x.topic)),f=pts.filter(x=>!used.has(x.topic));return pickOne(f.length?f:pts);
 }
 function storyStreak(){const days=new Set(S.stories.filter(x=>x.readAt).map(x=>dayKey(x.readAt)));let n=0,t=Date.now();if(!days.has(dayKey(t)))t-=DAY;while(days.has(dayKey(t))){n++;t-=DAY}return n}
 const storyAttempts=s=>s.qaId?S.attempts.filter(a=>a.qaId===s.qaId):[];
@@ -1863,9 +1899,9 @@ async function writeStory(o){
     seriesId:o.prev?o.prev.seriesId:'',episode:o.prev?(o.prev.episode||1)+1:1,read:false,readAt:0,progress:0,qaId:'',cardsAdded:false,req:o};
   if(!s.seriesId)s.seriesId=s.id;
   await upsert('stories',s);
-  const g=GEN[s.id]={text:'',ctrl:new AbortController(),on:null};const[sys,usr]=storyPrompt(o);
+  const g=GEN[s.id]={text:'',status:o.web?'🔎 Checking facts…':'',ctrl:new AbortController(),on:null};const[sys,usr]=storyPrompt(o);
   go('#/story/'+s.id);
-  try{await aiStream(sys,usr,t=>{g.text+=t;g.on&&g.on()},g.ctrl.signal);
+  try{await aiStream(sys,usr,t=>{g.text+=t;g.on&&g.on()},g.ctrl.signal,{web:o.web,onStatus:m=>{g.status=m;g.on&&g.on()}});
     const p=parseStory(g.text);if(!p.body)throw new Error('The reply was empty. Try again.');
     Object.assign(s,{raw:g.text,title:p.title||o.topic.slice(0,70),status:'done',error:''})}
   catch(e){Object.assign(s,{raw:g.text,title:parseStory(g.text).title||s.title,status:'error',error:e.name==='AbortError'?'You stopped the story.':(e.message==='Failed to fetch'?(AI.provider==='openai'?'Could not reach OpenAI. Usually the API key is wrong or has no credit (OpenAI hides the reason from browsers), or you are offline.':'Network error. Check your internet connection.'):e.message||String(e))})}
@@ -1913,32 +1949,46 @@ function vStories(v){
   ${unread?`<a class="card storyhook" data-go="#/story/${unread.id}" style="margin-top:12px"><span style="font-size:30px">${genreOf(unread.genre)[1]}</span><div style="flex:1"><div class="ftag" style="color:var(--gold)">${unread.progress>0.03?'Continue reading':'Waiting for you'}</div><b>${esc(unread.title)}</b></div><span style="font-size:22px">›</span></a>`:''}
   ${!unread&&nk&&nk.teaser?`<div class="card storyhook" style="margin-top:12px;display:block"><div class="ftag" style="color:var(--gold)">Next episode of “${esc(nu.title)}”</div><p style="margin:6px 0 10px;font-family:Georgia,serif;font-style:italic">${esc(nk.teaser)}</p><button class="btn primary block" id="snextup">▶ Write episode ${nu.episode+1}</button></div>`:''}
   <h3>New story</h3><div class="card">
-    <div class="genres" id="sgen">${GENRES.map(g=>`<button data-g="${g[0]}" title="${esc(g[3])}"><b>${g[1]}</b>${esc(g[2])}</button>`).join('')}</div>
+    <div class="genres" id="sgen">${[SURPRISE,...GENRES].map(g=>`<button data-g="${g[0]}" title="${esc(g[3])}"><b>${g[1]}</b>${esc(g[2])}</button>`).join('')}</div>
     <p class="small muted" id="sgdesc" style="margin:-4px 0 4px;text-align:center"></p>
     <label>Topic from</label><div class="seg" id="ssrc"><button data-s="syl">Syllabus</button><button data-s="mine">My notes</button><button data-s="custom">My topic</button></div>
     <input type="text" id="stopic" class="${ST.src==='custom'?'':'hide'}" placeholder="e.g. Mission Kakatiya, Article 371D, Mulki rules" value="${esc(ST.custom)}">
     <p class="small muted ${ST.src==='custom'?'hide':''}" id="ssrch" style="margin:0"></p>
-    <label>Paper</label><select id="spaper">${paperOpts(ST.paper,'Any paper')}</select>
+    <label>Paper</label><select id="spaper"><option value="">Any paper</option>${PAPERS.filter(p=>p.id!=='GE').map(p=>`<option value="${p.id}" ${p.id===ST.paper?'selected':''}>${esc(p.name)}</option>`).join('')}</select>
+    <div id="ssyl" class="${ST.src==='syl'&&ST.paper?'':'hide'}"><label>Unit</label><select id="sunit"></select><label>Topic</label><select id="spoint"></select></div>
     <div class="row" style="flex-wrap:nowrap;gap:10px"><div style="flex:1"><label>Length</label><div class="seg" id="slen" style="margin:0">${Object.entries(LENS).map(([k,[,l]])=>`<button data-l="${k}">${l}</button>`).join('')}</div></div>
     <div style="flex:1"><label>Language</label><div class="seg" id="slang" style="margin:0"><button data-l="en">English</button><button data-l="te">తెలుగు</button></div></div></div>
+    <div class="switch small ${AI.provider==='openai'?'hide':''}" style="border-bottom:0;padding-bottom:0"><span>🔎 Check facts on the web first <span class="muted">(Claude Opus / Sonnet; a little slower and costlier)</span></span><input type="checkbox" id="sweb" ${ST.web?'checked':''}></div>
     <button class="btn primary block" id="sgo" style="margin-top:14px">✨ Write my story</button>
   </div>
   ${list.length?`<h3>Your shelf</h3><div class="shelf">${list.map(bookHTML).join('')}</div>`:`<p class="small muted" style="text-align:center">Each story teaches one topic and ends with a Mains question, an answer outline and a quick recall quiz. Read it, then write the answer while it's fresh.</p>`}`;
-  const gd=()=>$('#sgdesc').textContent=genreOf(ST.genre)[3];
+  const gd=()=>$('#sgdesc').textContent=ST.genre==='random'?SURPRISE[3]:genreOf(ST.genre)[3];
   const sg=()=>{$$('#sgen button').forEach(b=>b.classList.toggle('on',b.dataset.g===ST.genre));gd()};sg();
   $$('#sgen button').forEach(b=>b.onclick=()=>{ST.genre=b.dataset.g;saveST();sg()});
   const sh=()=>{const c=ST.src==='custom';$('#stopic').classList.toggle('hide',!c);$('#ssrch').classList.toggle('hide',c);
-    $('#ssrch').textContent=ST.src==='mine'?(S.notes.length?'Picks one of your notes (due for revision first) and builds the story on its facts.':'You have no notes yet. Use Syllabus or My topic.'):'Picks a syllabus point you have no story for yet.'};
+    $('#ssrch').textContent=ST.src==='mine'?(S.notes.length?'Picks one of your notes (due for revision first) and builds the story on its facts.':'You have no notes yet. Use Syllabus or My topic.'):ST.paper?'Pick a unit and topic below, or leave them on 🎲 for a surprise.':'Choose a paper to pick an exact syllabus topic, or leave it on Any paper for a surprise.';
+    $('#ssyl').classList.toggle('hide',!(ST.src==='syl'&&ST.paper))};
+  const fillSyl=()=>{const secs=SYL[ST.paper]||[],told=new Set(S.stories.map(x=>x.topic));
+    $('#sunit').innerHTML='<option value="">🎲 Any unit</option>'+secs.map(([sn,units],si)=>`<optgroup label="${esc(sn)}">${units.map(([u],ui)=>`<option value="${si}.${ui}">${esc(u)}</option>`).join('')}</optgroup>`).join('');
+    $('#sunit').value=ST.unit;if($('#sunit').value!==String(ST.unit)){ST.unit='';ST.point='';$('#sunit').value=''}
+    const sel=sylSel();$('#spoint').disabled=!sel.unit;
+    $('#spoint').innerHTML='<option value="">🎲 Any topic in this unit</option>'+(sel.unit?sel.unit[1].map((pt,i)=>`<option value="${i}">${told.has(sel.unit[0]+': '+pt)?'✓ ':''}${esc(pt)}</option>`).join(''):'');
+    $('#spoint').value=ST.point;if($('#spoint').value!==String(ST.point)){ST.point='';$('#spoint').value=''}};
+  fillSyl();
+  $('#sunit').onchange=e=>{ST.unit=e.target.value;ST.point='';saveST();fillSyl()};
+  $('#spoint').onchange=e=>{ST.point=e.target.value;saveST()};
   bindSeg('ssrc','s',()=>ST.src,x=>{ST.src=x;sh()});sh();
   bindSeg('slen','l',()=>ST.len,x=>ST.len=x);bindSeg('slang','l',()=>ST.lang,x=>ST.lang=x);
   $('#stopic').oninput=e=>{ST.custom=e.target.value;saveST()};
-  $('#spaper').onchange=e=>{ST.paper=e.target.value;saveST()};
+  $('#spaper').onchange=e=>{ST.paper=e.target.value;ST.unit='';ST.point='';saveST();fillSyl();sh()};
   $('#aiset').onclick=()=>aiSetup();
-  $('#sgo').onclick=()=>{const t=pickTopic();if(!t)return toast(ST.src==='custom'?'Type a topic first':'No topic found for that choice');writeStory({...t,genre:ST.genre,len:ST.len,lang:ST.lang})};
+  $('#sweb').onchange=e=>{ST.web=e.target.checked;saveST()};
+  $('#sgo').onclick=()=>{const t=pickTopic();if(!t)return toast(ST.src==='custom'?'Type a topic first':'No topic found for that choice');
+    const genre=ST.genre==='random'?pickOne(GENRES)[0]:ST.genre;writeStory({...t,genre,len:ST.len,lang:ST.lang,web:AI.provider==='claude'&&ST.web})};
   if($('#snextup'))$('#snextup').onclick=()=>continueSeries(nu);
 }
 function continueSeries(s){const k=parseStory(s.raw).kit||{};const t=pickTopic()||pickOne(sylPoints(''));
-  writeStory({...t,genre:s.genre,len:s.len,lang:s.lang,prev:{seriesId:s.seriesId,episode:s.episode,title:s.title,cast:k.cast,teaser:k.teaser}})}
+  writeStory({...t,genre:s.genre,len:s.len,lang:s.lang,web:AI.provider==='claude'&&ST.web,prev:{seriesId:s.seriesId,episode:s.episode,title:s.title,cast:k.cast,teaser:k.teaser}})}
 async function storyToQA(s,k){
   if(s.qaId&&byId('qas',s.qaId))return s.qaId;
   const now=Date.now(),q={id:uid(),created:now,starred:false,rev:freshRev(now),question:k.question,paper:s.paper||'',topic:s.topic,tags:['story'],marks:k.marks,wordLimit:'',directive:'',
@@ -1947,6 +1997,7 @@ async function storyToQA(s,k){
   s.qaId=q.id;await upsert('stories',s,false);return q.id;
 }
 let curStory=null;
+const vfy=h=>h.replace(/\[verify[^\]]*\]/gi,m=>`<span class="vf" title="Not fully certain. Check this in your notes.">${m}</span>`);
 document.addEventListener('scroll',()=>{const b=$('#stbar i');if(!b||!curStory)return;const h=document.documentElement.scrollHeight-innerHeight,sb=$('#sbody');
   const end=sb?sb.offsetTop+sb.offsetHeight-innerHeight:h,p=clamp(scrollY/Math.max(1,end),0,1);b.style.width=(p*100)+'%';
   if(!curStory.read&&curStory.status==='done'&&p>curStory.progress+0.02){curStory.progress=p;clearTimeout(curStory._t);const s=curStory;curStory._t=setTimeout(()=>{const{_t,...o}=s;DB.put('stories',o).catch(()=>{})},1500)}},{passive:true});
@@ -1959,26 +2010,27 @@ function vStory(v,[id]){
   <div class="sthead"><button class="iconbtn" id="sback" aria-label="Back"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg></button><div class="tt" id="stt">${esc(p.title||s.title||'Writing…')}</div>
     <button class="iconbtn" id="sfont" aria-label="Text size" style="font-weight:700;font-family:Georgia,serif">Aa</button><button class="iconbtn" id="slisten" aria-label="Read aloud">🔈</button></div>
   <div class="stcover" style="${coverStyle(gn)}"><div class="em">${gn[1]}</div><h2 id="sct">${esc(p.title||(writing?'Your story is being written…':s.title||'Untitled'))}</h2>
-    <div class="m">${esc(gn[2])}${s.episode>1?' · Episode '+s.episode:''}${s.paper?' · '+s.paper:''}${words&&!writing?' · '+Math.max(1,Math.round(words/200))+' min read':''}</div><div class="m" style="margin-top:6px;opacity:.75">${esc(s.topic)}</div></div>
-  <div class="story" id="sbody" style="font-size:calc(var(--fs) + ${ST.fs}px)">${md(p.body)}${writing?cursor:''}</div><div id="send"></div>`;
+    <div class="m">${esc(gn[2])}${s.episode>1?' · Episode '+s.episode:''}${s.paper?' · '+s.paper:''}${words&&!writing?' · '+Math.max(1,Math.round(words/200))+' min read':''}</div><div class="m" style="margin-top:6px;opacity:.75">${esc(s.topic)}</div><div class="stbadge">Fictional characters · real facts${s.req?.web?' · web-checked':''}</div></div>
+  <div class="story" id="sbody" style="font-size:calc(var(--fs) + ${ST.fs}px)">${vfy(md(p.body))}${writing?cursor:''}</div><div id="send"></div>`;
   const endEl=$('#send');
-  if(writing){endEl.innerHTML=`<div class="vc" id="sst">✍️ Writing… ${words} words</div><button class="btn block" id="sstop" style="margin-top:8px">Stop writing</button>`;
+  if(writing){endEl.innerHTML=`<div class="vc" id="sst">${words?'✍️ Writing… '+words+' words':esc(g.status||'✍️ Starting…')}</div><button class="btn block" id="sstop" style="margin-top:8px">Stop writing</button>`;
     $('#sstop').onclick=()=>g.ctrl.abort();let pend=false;
     g.on=()=>{if(pend)return;pend=true;requestAnimationFrame(()=>setTimeout(()=>{pend=false;const sb=$('#sbody');if(!sb||!$('#sst')||curStory!==s||!GEN[s.id])return;
       const near=innerHeight+scrollY>=document.documentElement.scrollHeight-120,q=parseStory(g.text),w=(plain(q.body).match(/\S+/g)||[]).length;
-      sb.innerHTML=md(q.body)+(q.kit?'':cursor);if(q.title){$('#stt').textContent=q.title;$('#sct').textContent=q.title}
-      $('#sst').textContent=q.kit?'🎯 Story done. Preparing your Mains question…':'✍️ Writing… '+w+' words';if(near&&!q.kit)scrollTo(0,document.documentElement.scrollHeight)},90))}}
+      sb.innerHTML=vfy(md(q.body))+(q.kit?'':cursor);if(q.title){$('#stt').textContent=q.title;$('#sct').textContent=q.title}
+      $('#sst').textContent=q.kit?'🎯 Story done. Preparing your Mains question and fact list…':w?'✍️ Writing… '+w+' words':(g.status||'✍️ Starting…');if(near&&!q.kit)scrollTo(0,document.documentElement.scrollHeight)},90))}}
   else if(s.status==='error'){endEl.innerHTML=`<div class="card" style="border-color:var(--again)"><b>Story stopped</b><p class="small" style="margin:6px 0 10px">${esc(s.error||'Unknown error')}</p><div class="row"><button class="btn primary" id="sretry">Try again</button><button class="btn" id="skey">AI settings</button><span class="spacer"></span><button class="btn ghost danger" id="sdel">Delete</button></div></div>`;
     $('#sretry').onclick=async()=>{await removeMany('stories',[s.id]);writeStory(s.req)};$('#skey').onclick=()=>aiSetup();}
   else if(!s.read){endEl.innerHTML=`<div class="theend">✦ THE END ✦</div><button class="btn primary block" id="sfin">I've read it: unlock the Mains question (+20 XP)</button>`;
     $('#sfin').onclick=async()=>{s.read=true;s.readAt=Date.now();s.progress=1;await upsert('stories',s,false);floatXp(award(20),true);const y=scrollY;vStory(v,[id]);scrollTo(0,y);setTimeout(()=>$('#skit')?.scrollIntoView({behavior:'smooth',block:'start'}),60)}}
-  else{const att=storyAttempts(s),best=att.reduce((m,a)=>Math.max(m,a.score||0),0),mins=k?Math.round(k.marks*S.settings.minPerMark):0;
+  else{const nv=(s.raw.match(/\[verify/gi)||[]).length,att=storyAttempts(s),best=att.reduce((m,a)=>Math.max(m,a.score||0),0),mins=k?Math.round(k.marks*S.settings.minPerMark):0;
     endEl.innerHTML=`<div class="theend">✦ THE END ✦</div>
     ${k&&k.question?`<div class="kit" id="skit"><div class="ftag" style="color:var(--gold)">🎯 Now write it · ${k.marks} marks · ${mins} min</div><div class="q">${esc(k.question)}</div>
       ${k.keywords.length?`<div style="margin:10px 0 12px">${k.keywords.map(x=>`<span class="tag" style="font-size:12px;margin-bottom:4px">${esc(x)}</span>`).join('')}</div>`:''}
       ${att.length?`<p class="small" style="color:var(--good);margin:0 0 8px">✓ Written ${att.length}×${best?' · best self-score '+best+'/10':''}. Write it again in a few days to lock it in.</p>`:`<p class="small muted" style="margin:0 0 8px">The story is fresh in your head. This is the best moment to write the answer.</p>`}
       <button class="btn primary block" id="swrite">✍️ ${att.length?'Write it again':'Write this answer now'}</button>
       <details style="margin-top:12px"><summary class="small" style="cursor:pointer;color:var(--accent)">Model answer outline (peek after writing)</summary><div class="reading" style="font-size:15px">${k.intro?`<p><b>Intro:</b> ${inline(esc(k.intro))}</p>`:''}${md(k.body)}${k.conclusion?`<p><b>Way forward:</b> ${inline(esc(k.conclusion))}</p>`:''}</div></details></div>`:''}
+    ${k&&k.facts.length?`<div class="sec"><div class="h">Facts used in this story</div><div class="card" style="padding:6px 14px"><p class="small muted" style="margin:4px 0">Characters are fiction, these facts are not. ${nv?`<b style="color:var(--hard)">${nv} marked [verify]</b>: check them in your notes before using them.`:'Cross-check anything that surprises you with your notes.'}</p>${vfy(ulist(k.facts))}</div></div>`:''}
     ${k&&k.hooks.length?sec('Memory hooks',ulist(k.hooks)):''}
     ${k&&k.recall.length?`<div class="sec"><div class="h">Quick recall · tap to reveal</div><div class="card" style="padding:2px 14px">${k.recall.map((r,i)=>`<div class="rq" data-i="${i}"><div>${esc(r.q)}</div><div class="a">${esc(r.a)}</div></div>`).join('')}</div>
       <button class="btn block" id="scards" ${s.cardsAdded?'disabled':''}>${s.cardsAdded?'✓ Added to your flashcards':'+ Add these '+k.recall.length+' to flashcards'}</button></div>`:''}
