@@ -233,6 +233,15 @@ body.storyon main{padding-top:0}
 .stbadge{display:inline-block;margin-top:12px;font-size:11px;letter-spacing:.04em;background:rgba(255,255,255,.18);border-radius:20px;padding:3px 10px}
 .storyhook{display:flex;gap:12px;align-items:center;text-decoration:none;color:var(--ink);border-color:var(--gold)}
 @media (prefers-reduced-motion:reduce){.cursor{animation:none}}
+/* [verify] → Google search */
+.vg{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;margin:0 2px 0 3px;padding:0;border:1px solid var(--line);border-radius:50%;background:var(--surface);cursor:pointer;vertical-align:-3px;font:700 12px/1 system-ui,sans-serif;color:#4285f4;font-style:normal;text-decoration:none}
+.vg::before{content:'G'}
+.vg:active{background:var(--soft)}
+/* Q&A generator */
+#ltab.four button{font-size:13px;padding:7px 4px;line-height:1.2}
+.qtypes{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
+.qtypes .chip{padding:5px 11px}
+.qgs{font-size:13px;color:var(--muted);text-align:center;margin-top:8px;min-height:18px}
 </style>
 </head>
 <body>
@@ -478,6 +487,8 @@ const REV=[1,3,7,14,30,60,120];
 const freshRev=(now=Date.now())=>({count:0,last:0,next:dayStart(now)+DAY});
 function markRevised(n){const now=Date.now(),c=(n.rev?.count||0)+1;n.rev={count:c,last:now,next:dayStart(now)+REV[Math.min(c,REV.length-1)]*DAY}}
 const revDue=n=>n.rev&&n.rev.next<dayEnd();
+const revN=n=>n.rev?.count||0;
+const revTag=n=>`<span class="tag" style="${revN(n)?'color:var(--good)':''}" title="${revN(n)?'Last revised '+ago(n.rev.last):'Not revised yet'}">${revN(n)?'↻ revised '+revN(n)+'×':'not revised'}</span>`;
 
 /* ================= Router ================= */
 let tick=null;const R={deck:'all',card:null,pv:null,shown:false,t0:0,undo:[],lastGroup:'',cram:null,done:0};
@@ -532,27 +543,29 @@ function vHome(v){
 /* ================= Library ================= */
 const L={tab:'notes',q:'',paper:'',sort:'recent',star:false,cstate:'',focusSearch:false};
 function vLib(v,args){
-  if(args[0]&&['notes','qa','cards'].includes(args[0]))L.tab=args[0];
+  if(args[0]&&['notes','qa','cards','gen'].includes(args[0]))L.tab=args[0];
+  const tabs=`<div class="seg four" id="ltab"><button data-t="notes">Notes ${S.notes.length}</button><button data-t="qa">Q&amp;A ${S.qas.length}</button><button data-t="cards">Cards ${S.cards.length}</button><button data-t="gen">✨ Questions &amp; Answers</button></div>`;
+  if(L.tab==='gen'){v.innerHTML=tabs+'<div id="qgen"></div>';$$('#ltab button').forEach(b=>{b.classList.toggle('on',b.dataset.t==='gen');b.onclick=()=>{L.tab=b.dataset.t;vLib(v,[])}});vQGen($('#qgen'));return}
   v.innerHTML=`
-  <div class="seg" id="ltab"><button data-t="notes">Notes ${S.notes.length}</button><button data-t="qa">Q&amp;A ${S.qas.length}</button><button data-t="cards">Cards ${S.cards.length}</button></div>
+  ${tabs}
   <input type="search" id="lq" placeholder="Search…" value="${esc(L.q)}">
   <div class="chips" style="margin-top:10px" id="lp"><span class="chip" data-p="">All</span>${PAPERS.map(p=>`<span class="chip" data-p="${p.id}">${p.id}</span>`).join('')}<span class="chip" data-p="★">★</span></div>
   <div class="row small" id="lopts"></div>
   <div class="card list" id="llist" style="padding:2px 12px;margin-top:8px"></div>`;
   const syncUI=()=>{$$('#ltab button').forEach(b=>b.classList.toggle('on',b.dataset.t===L.tab));$$('#lp .chip').forEach(c=>c.classList.toggle('on',L.star?c.dataset.p==='★':c.dataset.p===L.paper));
     $('#lopts').innerHTML=L.tab==='cards'?`<select id="lcs" style="width:auto;padding:6px 10px"><option value="">All states</option><option value="new">New</option><option value="due">Due today</option><option value="learn">Learning</option><option value="flag">Flagged</option><option value="leech">Leeches</option><option value="susp">Suspended</option></select><span class="spacer"></span><button class="btn" id="newcard">+ Card</button>`
-      :`<select id="lsort" style="width:auto;padding:6px 10px"><option value="recent">Recently updated</option><option value="title">A–Z</option><option value="rev">Revision due</option>${L.tab==='qa'?'<option value="weak">Least practised</option>':''}</select><span class="spacer"></span><button class="btn" id="newitem">+ New</button>`;
+      :`<select id="lsort" style="width:auto;padding:6px 10px"><option value="recent">Recently updated</option><option value="title">A–Z</option><option value="rev">Revision due</option><option value="least">Least revised</option><option value="most">Most revised</option>${L.tab==='qa'?'<option value="weak">Least practised</option>':''}</select><span class="spacer"></span><button class="btn" id="newitem">+ New</button>`;
     if($('#lcs')){$('#lcs').value=L.cstate;$('#lcs').onchange=e=>{L.cstate=e.target.value;list()};$('#newcard').onclick=()=>cardEditor(null,null)}
     if($('#lsort')){$('#lsort').value=L.sort;$('#lsort').onchange=e=>{L.sort=e.target.value;list()};$('#newitem').onclick=()=>go(L.tab==='qa'?'#/edit/qa/new':'#/edit/note/new')}};
   const list=()=>{const q=L.q.toLowerCase().trim(),el=$('#llist');let h='';
     const pOk=x=>(!L.paper||x.paper===L.paper);
     if(L.tab==='notes'){let a=S.notes.filter(n=>pOk(n)&&(!L.star||n.starred)&&(!q||[n.title,n.topic,n.summary,n.content,(n.tags||[]).join(' '),(n.keyFacts||[]).join(' ')].join(' ').toLowerCase().includes(q)));
-      a.sort(L.sort==='title'?(x,y)=>x.title.localeCompare(y.title):L.sort==='rev'?(x,y)=>(x.rev?.next||0)-(y.rev?.next||0):(x,y)=>(y.updated||0)-(x.updated||0));
-      h=a.map(n=>`<a class="item" data-go="#/note/${n.id}"><div class="t">${n.starred?'★ ':''}${esc(n.title)}</div><div class="s">${n.paper?`<span class="tag">${n.paper}</span>`:''}${revDue(n)?'<span class="tag">revise</span>':''}${esc(n.summary||plain(n.content).slice(0,140))}</div></a>`).join('')}
+      a.sort(L.sort==='least'?(x,y)=>revN(x)-revN(y):L.sort==='most'?(x,y)=>revN(y)-revN(x):L.sort==='title'?(x,y)=>x.title.localeCompare(y.title):L.sort==='rev'?(x,y)=>(x.rev?.next||0)-(y.rev?.next||0):(x,y)=>(y.updated||0)-(x.updated||0));
+      h=a.map(n=>`<a class="item" data-go="#/note/${n.id}"><div class="t">${n.starred?'★ ':''}${esc(n.title)}</div><div class="s">${n.paper?`<span class="tag">${n.paper}</span>`:''}${revTag(n)}${revDue(n)?'<span class="tag">revise</span>':''}${esc(n.summary||plain(n.content).slice(0,140))}</div></a>`).join('')}
     else if(L.tab==='qa'){let a=S.qas.filter(n=>pOk(n)&&(!L.star||n.starred)&&(!q||[n.question,n.topic,n.intro,n.body,n.conclusion,(n.keywords||[]).join(' ')].join(' ').toLowerCase().includes(q)));
       const att=id=>S.attempts.filter(x=>x.qaId===id).length;
-      a.sort(L.sort==='title'?(x,y)=>x.question.localeCompare(y.question):L.sort==='rev'?(x,y)=>(x.rev?.next||0)-(y.rev?.next||0):L.sort==='weak'?(x,y)=>att(x.id)-att(y.id):(x,y)=>(y.updated||0)-(x.updated||0));
-      h=a.map(n=>`<a class="item" data-go="#/qa/${n.id}"><div class="t">${n.starred?'★ ':''}${esc(n.question)}</div><div class="s">${n.paper?`<span class="tag">${n.paper}</span>`:''}${n.marks?`<span class="tag">${n.marks}m</span>`:''}${att(n.id)?`<span class="tag">practised ${att(n.id)}×</span>`:''}${esc(n.topic||'')}</div></a>`).join('')}
+      a.sort(L.sort==='least'?(x,y)=>revN(x)-revN(y):L.sort==='most'?(x,y)=>revN(y)-revN(x):L.sort==='title'?(x,y)=>x.question.localeCompare(y.question):L.sort==='rev'?(x,y)=>(x.rev?.next||0)-(y.rev?.next||0):L.sort==='weak'?(x,y)=>att(x.id)-att(y.id):(x,y)=>(y.updated||0)-(x.updated||0));
+      h=a.map(n=>`<a class="item" data-go="#/qa/${n.id}"><div class="t">${n.starred?'★ ':''}${esc(n.question)}</div><div class="s">${n.paper?`<span class="tag">${n.paper}</span>`:''}${n.marks?`<span class="tag">${n.marks}m</span>`:''}${revTag(n)}${att(n.id)?`<span class="tag">practised ${att(n.id)}×</span>`:''}${esc(n.topic||'')}</div></a>`).join('')}
     else{const now=Date.now(),end=dayEnd(now);let a=S.cards.filter(c=>{if(L.paper&&c.paper!==L.paper)return false;if(L.star){const s=srcOf(c);if(!s||!s.starred)return false}
         const st=L.cstate;if(st==='new'&&c.state)return false;if(st==='due'&&!(c.state&&c.due<end&&!c.suspended))return false;if(st==='learn'&&!(c.state===1||c.state===3))return false;if(st==='flag'&&!c.flagged)return false;if(st==='leech'&&!c.leech)return false;if(st==='susp'&&!c.suspended)return false;
         return!q||[c.front,c.back,c.text].join(' ').toLowerCase().includes(q)});
@@ -560,7 +573,7 @@ function vLib(v,args){
       h=a.map(c=>`<div class="item" data-card="${c.id}"><div class="t">${esc(plain(c.type==='cloze'?c.text:c.front).slice(0,160))}</div><div class="s">${c.paper?`<span class="tag">${c.paper}</span>`:''}<span class="tag">${c.type==='cloze'?'cloze '+c.cloze:'basic'}</span>${c.suspended?'<span class="tag">suspended</span>':!c.state?'<span class="tag">new</span>':c.state===2?`<span class="tag">due ${until(c.due)}</span>`:'<span class="tag">learning</span>'}${c.flagged?'<span class="tag">⚑</span>':''}${c.leech?'<span class="tag">leech</span>':''}</div></div>`).join('')+(more?'<p class="small muted">Showing first 300 — refine the search.</p>':'')}
     el.innerHTML=h||`<div class="empty">${q||L.paper||L.star?'Nothing matches.':'Nothing here yet. Use <a href="#/add">Add</a> to import content.'}</div>`;
     $$('[data-card]',el).forEach(x=>x.onclick=()=>cardEditor(byId('cards',x.dataset.card),null,list))};
-  $$('#ltab button').forEach(b=>b.onclick=()=>{L.tab=b.dataset.t;syncUI();list()});
+  $$('#ltab button').forEach(b=>b.onclick=()=>{L.tab=b.dataset.t;if(L.tab==='gen')return vLib(v,[]);syncUI();list()});
   $$('#lp .chip').forEach(c=>c.onclick=()=>{if(c.dataset.p==='★'){L.star=!L.star;L.paper=''}else{L.paper=c.dataset.p;L.star=false}syncUI();list()});
   $('#lq').oninput=e=>{L.q=e.target.value;list()};
   syncUI();list();if(L.focusSearch){L.focusSearch=false;$('#lq').focus()}
@@ -579,7 +592,7 @@ function vNote(v,[id]){
   <div class="small muted">${esc(paperName(n.paper))}${n.topic?' · '+esc(n.topic):''}</div>
   <div style="margin-top:6px">${(n.tags||[]).map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>
   <div class="actions"><button class="btn" id="star">${n.starred?'★':'☆'}</button><button class="btn" id="rev">✓ Revised</button><button class="btn" id="study">Study ${cs.length}</button><button class="btn" id="focus">Focus</button><button class="btn" id="listen">🔈 Listen</button><span class="spacer"></span><button class="btn" id="more">⋯</button></div>
-  <div class="small muted">Revised ${n.rev?.count||0}× · last ${ago(n.rev?.last)} · next ${n.rev?until(n.rev.next):'—'}</div>
+  <div class="small muted"><b style="color:${revN(n)?'var(--good)':'var(--muted)'}">↻ Revised ${revN(n)}×</b> · last ${ago(n.rev?.last)} · next ${n.rev?until(n.rev.next):'—'}</div>
   <div class="reading">
   ${n.summary?`<blockquote>${inline(esc(n.summary))}</blockquote>`:''}
   ${md(n.content)}
@@ -621,13 +634,14 @@ function vQA(v,[id]){
   $('#title').textContent=(q.paper||'Question')+(q.marks?` · ${q.marks} marks`:'');
   const atts=S.attempts.filter(a=>a.qaId===id).sort((a,b)=>b.t-a.t);
   v.innerHTML=`<h2 style="line-height:1.4">${esc(q.question)}</h2>
-  <div class="small muted">${esc(paperName(q.paper))}${q.topic?' · '+esc(q.topic):''}${q.wordLimit?' · '+q.wordLimit+' words':''}${q.directive?' · <b>'+esc(q.directive)+'</b>':''}</div>
+  <div class="small muted">${esc(paperName(q.paper))}${q.topic?' · '+esc(q.topic):''}${q.wordLimit?' · '+q.wordLimit+' words':''}${q.directive?' · <b>'+esc(q.directive)+'</b>':''} · <b style="color:${revN(q)?'var(--good)':'var(--muted)'}">↻ Revised ${revN(q)}×</b></div>
   <div class="actions"><button class="btn" id="star">${q.starred?'★':'☆'}</button><button class="btn" id="rev">✓ Revised</button><button class="btn" id="test">Test me</button><button class="btn" id="listen">🔈 Listen</button><button class="btn" id="study">Cards ${cardsOf(id).length}</button><span class="spacer"></span><button class="btn" id="more">⋯</button></div>
   ${q.keywords?.length?`<div style="margin-bottom:8px">${q.keywords.map(k=>`<span class="tag" style="font-size:12px">${esc(k)}</span>`).join('')}</div>`:''}
   <div class="reading" id="ans">
   ${sec('Introduction',q.intro?md(q.intro):'')}
   ${sec('Body',md(q.body))}
   ${sec('Conclusion',q.conclusion?md(q.conclusion):'')}
+  ${sec('🧠 Memory aid',q.mnemonic?md(q.mnemonic):'')}
   ${sec('Diagram',q.diagram?md(q.diagram):'')}
   ${sec('Value additions',ulist(q.valueAdd))}
   </div>
@@ -867,7 +881,7 @@ function normNote(r,fallbackPaper){
   return{title:String(r.title||r.topic||'Untitled').trim(),paper:normPaper(r.paper)||fallbackPaper||'',topic:str(r.topic||r.section||r.subtopic),tags:arr(r.tags),summary:str(r.summary),content:str(r.content||r.notes||r.body),keyFacts:arr(r.keyFacts||r.key_facts||r.facts),telanganaAngle:str(r.telanganaAngle||r.telangana_angle||r.telangana),mnemonics:arr(r.mnemonics),pyqs:arr(r.pyqs||r.questions||r.likelyQuestions),_cards:r.cards||r.flashcards||[]}}
 function normQA(r,fallbackPaper){
   const an=r.answer&&typeof r.answer==='object'&&!Array.isArray(r.answer)?r.answer:{body:r.answer||r.modelAnswer||r.body};
-  return{question:String(r.question||'').trim(),paper:normPaper(r.paper)||fallbackPaper||'',topic:str(r.topic),tags:arr(r.tags),marks:+r.marks||'',wordLimit:+(r.wordLimit||r.word_limit||r.words)||'',directive:str(r.directive),keywords:arr(r.keywords),intro:str(an.intro||an.introduction||r.intro),body:str(an.body||an.mainBody||an.points),conclusion:str(an.conclusion||an.wayForward||r.conclusion),diagram:str(r.diagram),valueAdd:arr(r.valueAdd||r.value_add||r.valueAdditions),_cards:r.cards||r.flashcards||[]}}
+  return{question:String(r.question||'').trim(),paper:normPaper(r.paper)||fallbackPaper||'',topic:str(r.topic),tags:arr(r.tags),marks:+r.marks||'',wordLimit:+(r.wordLimit||r.word_limit||r.words)||'',directive:str(r.directive),keywords:arr(r.keywords),intro:str(an.intro||an.introduction||r.intro),body:str(an.body||an.mainBody||an.points),conclusion:str(an.conclusion||an.wayForward||r.conclusion),diagram:str(r.diagram),mnemonic:str(r.mnemonic||r.memoryAid||r.memory_aid),valueAdd:arr(r.valueAdd||r.value_add||r.valueAdditions),_cards:r.cards||r.flashcards||[]}}
 function prepareImport(parsed,fallbackPaper){
   const nk=new Map(S.notes.map(n=>[keyNote(n),n])),qk=new Map(S.qas.map(q=>[keyQA(q),q]));
   const notes=parsed.notes.map(r=>normNote(r,fallbackPaper)).map(n=>({...n,_dup:nk.get(keyNote(n))||null,_on:true}));
@@ -1263,10 +1277,10 @@ function vSettings(v){
   $('#wipe').onclick=async()=>{if(!confirm('Delete ALL notes, questions, cards and history? Make a backup first.'))return;if(prompt('Type DELETE to confirm')!=='DELETE')return;for(const st of['notes','qas','cards','logs','attempts','ideas','stories']){S[st]=[];await DB.clear(st)}toast('Everything deleted');go('#/home')};
 }
 function noteToMd(n){return`# ${n.title}\n*${paperName(n.paper)}${n.topic?' · '+n.topic:''}*\n\n${n.summary?'> '+n.summary+'\n\n':''}${n.content||''}\n${n.keyFacts?.length?'\n## Key facts\n'+n.keyFacts.map(x=>'- '+x).join('\n')+'\n':''}${n.telanganaAngle?'\n## Telangana angle\n'+n.telanganaAngle+'\n':''}${n.mnemonics?.length?'\n## Memory aids\n'+n.mnemonics.map(x=>'- '+x).join('\n')+'\n':''}${n.pyqs?.length?'\n## Likely questions\n'+n.pyqs.map(x=>'- '+x).join('\n')+'\n':''}`}
-function qaToMd(q){return`## Q. ${q.question}\n*${paperName(q.paper)}${q.marks?' · '+q.marks+' marks':''}${q.wordLimit?' · '+q.wordLimit+' words':''}*\n\n${q.keywords?.length?'**Keywords:** '+q.keywords.join(', ')+'\n\n':''}${q.intro?q.intro+'\n\n':''}${q.body||''}\n\n${q.conclusion||''}\n${q.diagram?'\n**Diagram:** '+q.diagram+'\n':''}${q.valueAdd?.length?'\n**Value additions:**\n'+q.valueAdd.map(x=>'- '+x).join('\n')+'\n':''}`}
+function qaToMd(q){return`## Q. ${q.question}\n*${paperName(q.paper)}${q.marks?' · '+q.marks+' marks':''}${q.wordLimit?' · '+q.wordLimit+' words':''}*\n\n${q.keywords?.length?'**Keywords:** '+q.keywords.join(', ')+'\n\n':''}${q.intro?q.intro+'\n\n':''}${q.body||''}\n\n${q.conclusion||''}\n${q.mnemonic?'\n**Memory aid:** '+q.mnemonic+'\n':''}${q.diagram?'\n**Diagram:** '+q.diagram+'\n':''}${q.valueAdd?.length?'\n**Value additions:**\n'+q.valueAdd.map(x=>'- '+x).join('\n')+'\n':''}`}
 const cardRaw=id=>cardsOf(id).filter(c=>!c.group?.startsWith('outline-')).reduce((a,c)=>{if(c.type==='cloze'){if(!a.seen.has(c.group)){a.seen.add(c.group);a.l.push({type:'cloze',text:c.text,back:c.back})}}else a.l.push({type:'basic',front:c.front,back:c.back});return a},{seen:new Set(),l:[]}).l;
 function packNote(n){return{title:n.title,paper:n.paper,topic:n.topic,tags:n.tags,summary:n.summary,content:n.content,keyFacts:n.keyFacts,telanganaAngle:n.telanganaAngle,mnemonics:n.mnemonics,pyqs:n.pyqs,cards:cardRaw(n.id)}}
-function packQA(q){return{question:q.question,paper:q.paper,topic:q.topic,tags:q.tags,marks:q.marks,wordLimit:q.wordLimit,directive:q.directive,keywords:q.keywords,answer:{intro:q.intro,body:q.body,conclusion:q.conclusion},diagram:q.diagram,valueAdd:q.valueAdd,cards:cardRaw(q.id)}}
+function packQA(q){return{question:q.question,paper:q.paper,topic:q.topic,tags:q.tags,marks:q.marks,wordLimit:q.wordLimit,directive:q.directive,keywords:q.keywords,answer:{intro:q.intro,body:q.body,conclusion:q.conclusion},diagram:q.diagram,mnemonic:q.mnemonic,valueAdd:q.valueAdd,cards:cardRaw(q.id)}}
 function vBackup(v){
   v.innerHTML=`<div class="card"><b>Full backup</b><p class="small muted" style="margin:4px 0 10px">Everything — notes, Q&amp;A, cards, ideas, stories, review history, attempts and settings. Last backup: ${ago(S.settings.lastBackup)}.</p>
    <div class="row"><button class="btn primary" id="bdl">Download</button><button class="btn" id="bsh">Share (Drive, WhatsApp…)</button></div></div>
@@ -1931,7 +1945,7 @@ async function writeStory(o){
 }
 function aiSetup(after){
   let prov=AI.provider;
-  modal(`<h3>AI for Story mode</h3><p class="small muted" style="margin-top:-4px">Use your own Claude or OpenAI API key. It stays on this phone only (not in backups) and is sent only to the provider you pick. Each story costs about a rupee or two with the default models.</p>
+  modal(`<h3>AI for Story mode &amp; Q&amp;A</h3><p class="small muted" style="margin-top:-4px">Use your own Claude or OpenAI API key. It stays on this phone only (not in backups) and is sent only to the provider you pick. Each story or Q&amp;A set costs about a rupee or two with the default models.</p>
     <div class="seg" id="aip"><button data-p="claude">Claude</button><button data-p="openai">OpenAI</button></div><div id="aic"></div>
     <div class="row end" style="margin-top:14px"><button class="btn" data-close>Cancel</button><button class="btn primary" id="aisave">Save</button></div>`,m=>{
     const draw=()=>{$$('#aip button',m).forEach(b=>b.classList.toggle('on',b.dataset.p===prov));
@@ -2069,6 +2083,159 @@ function vStory(v,[id]){
     TTS.on=true;$('#slisten').textContent='⏹';TTS.wake(true);TTS.say(elSpeech($('#sbody')),()=>{TTS.on=false;const b=$('#slisten');if(b)b.textContent='🔈'})};
   if(s.progress>0.03&&!s.read&&!writing)setTimeout(()=>{const sb=$('#sbody');scrollTo(0,(sb.offsetTop+sb.offsetHeight-innerHeight)*s.progress)},30);
 }
+
+/* ================= Questions & Answers generator (AI, per syllabus topic) ================= */
+const QTYPES=[['15','15 marks · 250 words'],['10','10 marks · 150 words'],['5','5 marks · short note'],['crit','Critically examine'],['tg','Telangana-specific'],['case','Case / data-based'],['cmp','Compare & contrast'],['essay','Essay outline']];
+const QTYPE_TXT={'15':'15-mark analytical questions (about 250 words)','10':'10-mark questions (about 150 words)','5':'5-mark short-note questions (about 80 words)',crit:'"Critically examine / evaluate" questions that need both sides and a balanced verdict',tg:'Telangana-specific questions (state data, schemes, history, examples)',case:'case-study or data-based questions (a short situation or a few figures, then the question)',cmp:'"Compare and contrast" / "distinguish between" questions (use a table in the body)',essay:'one essay-type question with a structured outline answer (about 400 words of points)'};
+const QG={paper:'P2',unit:'',point:'',types:QTYPES.map(t=>t[0]),n:5,web:true};
+try{Object.assign(QG,JSON.parse(localStorage.getItem('mains-qg')||'{}'))}catch(e){}
+const saveQG=()=>{try{localStorage.setItem('mains-qg',JSON.stringify(QG))}catch(e){}};
+let QJOB=null,QERR='';// the running generation, and the last error
+function qgSel(){const secs=SYL[QG.paper]||[];if(QG.unit==='')return{};const[si,ui]=String(QG.unit).split('.').map(Number);const unit=secs[si]?.[1]?.[ui];if(!unit)return{};
+  const pi=QG.point===''?-1:+QG.point;return{si,ui,unit,sec:secs[si][0],pi,point:pi>=0?unit[1][pi]||'':''}}
+const qgKey=(p,si,ui,pi)=>`${p}.${si}.${ui}.${pi<0?'all':pi}`;
+function qgPrompt(o){
+  const have=o.have.length?`\nI already have these questions on this topic. Do NOT repeat them; ask about other dimensions:\n${o.have.map(q=>'- '+q).join('\n')}\n`:'';
+  const system=`You are an expert TSPSC (TGPSC) Group-1 Mains examiner and answer-writing mentor, English medium. You write model answers that score top marks AND are easy to remember.
+${o.web?'\nBefore writing, use web search to confirm the key dates, figures, provisions and current scheme names for this topic (prefer government, PIB, PRS, Telangana government and reputed newspaper sources). Do all searching first, then output only the JSON.\n':''}
+TASK
+- Write ${o.n} likely TSPSC Group-1 Mains questions with complete model answers on the syllabus topic I give.
+- Together the set must cover the topic COMPREHENSIVELY: every examinable dimension of the syllabus point should be asked by at least one question. No two questions should overlap much.
+- Spread the set across these question types:
+${o.types.map(t=>'  - '+QTYPE_TXT[t]).join('\n')}
+- Use real Mains directives (Discuss, Explain, Analyse, Examine, Critically evaluate, Comment, Elucidate, Describe, Compare) and set "marks" and "wordLimit" for each question.
+
+ANSWER RULES
+- Identify the directive and answer exactly what it asks.
+- Introduction: 1–2 lines — definition, context or a data point.
+- Body: 3–5 ## sub-headings with short bullets covering the relevant dimensions (historical, social, economic, political, constitutional/legal, Telangana-specific); for "critically" give both sides.
+- Conclusion: balanced, forward-looking way ahead (scheme, committee, SDG or constitutional value).
+- Keep within the word limit. **Bold** the keywords an examiner looks for. Suggest a simple diagram / flowchart / map where it would earn marks.
+- Value additions: reports, committees, articles, judgements, schemes, data — with source and year.
+
+EASY TO REMEMBER
+- Each bullet is one idea, starts with a **bold keyword**, and stays under 15 words.
+- Use → arrows for cause-and-effect chains and a | table | for comparisons.
+- Give every answer a "mnemonic": an acronym or a vivid one-line memory hook for its body points, saying what each letter stands for.
+- Keep the same skeleton in every answer (intro → dimensions → Telangana angle → way ahead) so it is easy to reproduce in the exam hall.
+
+ACCURACY (very important — these will be written in a government exam)
+- Never invent statistics, dates, schemes, committees, judgements or quotes. Prefer fewer, well-established facts.
+- If you are not certain of a figure or date, leave it out, or keep it and add " [verify]" right after it.
+
+${PLAIN_RULES}
+
+${CARD_RULES('3–5')}
+
+${JSON_RULES}
+Schema:
+{"type":"tspsc-qa","version":1,"items":[{"question":"...","paper":"${o.paper}","topic":"...","tags":["..."],"marks":15,"wordLimit":250,"directive":"Discuss","keywords":["6–8 must-use keywords"],"answer":{"intro":"...","body":"## Sub-heading\\n- **Keyword**: point\\n- **Keyword**: point","conclusion":"..."},"mnemonic":"ACRONYM: A = ..., C = ...","diagram":"suggested diagram or empty string","valueAdd":["..."],"cards":[{"type":"basic","front":"...","back":"..."},{"type":"cloze","text":"... {{c1::...}} ..."}]}]}
+
+${PAPER_CODES}`;
+  const user=`Paper: ${paperName(o.paper)} (use "paper":"${o.paper}")\nSyllabus: ${o.sec} › ${o.unitName}\nTopic: ${o.topic}${o.pi<0?'\nThis is a whole unit. Cover all of its points:\n'+o.points.map(x=>'- '+x).join('\n'):''}\n${have}\nNumber of questions: ${o.n}`;
+  return[system,user];
+}
+async function runQGen(o){
+  if(!aiReady())return aiSetup(()=>runQGen(o));
+  if(QJOB)return toast('Already generating. Wait for it to finish.');
+  QERR='';const j=QJOB={...o,text:'',status:o.web?'🔎 Checking facts on the web…':'✍️ Starting…',ctrl:new AbortController(),on:null};
+  const ping=()=>j.on&&j.on();const[sys,usr]=qgPrompt(o);
+  if(location.hash.startsWith('#/lib')&&L.tab==='gen'){const y=scrollY;render();scrollTo(0,y)}
+  try{
+    await aiStream(sys,usr,t=>{j.text+=t;const n=(j.text.match(/"question"\s*:/g)||[]).length;j.status=n?`✍️ Writing question ${Math.min(n,o.n)} of ${o.n}…`:'✍️ Writing…';ping()},j.ctrl.signal,{web:o.web,onStatus:m=>{j.status=m;ping()}});
+    const parsed=parseAI(j.text);if(!parsed.items.length)throw new Error('The reply had no questions. Try again.');
+    const prep=prepareImport({notes:[],items:parsed.items},o.paper);
+    prep.qas.forEach(q=>{q.sylKey=o.key;q.tags=[...new Set([...(q.tags||[]),'ai-qa'])];if(!q.topic)q.topic=o.topic});
+    const r=await commitImport(prep);QJOB=null;
+    floatXp(award(10));toast(`Saved ${r.nQ} new${r.nU?', '+r.nU+' updated':''} questions · ${r.nC} flashcards`,3500);
+  }catch(e){QJOB=null;QERR=e.name==='AbortError'?'You stopped it.':e.message==='Failed to fetch'?(AI.provider==='openai'?'Could not reach OpenAI. Usually the key is wrong or has no credit, or you are offline.':'Network error. Check your internet connection.'):(e.message||String(e))}
+  updateBadge();if(location.hash.startsWith('#/lib')&&L.tab==='gen'){const y=scrollY;render();scrollTo(0,y)}else if(QERR)toast('Q&A generation failed: '+QERR,4000);
+}
+function vQGen(el){
+  const ids=Object.keys(SYL).filter(p=>p!=='GE');if(!ids.includes(QG.paper))QG.paper='P2';
+  const cnt={};for(const q of S.qas)if(q.sylKey)cnt[q.sylKey]=(cnt[q.sylKey]||0)+1;
+  const pre=(p,si,ui)=>`${p}.${si}.${ui}.`,unitCnt=(p,si,ui)=>Object.entries(cnt).filter(([k])=>k.startsWith(pre(p,si,ui))).reduce((a,[,n])=>a+n,0);
+  el.innerHTML=`<div class="row" style="flex-wrap:nowrap;margin-bottom:10px;align-items:flex-start"><p class="small muted" style="flex:1;margin:0">AI writes likely Mains questions with model answers that are easy to remember, for any syllabus topic. They are saved to your Q&amp;A with flashcards.</p><button class="btn" id="qkey">${aiReady()?'⚙ '+(AI.provider==='openai'?'OpenAI':'Claude'):'🔑 Add AI key'}</button></div>
+  <div class="card">
+    <label style="margin-top:0">Paper</label><select id="qpaper">${ids.map(id=>`<option value="${id}" ${id===QG.paper?'selected':''}>${esc(paperName(id))}</option>`).join('')}</select>
+    <label>Unit</label><select id="qunit"></select>
+    <label>Topic</label><select id="qpoint"></select>
+    <label>Question types</label><div class="qtypes" id="qtypes">${QTYPES.map(([k,l])=>`<span class="chip" data-k="${k}">${l}</span>`).join('')}</div>
+    <label>How many questions</label><div class="seg" id="qn" style="margin:0">${[3,5,8,10].map(n=>`<button data-n="${n}">${n}</button>`).join('')}</div>
+    <div class="switch small ${AI.provider==='openai'?'hide':''}" style="border-bottom:0;padding-bottom:0"><span>🔎 Check facts on the web first <span class="muted">(Claude Opus / Sonnet; slower, costlier)</span></span><input type="checkbox" id="qweb" ${QG.web?'checked':''}></div>
+    <button class="btn primary block" id="qgo" style="margin-top:14px"></button>
+    <div class="qgs" id="qgs"></div>
+  </div>
+  <div id="qdone"></div>`;
+  const fill=()=>{const secs=SYL[QG.paper]||[];
+    $('#qunit',el).innerHTML='<option value="">Choose a unit…</option>'+secs.map(([sn,units],si)=>`<optgroup label="${esc(sn)}">${units.map(([u],ui)=>{const n=unitCnt(QG.paper,si,ui);return`<option value="${si}.${ui}">${n?'✓ ':''}${esc(u)}${n?' ('+n+')':''}</option>`}).join('')}</optgroup>`).join('');
+    $('#qunit',el).value=QG.unit;if($('#qunit',el).value!==String(QG.unit)){QG.unit='';QG.point=''}
+    const sel=qgSel();$('#qpoint',el).disabled=!sel.unit;
+    $('#qpoint',el).innerHTML=sel.unit?`<option value="">Whole unit (all ${sel.unit[1].length} points)${cnt[qgKey(QG.paper,sel.si,sel.ui,-1)]?' ✓ '+cnt[qgKey(QG.paper,sel.si,sel.ui,-1)]:''}</option>`+sel.unit[1].map((pt,i)=>{const n=cnt[qgKey(QG.paper,sel.si,sel.ui,i)];return`<option value="${i}">${n?'✓ ':''}${esc(pt)}${n?' ('+n+')':''}</option>`}).join(''):'<option>Choose a unit first</option>';
+    if(sel.unit){$('#qpoint',el).value=QG.point;if($('#qpoint',el).value!==String(QG.point)){QG.point='';$('#qpoint',el).value=''}}
+    btn();done()};
+  const btn=()=>{const b=$('#qgo',el),s=$('#qgs',el);if(!b)return;
+    if(QJOB){b.textContent='■ Stop generating';b.classList.remove('primary');s.textContent=QJOB.status+(QJOB.key&&!qgSel().unit?'':'')+(QJOB.topic?' · '+QJOB.topic.slice(0,60):'')}
+    else{b.classList.add('primary');b.textContent=`✨ Generate ${QG.n} questions & model answers`;b.disabled=!qgSel().unit;s.innerHTML=QERR?`<span style="color:var(--again)">${esc(QERR)}</span>`:(qgSel().unit?'':'Pick a unit to start.')}};
+  const done=()=>{const box=$('#qdone',el),sel=qgSel();
+    if(!sel.unit){const secs=SYL[QG.paper]||[],rows=[];secs.forEach(([,units],si)=>units.forEach(([u],ui)=>{const n=unitCnt(QG.paper,si,ui);if(n)rows.push({si,ui,u,n})}));
+      box.innerHTML=rows.length?`<h3>Generated for ${QG.paper}</h3><div class="card list" style="padding:2px 12px">${rows.map(r=>`<div class="item" data-u="${r.si}.${r.ui}"><div class="t">${esc(r.u)}</div><div class="s">${r.n} question${r.n>1?'s':''}</div></div>`).join('')}</div>`:'';
+      $$('[data-u]',box).forEach(x=>x.onclick=()=>{QG.unit=x.dataset.u;QG.point='';saveQG();fill();window.scrollTo(0,0)});return}
+    const p=pre(QG.paper,sel.si,sel.ui),keys=sel.pi<0?null:qgKey(QG.paper,sel.si,sel.ui,sel.pi);
+    const qs=S.qas.filter(q=>q.sylKey&&(keys?q.sylKey===keys:q.sylKey.startsWith(p))).sort((a,b)=>(a.created||0)-(b.created||0));
+    if(!qs.length){box.innerHTML=`<p class="small muted" style="text-align:center;margin-top:14px">No questions generated for this ${sel.pi<0?'unit':'topic'} yet.</p>`;return}
+    const groups=new Map();for(const q of qs){if(!groups.has(q.sylKey))groups.set(q.sylKey,[]);groups.get(q.sylKey).push(q)}
+    const label=k=>{const t=k.split('.').pop();return t==='all'?'Whole unit':sel.unit[1][+t]||'Topic'};
+    const att=id=>S.attempts.filter(x=>x.qaId===id).length;
+    box.innerHTML=`<h3>${qs.length} question${qs.length>1?'s':''} on this ${sel.pi<0?'unit':'topic'}</h3>`+[...groups].map(([k,list])=>`<div class="sec"><div class="h">${esc(label(k))}</div><div class="card list" style="padding:2px 12px">${list.map(q=>`<a class="item" data-go="#/qa/${q.id}"><div class="t">${esc(q.question)}</div><div class="s">${q.marks?`<span class="tag">${q.marks}m</span>`:''}${q.directive?`<span class="tag">${esc(q.directive)}</span>`:''}${revTag(q)}${att(q.id)?`<span class="tag">practised ${att(q.id)}×</span>`:''}</div></a>`).join('')}</div></div>`).join('')}
+  const go_=()=>{if(QJOB){QJOB.ctrl.abort();return}const sel=qgSel();if(!sel.unit)return toast('Choose a unit first');if(!QG.types.length)return toast('Pick at least one question type');
+    const key=qgKey(QG.paper,sel.si,sel.ui,sel.pi),topic=sel.pi<0?sel.unit[0]:sel.unit[0]+': '+sel.point;
+    const have=S.qas.filter(q=>q.sylKey===key).map(q=>q.question).slice(-25);
+    runQGen({key,paper:QG.paper,sec:sel.sec,unitName:sel.unit[0],topic,pi:sel.pi,points:sel.unit[1],types:QTYPES.map(t=>t[0]).filter(t=>QG.types.includes(t)),n:QG.n,web:AI.provider==='claude'&&QG.web,have})};
+  if(QJOB)QJOB.on=()=>{if(el.isConnected)btn()};
+  const syncTypes=()=>$$('#qtypes .chip',el).forEach(c=>c.classList.toggle('on',QG.types.includes(c.dataset.k)));syncTypes();
+  $$('#qtypes .chip',el).forEach(c=>c.onclick=()=>{const k=c.dataset.k;QG.types=QG.types.includes(k)?QG.types.filter(x=>x!==k):[...QG.types,k];saveQG();syncTypes()});
+  const syncN=()=>$$('#qn button',el).forEach(b=>b.classList.toggle('on',+b.dataset.n===QG.n));syncN();
+  $$('#qn button',el).forEach(b=>b.onclick=()=>{QG.n=+b.dataset.n;saveQG();syncN();btn()});
+  $('#qpaper',el).onchange=e=>{QG.paper=e.target.value;QG.unit='';QG.point='';saveQG();fill()};
+  $('#qunit',el).onchange=e=>{QG.unit=e.target.value;QG.point='';saveQG();fill()};
+  $('#qpoint',el).onchange=e=>{QG.point=e.target.value;saveQG();done()};
+  $('#qweb',el).onchange=e=>{QG.web=e.target.checked;saveQG()};
+  $('#qkey',el).onclick=()=>aiSetup();
+  $('#qgo',el).onclick=go_;
+  fill();
+}
+
+/* ================= [verify] → one-tap Google search ================= */
+// Every "[verify…]" mark on screen gets a small G button that searches Google for the sentence just before it.
+function verifyQuery(block,node,off){
+  let t='';try{const r=document.createRange();r.setStart(block,0);r.setEnd(node,off);t=r.toString()}catch(e){t=node.nodeValue.slice(0,off)}
+  t=t.replace(/\[verify[^\]]*\]/gi,'\n').replace(/[ \t]+/g,' ').replace(/[\s.;:,–—-]+$/,'').trim();
+  const parts=t.split(/(?<=[.!?।])\s+|\s*\n\s*/).map(s=>s.trim()).filter(Boolean);
+  let s=parts.pop()||'';while(s.length<30&&parts.length)s=parts.pop()+' '+s;
+  s=s.replace(/^\s*([-*•]|\d+[.)])\s*/,'');
+  return s.length>220?s.slice(s.length-220).replace(/^\S*\s/,''):s;
+}
+function addVerifyLinks(root){
+  if(!root||!/\[verify/i.test(root.textContent||''))return;
+  const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{acceptNode:n=>/\[verify/i.test(n.nodeValue)&&n.parentElement&&!n.parentElement.closest('textarea,pre,script,style,option,.vgw,input')?1:3});
+  const ns=[];while(w.nextNode())ns.push(w.currentNode);
+  for(const n of ns){if(!n.parentNode)continue;
+    const block=n.parentElement.closest('li,p,td,th,blockquote,h1,h2,h3,h4,h5,.t,.s,.flash,.fs-in,.card')||n.parentElement;
+    const v=n.nodeValue,re=/\[verify[^\]]*\]/gi,hits=[];let m;
+    while((m=re.exec(v)))hits.push([m.index,m[0],verifyQuery(block,n,m.index)]);
+    const f=document.createDocumentFragment();let last=0;
+    for(const[i,txt,q]of hits){f.append(v.slice(last,i));const s=document.createElement('span');s.className='vgw';s.textContent=txt;
+      if(q){const b=document.createElement('button');b.type='button';b.className='vg';b.dataset.gq=q;b.setAttribute('aria-label','Search Google to verify');b.title='Google: '+q;s.append(b)}
+      f.append(s);last=i+txt.length}
+    f.append(v.slice(last));n.parentNode.replaceChild(f,n)}
+}
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('.vg');if(!b)return;e.preventDefault();e.stopPropagation();
+  window.open('https://www.google.com/search?q='+encodeURIComponent(b.dataset.gq),'_blank','noopener')},true);
+{let pend=new Set(),sched=false;
+  new MutationObserver(ms=>{for(const m of ms)for(const n of m.addedNodes){const el=n.nodeType===1?n:n.parentElement;if(el&&!el.closest('.vgw'))pend.add(el)}
+    if(!sched&&pend.size){sched=true;queueMicrotask(()=>{sched=false;const a=[...pend];pend.clear();a.forEach(el=>el.isConnected&&addVerifyLinks(el))})}})
+  .observe(document.body,{childList:true,subtree:true,characterData:false})}
 
 /* ================= Boot ================= */
 (async function boot(){
