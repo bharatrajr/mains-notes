@@ -189,6 +189,10 @@ body.feedon #exitfocus{display:none!important}
 .sypt{display:flex;align-items:flex-start;gap:2px;padding:6px 0 6px 10px;border-left:2px solid var(--line);margin:2px 0;font-size:15px}
 .sypt span{flex:1;padding-top:3px}
 .sypt .iconbtn{flex:none}
+.sypt .spt{cursor:pointer}
+.sypt.done .spt{color:var(--muted)}
+.syok{color:var(--good)}
+.syin{display:block;font-size:12px;color:var(--good);margin-top:1px}
 .idea .itext{font-size:15px;line-height:1.6}.idea .itext p{margin:4px 0}
 .idea .btn{padding:6px 10px;font-size:14px}
 .vc{text-align:center;font-size:13px;color:var(--muted);min-height:20px;margin-top:8px}
@@ -237,6 +241,18 @@ body.storyon main{padding-top:0}
 .vg{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;margin:0 2px 0 3px;padding:0;border:1px solid var(--line);border-radius:50%;background:var(--surface);cursor:pointer;vertical-align:-3px;font:700 12px/1 system-ui,sans-serif;color:#4285f4;font-style:normal;text-decoration:none}
 .vg::before{content:'G'}
 .vg:active{background:var(--soft)}
+#toast.act{pointer-events:auto}
+.tact{background:none;border:0;color:#8ab4f8;font-weight:700;margin-left:8px;cursor:pointer;padding:2px 4px;text-transform:uppercase;font-size:13px}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .tact{color:#2f4b7c}}
+:root[data-theme="dark"] .tact{color:#2f4b7c}
+/* selection toolbar */
+.seltb{position:fixed;z-index:25;display:flex;gap:2px;background:var(--ink);color:var(--bg);border-radius:20px;padding:3px;box-shadow:0 6px 20px rgba(0,0,0,.28);user-select:none;-webkit-user-select:none}
+.seltb[hidden]{display:none}
+.seltb button{background:none;border:0;color:inherit;font-size:13px;padding:7px 11px;border-radius:16px;cursor:pointer;white-space:nowrap}
+.seltb button:active{background:rgba(127,127,127,.3)}
+.seltb button b{color:#8ab4f8}
+.hl{animation:hl 2s ease-out}
+@keyframes hl{from{background:var(--mark)}}
 /* Q&A generator */
 #ltab.four button{font-size:13px;padding:7px 4px;line-height:1.2}
 .qtypes{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
@@ -423,26 +439,29 @@ function inline(s){return s.replace(/`([^`]+)`/g,'<code>$1</code>').replace(/\*\
 function mdTable(rows){const cells=r=>r.trim().replace(/^\|/,'').replace(/\|$/,'').split('|').map(c=>inline(c.trim()));
   const body=rows.filter(r=>!/^\s*\|?\s*:?-{2,}/.test(r));if(!body.length)return'';
   return'<table><thead><tr>'+cells(body[0]).map(c=>`<th>${c}</th>`).join('')+'</tr></thead><tbody>'+body.slice(1).map(r=>'<tr>'+cells(r).map(c=>`<td>${c}</td>`).join('')+'</tr>').join('')+'</tbody></table>'}
-function md(src){
+// track=true tags each block with data-ln (its first source line) so a selection can be mapped back to the note text.
+function md(src,track){
   if(!src)return'';const lines=esc(String(src)).replace(/\r/g,'').split('\n'),out=[],st=[];
+  const A=k=>track?` data-ln="${k}"`:'';
   const closeAll=()=>{while(st.length)out.push(`</li></${st.pop().t}>`)};
-  const item=(ind,t)=>{
-    if(!st.length||ind>st[st.length-1].ind){out.push(`<${t}><li>`);st.push({t,ind});return}
+  const item=(ind,t,ln)=>{const li=`<li${A(ln)}>`;
+    if(!st.length||ind>st[st.length-1].ind){out.push(`<${t}>${li}`);st.push({t,ind});return}
     while(st.length>1&&st[st.length-1].ind>ind)out.push(`</li></${st.pop().t}>`);
-    const top=st[st.length-1];if(top.t!==t){out.push(`</li></${st.pop().t}><${t}><li>`);st.push({t,ind})}else out.push('</li><li>')};
+    const top=st[st.length-1];if(top.t!==t){out.push(`</li></${st.pop().t}><${t}>${li}`);st.push({t,ind})}else out.push('</li>'+li)};
   const isBlock=l=>/^(\s*([-*•]|\d+[.)])\s+|#{1,4}\s|&gt;|\s*\||\s*(---|\*\*\*)\s*$)/.test(l);
   for(let i=0;i<lines.length;i++){const L=lines[i];
     const m=L.match(/^(\s*)([-*•]|\d+[.)])\s+(.*)$/);
-    if(m){item(m[1].replace(/\t/g,'    ').length,/\d/.test(m[2])?'ol':'ul');out.push(inline(m[3]));continue}
+    if(m){item(m[1].replace(/\t/g,'    ').length,/\d/.test(m[2])?'ol':'ul',i);out.push(inline(m[3]));continue}
     if(!L.trim()){if(st.length&&i+1<lines.length&&/^\s*([-*•]|\d+[.)])\s+/.test(lines[i+1]))continue;closeAll();continue}
     if(st.length&&/^\s{2,}\S/.test(L)){out.push('<br>'+inline(L.trim()));continue}
     closeAll();
-    let h=L.match(/^(#{1,4})\s+(.*)$/);if(h){const lv=Math.min(h[1].length+1,5);out.push(`<h${lv}>${inline(h[2])}</h${lv}>`);continue}
+    let h=L.match(/^(#{1,4})\s+(.*)$/);if(h){const lv=Math.min(h[1].length+1,5);out.push(`<h${lv}${A(i)}>${inline(h[2])}</h${lv}>`);continue}
     if(/^\s*(---|\*\*\*)\s*$/.test(L)){out.push('<hr>');continue}
-    if(/^&gt;/.test(L)){const q=[];while(i<lines.length&&/^&gt;/.test(lines[i]))q.push(lines[i++].replace(/^&gt;\s?/,''));i--;out.push(`<blockquote>${inline(q.join('<br>'))}</blockquote>`);continue}
-    if(/^\s*\|/.test(L)){const rows=[];while(i<lines.length&&/^\s*\|/.test(lines[i]))rows.push(lines[i++]);i--;out.push(mdTable(rows));continue}
+    const s0=i;
+    if(/^&gt;/.test(L)){const q=[];while(i<lines.length&&/^&gt;/.test(lines[i]))q.push(lines[i++].replace(/^&gt;\s?/,''));i--;out.push(`<blockquote${A(s0)}>${inline(q.join('<br>'))}</blockquote>`);continue}
+    if(/^\s*\|/.test(L)){const rows=[];while(i<lines.length&&/^\s*\|/.test(lines[i]))rows.push(lines[i++]);i--;out.push(mdTable(rows).replace('<table>',`<table${A(s0)}>`));continue}
     const p=[L];while(i+1<lines.length&&lines[i+1].trim()&&!isBlock(lines[i+1]))p.push(lines[++i]);
-    out.push(`<p>${inline(p.join('<br>'))}</p>`)}
+    out.push(`<p${A(s0)}>${inline(p.join('<br>'))}</p>`)}
   closeAll();return out.join('');
 }
 function clozeHTML(text,n,reveal){
@@ -452,7 +471,9 @@ function clozeHTML(text,n,reveal){
 const plain=t=>String(t||'').replace(/\{\{c\d+::([\s\S]*?)(?:::[\s\S]*?)?\}\}/g,'$1').replace(/[#*_=`>|]/g,'').replace(/\s+/g,' ').trim();
 
 /* ================= UI helpers ================= */
-function toast(m,ms=2200){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove('on'),ms)}
+function toast(m,ms=2200,act){const t=$('#toast');t.textContent=m;t.classList.toggle('act',!!act);
+  if(act){const b=document.createElement('button');b.className='tact';b.textContent=act.label;b.onclick=()=>{t.classList.remove('on','act');act.fn()};t.append(' ',b)}
+  t.classList.add('on');clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove('on','act'),ms)}
 function modal(html,bind){const m=$('#modal');m.innerHTML=`<div class="mbg"><div class="mbox">${html}</div></div>`;m.classList.add('on');
   $('.mbg',m).addEventListener('click',e=>{if(e.target.classList.contains('mbg')||e.target.closest('[data-close]'))closeModal()});bind&&bind($('.mbox',m))}
 function closeModal(){const m=$('#modal');m.classList.remove('on');m.innerHTML=''}
@@ -582,6 +603,9 @@ function vLib(v,args){
 /* ================= Note view ================= */
 function sec(title,body){return body?`<div class="sec"><div class="h">${title}</div>${body}</div>`:''}
 const ulist=a=>a&&a.length?`<ul class="facts">${a.map(x=>`<li>${inline(esc(x))}</li>`).join('')}</ul>`:'';
+// Same, but tagged with the field name and line / item position so selected text can be edited in place.
+const ulistF=(a,f)=>a&&a.length?`<ul class="facts" data-f="${f}">${a.map((x,i)=>`<li data-ai="${i}">${inline(esc(x))}</li>`).join('')}</ul>`:'';
+const mdF=(s,f)=>s?`<div data-f="${f}">${md(s,true)}</div>`:'';
 function cardListHTML(id){const cs=cardsOf(id);if(!cs.length)return'<p class="small muted">No flashcards yet.</p>';
   return`<div class="list">${cs.map(c=>`<div class="item" data-card="${c.id}"><div class="t small">${esc(plain(c.type==='cloze'?c.text:c.front).slice(0,140))}</div><div class="s">${c.type==='cloze'?'cloze '+c.cloze:'basic'} · ${c.suspended?'suspended':!c.state?'new':c.state===2?'due '+until(c.due):'learning'}</div></div>`).join('')}</div>`}
 function vNote(v,[id]){
@@ -593,13 +617,13 @@ function vNote(v,[id]){
   <div style="margin-top:6px">${(n.tags||[]).map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>
   <div class="actions"><button class="btn" id="star">${n.starred?'★':'☆'}</button><button class="btn" id="rev">✓ Revised</button><button class="btn" id="study">Study ${cs.length}</button><button class="btn" id="focus">Focus</button><button class="btn" id="listen">🔈 Listen</button><span class="spacer"></span><button class="btn" id="more">⋯</button></div>
   <div class="small muted"><b style="color:${revN(n)?'var(--good)':'var(--muted)'}">↻ Revised ${revN(n)}×</b> · last ${ago(n.rev?.last)} · next ${n.rev?until(n.rev.next):'—'}</div>
-  <div class="reading">
+  <div class="reading" data-src="notes:${n.id}">
   ${n.summary?`<blockquote>${inline(esc(n.summary))}</blockquote>`:''}
-  ${md(n.content)}
-  ${sec('Key facts',ulist(n.keyFacts))}
-  ${sec('Telangana angle',n.telanganaAngle?md(n.telanganaAngle):'')}
-  ${sec('Memory aids',ulist(n.mnemonics))}
-  ${sec('Likely questions',ulist(n.pyqs))}
+  ${mdF(n.content,'content')}
+  ${sec('Key facts',ulistF(n.keyFacts,'keyFacts'))}
+  ${sec('Telangana angle',mdF(n.telanganaAngle,'telanganaAngle'))}
+  ${sec('Memory aids',ulistF(n.mnemonics,'mnemonics'))}
+  ${sec('Likely questions',ulistF(n.pyqs,'pyqs'))}
   </div>
   <div class="sec"><div class="h row">Flashcards <span class="spacer"></span><button class="btn ghost" id="addcard">+ Card</button></div><div id="clist">${cardListHTML(id)}</div></div>`;
   bindNoteCommon(v,n,'notes');
@@ -637,13 +661,13 @@ function vQA(v,[id]){
   <div class="small muted">${esc(paperName(q.paper))}${q.topic?' · '+esc(q.topic):''}${q.wordLimit?' · '+q.wordLimit+' words':''}${q.directive?' · <b>'+esc(q.directive)+'</b>':''} · <b style="color:${revN(q)?'var(--good)':'var(--muted)'}">↻ Revised ${revN(q)}×</b></div>
   <div class="actions"><button class="btn" id="star">${q.starred?'★':'☆'}</button><button class="btn" id="rev">✓ Revised</button><button class="btn" id="test">Test me</button><button class="btn" id="listen">🔈 Listen</button><button class="btn" id="study">Cards ${cardsOf(id).length}</button><span class="spacer"></span><button class="btn" id="more">⋯</button></div>
   ${q.keywords?.length?`<div style="margin-bottom:8px">${q.keywords.map(k=>`<span class="tag" style="font-size:12px">${esc(k)}</span>`).join('')}</div>`:''}
-  <div class="reading" id="ans">
-  ${sec('Introduction',q.intro?md(q.intro):'')}
-  ${sec('Body',md(q.body))}
-  ${sec('Conclusion',q.conclusion?md(q.conclusion):'')}
-  ${sec('🧠 Memory aid',q.mnemonic?md(q.mnemonic):'')}
-  ${sec('Diagram',q.diagram?md(q.diagram):'')}
-  ${sec('Value additions',ulist(q.valueAdd))}
+  <div class="reading" id="ans" data-src="qas:${q.id}">
+  ${sec('Introduction',mdF(q.intro,'intro'))}
+  ${sec('Body',mdF(q.body,'body'))}
+  ${sec('Conclusion',mdF(q.conclusion,'conclusion'))}
+  ${sec('🧠 Memory aid',mdF(q.mnemonic,'mnemonic'))}
+  ${sec('Diagram',mdF(q.diagram,'diagram'))}
+  ${sec('Value additions',ulistF(q.valueAdd,'valueAdd'))}
   </div>
   ${atts.length?sec('Your attempts',`<table class="t">${atts.slice(0,8).map(a=>`<tr><td>${fmtDate(a.t)}</td><td>${Math.round(a.secs/60)} min</td><td>${a.words?a.words+' words':'on paper'}</td><td class="n">${a.score?a.score+'/10':'—'}</td></tr>`).join('')}</table>`):''}
   <div class="sec"><div class="h row">Flashcards <span class="spacer"></span><button class="btn ghost" id="addcard">+ Card</button></div><div id="clist">${cardListHTML(id)}</div></div>`;
@@ -901,7 +925,7 @@ async function commitImport(prep){
     if(!_dup&&S.settings.autoQaCards){cards.push(qaOutlineCard(o,t++));nC++}
     addCards(_cards,{kind:'qa',id:o.id,paper:o.paper},_dup?cardsOf(o.id):[])}
   if(notes.length)await upsertMany('notes',notes);if(qas.length)await upsertMany('qas',qas);if(cards.length)await upsertMany('cards',cards);
-  return{nN,nQ,nC,nU,first:notes[0]?'#/note/'+notes[0].id:qas[0]?'#/qa/'+qas[0].id:null};
+  return{nN,nQ,nC,nU,saved:[...notes,...qas],first:notes[0]?'#/note/'+notes[0].id:qas[0]?'#/qa/'+qas[0].id:null};
 }
 function vAdd(v){
   v.innerHTML=`
@@ -947,7 +971,7 @@ function vAdd(v){
       toast(await copyText(buildPrompt(i))?`Part ${i+1} prompt copied — paste it in your AI`:'Copy failed; use Preview');renderBulk();if(!$('#apv').classList.contains('hide'))$('#apv').textContent=buildPrompt()})};
   const wc=()=>{clearTimeout(wc.t);wc.t=setTimeout(renderBulk,250)};renderBulk();
   $('#araw').oninput=e=>{A.raw=e.target.value;saveA();wc()};
-  $('#apaste1').onclick=()=>pasteInto($('#araw'));$('#aclear1').onclick=()=>{A.raw='';A.done=[];A.cur=0;$('#araw').value='';saveA();renderBulk()};
+  $('#apaste1').onclick=()=>pasteInto($('#araw'));$('#aclear1').onclick=()=>{A.raw='';A.done=[];A.cur=0;A.syl=[];$('#araw').value='';saveA();renderBulk()};
   $('#apaper').onchange=e=>{A.paper=e.target.value;saveA()};
   const bindSel=(id,k,num)=>{const el=$(id);if(!el)return;el.value=A[k];el.onchange=el.oninput=e=>{A[k]=num?+e.target.value:e.target.value;saveA()}};
   bindSel('#astyle','style');bindSel('#adepth','depth');bindSel('#acards','cards');bindSel('#amarks','marks',1);bindSel('#awords','words',1);
@@ -966,14 +990,14 @@ function vAdd(v){
     ${all.map((it,i)=>`<label class="pv"><input type="checkbox" data-i="${i}" ${it.x._on?'checked':''}><div><div style="color:var(--ink);font-size:15px">${esc(it.k==='n'?it.x.title:it.x.question)}</div><div class="small muted">${it.x.paper||'Unsorted'} · ${(Array.isArray(it.x._cards)?it.x._cards.length:0)} cards${it.k==='q'&&S.settings.autoQaCards&&!it.x._dup?' + outline':''}${it.x._dup?' · <b>already exists — will update</b>':''}</div></div></label>`).join('')}
     <div class="row end"><button class="btn primary" id="asave">Save to library</button></div>`;
     $$('input[data-i]',box).forEach(cb=>cb.onchange=()=>{all[+cb.dataset.i].x._on=cb.checked});
-    $('#asave',box).onclick=async()=>{const r=await commitImport(prep);A.reply='';A.parsed=null;
+    $('#asave',box).onclick=async()=>{const r=await commitImport(prep);A.reply='';A.parsed=null;await linkSyl(r.saved);
       const parts=bulkParts(),msg=`Saved ${r.nN+r.nQ} new, ${r.nU} updated, ${r.nC} cards`;
       if(parts.length>1){const k=partKey(parts[A.cur]);if(!A.done.includes(k))A.done.push(k);
         const left=parts.map((p,i)=>i).filter(i=>!A.done.includes(partKey(parts[i])));
         if(left.length){const i=left.find(i=>i>A.cur)??left[0];A.cur=i;toast(`${msg}. Next: part ${i+1}`,3200)}
-        else{celebrate(`All ${parts.length} parts imported`,'📚');toast(msg,3000)}
+        else{A.syl=[];celebrate(`All ${parts.length} parts imported`,'📚');toast(msg,3000)}
         saveA();vAdd(v);$('#abulk').scrollIntoView({behavior:'smooth',block:'center'});return}
-      saveA();toast(msg,3000);if(r.first)go(r.first);else vAdd(v)}};
+      A.syl=[];saveA();toast(msg,3000);if(r.first)go(r.first);else vAdd(v)}};
 }
 
 /* ================= Review ================= */
@@ -1725,6 +1749,58 @@ const SY={paper:'P2',q:'',ctx:true,open:{}};
 try{Object.assign(SY,JSON.parse(localStorage.getItem('mains-syl')||'{}'))}catch(e){}
 const saveSY=()=>{try{localStorage.setItem('mains-syl',JSON.stringify(SY))}catch(e){}};
 const sylText=(p,s,u,pt)=>SY.ctx?`${paperName(p)} › ${s} › ${u}: ${pt}`:pt;
+/* Which syllabus points the library already covers: an exact link (notes/Q&A made from that point),
+   or a word match between the point and a note title / Q&A topic. The user can override either way. */
+const SYSTOP=new Set('the and of in to for with from its their on by as at an or under during role impact features nature results causes course this that india indian telangana state states issues main major various concept concepts types other contribution between after before about into also through his her them they how what why which new age period culture cultural society social history historical art arts literature economy economic development political politics polity administration movement policy policie programme reform system structure condition life people dynasty empire rule government public general modern ancient medieval'.split(' '));
+const sTok=s=>[...new Set(String(s||'').toLowerCase().replace(/[^a-z0-9ఀ-౿]+/g,' ').split(' ').map(w=>w.length>4?w.replace(/s$/,''):w).filter(w=>w.length>=3&&!SYSTOP.has(w)))];
+let sylIdx=null;
+function sylIndex(){const sig=S.notes.length+':'+S.qas.length+':'+Math.max(0,...S.notes.map(n=>n.updated||0),...S.qas.map(q=>q.updated||0))+':'+S.notes.concat(S.qas).reduce((a,x)=>a+(x.sylKeys||[]).length,0);
+  if(sylIdx&&sylIdx.sig===sig)return sylIdx;
+  const mk=(k,x,head,all)=>({k,x,head:sTok(head),all:new Set(sTok(all))});
+  return sylIdx={sig,items:[...S.notes.map(n=>mk('note',n,n.title,[n.title,n.topic,(n.tags||[]).join(' ')].join(' '))),...S.qas.map(q=>mk('qa',q,q.topic,[q.topic,q.question,(q.tags||[]).join(' ')].join(' ')))]}}
+function sylCover(p,si,ui,pi){
+  const key=`${p}.${si}.${ui}.${pi}`,unit=SYL[p]?.[si]?.[1]?.[ui],pt=unit?.[1]?.[pi];if(!pt)return{key,hits:[],done:false,manual:false};
+  const ptT=sTok(pt),ptSet=new Set(ptT),ctx=new Set(sTok(unit[0]+' '+pt)),hits=[];
+  for(const it of sylIndex().items){const x=it.x;
+    if(x.sylKey===key||(x.sylKeys||[]).includes(key)){hits.push(it);continue}
+    if(x.paper&&x.paper!==p)continue;
+    const h=it.head,hm=h.filter(w=>ctx.has(w)).length;
+    const about=h.length>0&&h.length<=8&&hm>=Math.ceil(h.length*.6)&&h.some(w=>ptSet.has(w));// its title is about this point
+    const covers=ptT.length>=2&&ptT.filter(w=>it.all.has(w)).length>=Math.ceil(ptT.length*.6);// it covers most of the point's words
+    if(about||covers)hits.push(it)}
+  const man=(S.settings.sylDone||{})[key];
+  return{key,hits,done:man===undefined?hits.length>0:!!man,manual:man!==undefined}}
+const coverText=c=>{const n=c.hits.filter(h=>h.k==='note').length,q=c.hits.length-n;return[n?n+' note'+(n>1?'s':''):'',q?q+' Q&A':''].filter(Boolean).join(' · ')};
+async function setSylDone(key,val){const d={...(S.settings.sylDone||{})};if(val===undefined)delete d[key];else d[key]=val;S.settings.sylDone=d;await saveSettings()}
+function sylPointModal(p,s,u,pt,si,ui,pi,after){
+  const c=sylCover(p,si,ui,pi);
+  modal(`<h3 style="margin-bottom:4px">${esc(pt)}</h3><p class="small muted" style="margin:0 0 10px">${esc(paperName(p))} › ${esc(u)}</p>
+    <div class="small" style="margin-bottom:8px;color:${c.done?'var(--good)':'var(--muted)'}"><b>${c.done?'✓ Done':'Not covered yet'}</b>${c.manual?' (marked by you)':c.hits.length?' (found in your library)':''}</div>
+    ${c.hits.length?`<div class="card list" style="padding:2px 12px">${c.hits.map(h=>`<a class="item" data-go="#/${h.k}/${h.x.id}"><div class="t">${esc(h.k==='note'?h.x.title:h.x.question)}</div><div class="s"><span class="tag">${h.k==='note'?'note':'Q&A'}</span>${revTag(h.x)}</div></a>`).join('')}</div>`:''}
+    <div style="display:grid;gap:8px;margin-top:12px">
+      <button class="btn" id="spdone">${c.done?'Mark as not done':'✓ Mark as done'}</button>
+      ${c.manual?'<button class="btn ghost" id="spauto">Go back to automatic</button>':''}
+      <button class="btn" id="spadd">${c.done?'Write more notes on it':'Write notes on it'} (Add)</button>
+      <button class="btn" id="spqa">✨ ${c.done?'Generate more':'Generate'} questions &amp; answers</button>
+      <button class="btn ghost" data-close>Close</button></div>`,m=>{
+    $('#spdone',m).onclick=async()=>{await setSylDone(c.key,!c.done);closeModal();after()};
+    if($('#spauto',m))$('#spauto',m).onclick=async()=>{await setSylDone(c.key,undefined);closeModal();after()};
+    $('#spadd',m).onclick=()=>sylUseInAdd(p,s,u,pt,c);
+    $('#spqa',m).onclick=()=>{if(p==='GE')return toast('Q&A generation is for Papers I–VI');QG.paper=p;QG.unit=si+'.'+ui;QG.point=String(pi);saveQG();L.tab='gen';go('#/lib/gen')}});
+}
+// After an import that started from syllabus points, link each saved item to the point it best matches.
+async function linkSyl(saved){
+  const keys=(A.syl||[]).filter(k=>{const[p,si,ui,pi]=k.split('.');return SYL[p]?.[+si]?.[1]?.[+ui]?.[1]?.[+pi]});if(!keys.length||!saved?.length)return;
+  const ptT=k=>{const[p,si,ui,pi]=k.split('.');return sTok(SYL[p][+si][1][+ui][1][+pi])};const kt=keys.map(k=>[k,ptT(k)]);
+  for(const x of saved){const have=new Set(sTok([x.title||x.question,x.topic].join(' ')));
+    const sc=kt.map(([k,t])=>[k,t.filter(w=>have.has(w)).length]).sort((a,b)=>b[1]-a[1]);
+    const pick=keys.length===1?[keys[0]]:sc[0][1]>0?sc.filter(s=>s[1]===sc[0][1]).map(s=>s[0]):keys;
+    x.sylKeys=[...new Set([...(x.sylKeys||[]),...pick])]}
+  await upsertMany('notes',saved.filter(x=>x.title!==undefined&&!x.question));await upsertMany('qas',saved.filter(x=>x.question))}
+function sylUseInAdd(p,s,u,pt,c){
+  if(c.done&&!confirm(c.hits.length?`Your library already has ${coverText(c)} on this point. Add it again anyway?`:'You marked this point as done. Add it again anyway?'))return;
+  const line='Syllabus topic: '+sylText(p,s,u,pt);A.mode='notes';A.paper=p==='GE'?'GE':p;A.raw=A.raw.trim()?A.raw.trim()+'\n\n'+line:line;
+  A.syl=[...new Set([...(A.syl||[]),c.key])];saveA();toast('Added to Add content');go('#/add')}
 function vSyl(v){
   const ids=Object.keys(SYL);if(!SYL[SY.paper])SY.paper='P2';
   v.innerHTML=`<div class="chips" id="sypap">${ids.map(id=>`<button class="chip${id===SY.paper&&!SY.q?' on':''}" data-p="${id}">${id}</button>`).join('')}</div>
@@ -1736,9 +1812,9 @@ function vSyl(v){
     for(const p of q?ids:[SY.paper]){const secs=SYL[p];let ph='';
       secs.forEach(([s,units],si)=>{let sh='';
         units.forEach(([u,list],ui)=>{const hit=q?list.filter(pt=>(pt+' '+u+' '+s).toLowerCase().includes(q)):list;if(!hit.length)return;
-          const key=p+'.'+si+'.'+ui,open=q||SY.open[key];
-          sh+=`<div class="syu${open?' on':''}"><div class="syh" data-k="${key}"><span class="t">${esc(u)}</span><span class="small muted">${hit.length}</span><button class="btn ghost sycp" data-all="${pts.length}" data-n="${hit.length}" aria-label="Copy unit">Copy all</button></div>
-          <div class="sypts">${hit.map(pt=>{pts.push([p,s,u,pt]);const i=pts.length-1;return`<div class="sypt"><span>${esc(pt)}</span><button class="iconbtn" data-c="${i}" aria-label="Copy point"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button><button class="iconbtn" data-u="${i}" aria-label="Use in Add"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></div>`}).join('')}</div></div>`});
+          const key=p+'.'+si+'.'+ui,open=q||SY.open[key],cv=hit.map(pt=>sylCover(p,si,ui,list.indexOf(pt))),nd=cv.filter(c=>c.done).length;
+          sh+=`<div class="syu${open?' on':''}"><div class="syh" data-k="${key}"><span class="t">${nd===hit.length?'<b class="syok">✓</b> ':''}${esc(u)}</span><span class="small ${nd?'':'muted'}" style="${nd?'color:var(--good)':''}" title="Points done">${nd}/${hit.length}</span><button class="btn ghost sycp" data-all="${pts.length}" data-n="${hit.length}" aria-label="Copy unit">Copy all</button></div>
+          <div class="sypts">${hit.map((pt,j)=>{const c=cv[j];pts.push([p,s,u,pt,si,ui,list.indexOf(pt),c]);const i=pts.length-1;return`<div class="sypt${c.done?' done':''}"><span class="spt" data-i="${i}">${c.done?'<b class="syok">✓</b> ':''}${esc(pt)}${c.done?`<small class="syin">${c.hits.length?'In library: '+coverText(c):'Marked done'}</small>`:''}</span><button class="iconbtn" data-c="${i}" aria-label="Copy point"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button><button class="iconbtn" data-u="${i}" aria-label="Use in Add"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></div>`}).join('')}</div></div>`});
         if(sh)ph+=`<div class="sec"><div class="h">${esc(s)}</div><div class="card" style="padding:4px 12px">${sh}</div></div>`});
       if(ph)h+=(q?`<h3>${esc(paperName(p))}</h3>`:`<h3 style="margin-top:4px">${esc(paperName(p))}</h3>`)+ph}
     $('#sylist').innerHTML=h||'<div class="empty">No syllabus point matches.</div>';
@@ -1746,8 +1822,8 @@ function vSyl(v){
     $$('#sylist [data-c]').forEach(b=>b.onclick=async()=>{const[p,s,u,pt]=pts[+b.dataset.c];toast(await copyText(sylText(p,s,u,pt))?'Copied':'Could not copy')});
     $$('#sylist .sycp').forEach(b=>b.onclick=async()=>{const a=+b.dataset.all,sl=pts.slice(a,a+ +b.dataset.n);const[p,s,u]=sl[0];
       const t=SY.ctx?`${paperName(p)} › ${s} › ${u}\n`+sl.map(x=>'- '+x[3]).join('\n'):sl.map(x=>'- '+x[3]).join('\n');toast(await copyText(t)?`Copied ${sl.length} points`:'Could not copy')});
-    $$('#sylist [data-u]').forEach(b=>b.onclick=()=>{const[p,s,u,pt]=pts[+b.dataset.u];const line='Syllabus topic: '+sylText(p,s,u,pt);
-      A.mode='notes';A.paper=p==='GE'?'GE':p;A.raw=A.raw.trim()?A.raw.trim()+'\n\n'+line:line;saveA();toast('Added to Add content');go('#/add')});
+    $$('#sylist [data-u]').forEach(b=>b.onclick=()=>{const[p,s,u,pt,,,,c]=pts[+b.dataset.u];sylUseInAdd(p,s,u,pt,c)});
+    $$('#sylist .spt').forEach(el=>el.onclick=()=>{const[p,s,u,pt,si,ui,pi]=pts[+el.dataset.i];sylPointModal(p,s,u,pt,si,ui,pi,()=>{const y=scrollY;draw();scrollTo(0,y)})});
   };
   $$('#sypap .chip').forEach(b=>b.onclick=()=>{SY.paper=b.dataset.p;SY.q='';saveSY();vSyl(v)});
   $('#syq').oninput=e=>{SY.q=e.target.value;saveSY();$$('#sypap .chip').forEach(c=>c.classList.toggle('on',!SY.q&&c.dataset.p===SY.paper));draw()};
@@ -2171,7 +2247,7 @@ function vQGen(el){
     $('#qunit',el).innerHTML='<option value="">Choose a unit…</option>'+secs.map(([sn,units],si)=>`<optgroup label="${esc(sn)}">${units.map(([u],ui)=>{const n=unitCnt(QG.paper,si,ui);return`<option value="${si}.${ui}">${n?'✓ ':''}${esc(u)}${n?' ('+n+')':''}</option>`}).join('')}</optgroup>`).join('');
     $('#qunit',el).value=QG.unit;if($('#qunit',el).value!==String(QG.unit)){QG.unit='';QG.point=''}
     const sel=qgSel();$('#qpoint',el).disabled=!sel.unit;
-    $('#qpoint',el).innerHTML=sel.unit?`<option value="">Whole unit (all ${sel.unit[1].length} points)${cnt[qgKey(QG.paper,sel.si,sel.ui,-1)]?' ✓ '+cnt[qgKey(QG.paper,sel.si,sel.ui,-1)]:''}</option>`+sel.unit[1].map((pt,i)=>{const n=cnt[qgKey(QG.paper,sel.si,sel.ui,i)];return`<option value="${i}">${n?'✓ ':''}${esc(pt)}${n?' ('+n+')':''}</option>`}).join(''):'<option>Choose a unit first</option>';
+    $('#qpoint',el).innerHTML=sel.unit?`<option value="">Whole unit (all ${sel.unit[1].length} points)${cnt[qgKey(QG.paper,sel.si,sel.ui,-1)]?' ✓ '+cnt[qgKey(QG.paper,sel.si,sel.ui,-1)]:''}</option>`+sel.unit[1].map((pt,i)=>{const c=sylCover(QG.paper,sel.si,sel.ui,i),n=c.hits.length;return`<option value="${i}">${c.done?'✓ ':''}${esc(pt)}${n?' ('+coverText(c)+')':''}</option>`}).join(''):'<option>Choose a unit first</option>';
     if(sel.unit){$('#qpoint',el).value=QG.point;if($('#qpoint',el).value!==String(QG.point)){QG.point='';$('#qpoint',el).value=''}}
     btn();done()};
   const btn=()=>{const b=$('#qgo',el),s=$('#qgs',el);if(!b)return;
@@ -2189,6 +2265,7 @@ function vQGen(el){
     const att=id=>S.attempts.filter(x=>x.qaId===id).length;
     box.innerHTML=`<h3>${qs.length} question${qs.length>1?'s':''} on this ${sel.pi<0?'unit':'topic'}</h3>`+[...groups].map(([k,list])=>`<div class="sec"><div class="h">${esc(label(k))}</div><div class="card list" style="padding:2px 12px">${list.map(q=>`<a class="item" data-go="#/qa/${q.id}"><div class="t">${esc(q.question)}</div><div class="s">${q.marks?`<span class="tag">${q.marks}m</span>`:''}${q.directive?`<span class="tag">${esc(q.directive)}</span>`:''}${revTag(q)}${att(q.id)?`<span class="tag">practised ${att(q.id)}×</span>`:''}</div></a>`).join('')}</div></div>`).join('')}
   const go_=()=>{if(QJOB){QJOB.ctrl.abort();return}const sel=qgSel();if(!sel.unit)return toast('Choose a unit first');if(!QG.types.length)return toast('Pick at least one question type');
+    if(sel.pi>=0){const c=sylCover(QG.paper,sel.si,sel.ui,sel.pi);if(c.done&&!confirm(c.hits.length?`Your library already has ${coverText(c)} on this topic. Generate more anyway?`:'You marked this topic as done. Generate anyway?'))return}
     const key=qgKey(QG.paper,sel.si,sel.ui,sel.pi),topic=sel.pi<0?sel.unit[0]:sel.unit[0]+': '+sel.point;
     const have=S.qas.filter(q=>q.sylKey===key).map(q=>q.question).slice(-25);
     runQGen({key,paper:QG.paper,sec:sel.sec,unitName:sel.unit[0],topic,pi:sel.pi,points:sel.unit[1],types:QTYPES.map(t=>t[0]).filter(t=>QG.types.includes(t)),n:QG.n,web:AI.provider==='claude'&&QG.web,have})};
@@ -2236,6 +2313,79 @@ document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest
   new MutationObserver(ms=>{for(const m of ms)for(const n of m.addedNodes){const el=n.nodeType===1?n:n.parentElement;if(el&&!el.closest('.vgw'))pend.add(el)}
     if(!sched&&pend.size){sched=true;queueMicrotask(()=>{sched=false;const a=[...pend];pend.clear();a.forEach(el=>el.isConnected&&addVerifyLinks(el))})}})
   .observe(document.body,{childList:true,subtree:true,characterData:false})}
+
+/* ================= Selection toolbar: Google · add point · edit line ================= */
+// Appears only while text is selected. In notes and Q&A it can also add a point after the selected line
+// (same list / indent format) or edit that line. Elsewhere it offers search only.
+const SELT={ctx:null,text:'',t:0};
+const selBox=document.createElement('div');selBox.className='seltb';selBox.hidden=true;
+selBox.innerHTML='<button data-a="g"><b>G</b> Search</button><button data-a="add">+ Add point</button><button data-a="edit">✎ Edit</button>';
+document.body.append(selBox);
+const LISTRE=/^(\s*)([-*•]|\d+[.)])\s+(.*)$/;
+function blockEnd(lines,ln){const L=lines[ln]||'',ind=(L.match(/^\s*/)[0]).length;let j=ln;
+  if(LISTRE.test(L)){while(j+1<lines.length){const n=lines[j+1];
+      if(!n.trim()){const k=lines.slice(j+2).findIndex(x=>x.trim());if(k<0)break;if((lines[j+2+k].match(/^\s*/)[0]).length>ind){j=j+2+k;continue}break}
+      if((n.match(/^\s*/)[0]).length>ind){j++;continue}break}return j}
+  if(/^#{1,4}\s/.test(L))return ln;
+  if(/^\s*\|/.test(L)){while(j+1<lines.length&&/^\s*\|/.test(lines[j+1]))j++;return j}
+  if(/^>/.test(L)){while(j+1<lines.length&&/^>/.test(lines[j+1]))j++;return j}
+  const isBlock=l=>/^(\s*([-*•]|\d+[.)])\s+|#{1,4}\s|>|\s*\||\s*(---|\*\*\*)\s*$)/.test(l);
+  while(j+1<lines.length&&lines[j+1].trim()&&!isBlock(lines[j+1]))j++;return j}
+function selContext(r){
+  const el=n=>n.nodeType===1?n:n.parentElement,s=el(r.startContainer),e=el(r.endContainer);
+  const rd=e&&e.closest('[data-src]'),blk=e&&e.closest('[data-ln],[data-ai]'),fld=blk&&blk.closest('[data-f]');
+  if(!rd||!blk||!fld||!rd.contains(fld))return null;
+  const[store,id]=rd.dataset.src.split(':'),o=byId(store,id);if(!o)return null;
+  const c={store,id,field:fld.dataset.f,same:(s&&s.closest('[data-ln],[data-ai]'))===blk};
+  if(blk.dataset.ai!=null){c.ai=+blk.dataset.ai;c.cur=(o[c.field]||[])[c.ai]??'';c.canEdit=c.same;return c}
+  c.ln=+blk.dataset.ln;const lines=String(o[c.field]||'').replace(/\r/g,'').split('\n'),L=lines[c.ln]??'',m=L.match(LISTRE),h=L.match(/^(#{1,4})\s+(.*)$/);
+  c.kind=m?'li':h?'h':/^\s*\|/.test(L)?'table':/^>/.test(L)?'quote':'p';
+  c.cur=m?m[3]:h?h[2]:lines.slice(c.ln,blockEnd(lines,c.ln)+1).join('\n');c.canEdit=c.same&&c.kind!=='table'&&c.kind!=='quote';return c}
+function selHide(){if(SELT.down&&Date.now()-SELT.down<1500)return;selBox.hidden=true}
+function selCheck(){
+  const s=getSelection(),ae=document.activeElement;
+  if(!s||s.isCollapsed||!s.rangeCount||(ae&&/^(TEXTAREA|INPUT|SELECT)$/.test(ae.tagName)))return selHide();
+  const r=s.getRangeAt(0),txt=s.toString().replace(/\s+/g,' ').trim(),an=r.commonAncestorContainer,el=an.nodeType===1?an:an.parentElement;
+  if(txt.length<2||!el||el.closest('#seltb,nav,header,#toast'))return selHide();
+  SELT.ctx=selContext(r);SELT.text=txt.slice(0,300);
+  const c=SELT.ctx;selBox.querySelector('[data-a=add]').hidden=!c;selBox.querySelector('[data-a=edit]').hidden=!(c&&c.canEdit);
+  selBox.hidden=false;const rc=r.getBoundingClientRect(),w=selBox.offsetWidth,h=selBox.offsetHeight;
+  let top=rc.bottom+12;if(top+h>innerHeight-76)top=rc.top-h-12;
+  selBox.style.top=clamp(top,8,innerHeight-h-8)+'px';selBox.style.left=clamp(rc.left+rc.width/2-w/2,8,innerWidth-w-8)+'px'}
+document.addEventListener('selectionchange',()=>{clearTimeout(SELT.t);SELT.t=setTimeout(selCheck,180)});
+addEventListener('scroll',()=>{if(!selBox.hidden)selCheck()},{passive:true,capture:true});
+// Keep the selection (and the toolbar) alive while a toolbar button is being pressed.
+['pointerdown','mousedown'].forEach(ev=>selBox.addEventListener(ev,e=>{e.preventDefault();SELT.down=Date.now()}));
+selBox.addEventListener('click',e=>{const b=e.target.closest('button');SELT.down=0;if(!b)return;const a=b.dataset.a,c=SELT.ctx,t=SELT.text;
+  selBox.hidden=true;getSelection()?.removeAllRanges();
+  if(a==='g')window.open('https://www.google.com/search?q='+encodeURIComponent(t),'_blank','noopener');
+  else if(c)lineSheet(a,c,t)});
+function lineSheet(mode,c,sel){
+  const add=mode==='add',where=String(c.cur).replace(/\s+/g,' ').slice(0,90);
+  modal(`<h3>${add?'Add a point':'Edit this line'}</h3>
+    ${add?`<p class="small muted" style="margin:-4px 0 8px">Goes right after: <i>${esc(where)}${String(c.cur).length>90?'…':''}</i></p>`:''}
+    <textarea id="lsx" rows="4" placeholder="${add?'New point…':''}">${add?'':esc(c.cur)}</textarea>
+    <div class="row small muted" style="margin-top:6px"><span>**bold** · ==highlight==</span><span class="spacer"></span>
+      <button class="btn ghost" id="lsb" style="padding:4px 8px">B</button><button class="btn ghost" id="lsv" style="padding:4px 8px">+ [verify]</button></div>
+    <div class="row end" style="margin-top:12px"><button class="btn" data-close>Cancel</button><button class="btn primary" id="lss">${add?'Add':'Save'}</button></div>`,m=>{
+    const ta=$('#lsx',m);ta.focus();if(!add)ta.setSelectionRange(ta.value.length,ta.value.length);
+    $('#lsb',m).onclick=()=>{const s=ta.selectionStart,e=ta.selectionEnd;if(s===e)return toast('Select a word to bold');ta.value=ta.value.slice(0,s)+'**'+ta.value.slice(s,e)+'**'+ta.value.slice(e);ta.focus()};
+    $('#lsv',m).onclick=()=>{if(!/\[verify/i.test(ta.value))ta.value=ta.value.replace(/\s*$/,'')+' [verify]';ta.focus()};
+    $('#lss',m).onclick=async()=>{let v=ta.value.trim();if(!v)return toast(add?'Write the point first':'Line is empty — use Edit in ⋯ to delete');
+      const isList=c.ai!=null||c.kind==='li'||c.kind==='h';if(isList)v=v.replace(/\s*\n\s*/g,' ');await applyLine(mode,c,v)}})}
+async function applyLine(mode,c,v){
+  const o=byId(c.store,c.id);if(!o)return;const before=Array.isArray(o[c.field])?[...o[c.field]]:o[c.field];let hl;
+  if(c.ai!=null){const a=[...(o[c.field]||[])];if(mode==='add'){a.splice(c.ai+1,0,v);hl=`[data-ai="${c.ai+1}"]`}else{a[c.ai]=v;hl=`[data-ai="${c.ai}"]`}o[c.field]=a}
+  else{const lines=String(o[c.field]||'').replace(/\r/g,'').split('\n'),L=lines[c.ln]??'',m=L.match(LISTRE),h=L.match(/^(#{1,4})\s+(.*)$/),end=blockEnd(lines,c.ln);
+    if(mode==='edit'){if(m)lines[c.ln]=m[1]+m[2]+' '+v;else if(h)lines[c.ln]=h[1]+' '+v;else lines.splice(c.ln,end-c.ln+1,...v.split('\n'));hl=`[data-ln="${c.ln}"]`}
+    else{let ins;if(m)ins=[m[1]+m[2]+' '+v];else if(h)ins=['- '+v];else if(c.kind==='p')ins=['',...v.split('\n')];else ins=['','- '+v];
+      const nx=lines[end+1];if(ins[0]===''&&nx!==undefined&&nx.trim()&&!LISTRE.test(nx))ins.push('');
+      lines.splice(end+1,0,...ins);hl=`[data-ln="${end+1+(ins[0]===''?1:0)}"]`}
+    o[c.field]=lines.join('\n')}
+  await upsert(c.store,o);closeModal();
+  const redraw=()=>{const y=scrollY;render();scrollTo(0,y)};redraw();
+  const el=$(`[data-src="${c.store}:${c.id}"] [data-f="${c.field}"] ${hl}`)||$(`[data-src="${c.store}:${c.id}"] [data-f="${c.field}"]${hl}`);if(el){el.classList.add('hl');if(el.getBoundingClientRect().top>innerHeight-80)el.scrollIntoView({block:'center'})}
+  toast(mode==='add'?'Point added':'Line updated',5000,{label:'Undo',fn:async()=>{o[c.field]=before;await upsert(c.store,o);redraw();toast('Undone')}})}
 
 /* ================= Boot ================= */
 (async function boot(){
