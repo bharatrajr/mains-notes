@@ -246,9 +246,9 @@ body.storyon main{padding-top:0}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .tact{color:#2f4b7c}}
 :root[data-theme="dark"] .tact{color:#2f4b7c}
 /* selection toolbar */
-.seltb{position:fixed;z-index:25;display:flex;gap:2px;background:var(--ink);color:var(--bg);border-radius:20px;padding:3px;box-shadow:0 6px 20px rgba(0,0,0,.28);user-select:none;-webkit-user-select:none}
+.seltb{position:fixed;z-index:25;display:flex;flex-wrap:wrap;justify-content:center;max-width:calc(100vw - 16px);gap:0;background:var(--ink);color:var(--bg);border-radius:20px;padding:3px;box-shadow:0 6px 20px rgba(0,0,0,.28);user-select:none;-webkit-user-select:none}
 .seltb[hidden]{display:none}
-.seltb button{background:none;border:0;color:inherit;font-size:13px;padding:7px 11px;border-radius:16px;cursor:pointer;white-space:nowrap}
+.seltb button{background:none;border:0;color:inherit;font-size:13px;padding:8px 9px;border-radius:16px;cursor:pointer;white-space:nowrap}
 .seltb button:active{background:rgba(127,127,127,.3)}
 .seltb button b{color:#8ab4f8}
 .hl{animation:hl 2s ease-out}
@@ -2319,7 +2319,7 @@ document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest
 // (same list / indent format) or edit that line. Elsewhere it offers search only.
 const SELT={ctx:null,text:'',t:0};
 const selBox=document.createElement('div');selBox.className='seltb';selBox.hidden=true;
-selBox.innerHTML='<button data-a="g"><b>G</b> Search</button><button data-a="add">+ Add point</button><button data-a="edit">✎ Edit</button>';
+selBox.innerHTML='<button data-a="copy">Copy</button><button data-a="all">Select all</button><button data-a="g"><b>G</b> Search</button><button data-a="add">+ Add</button><button data-a="edit">✎ Edit</button>';
 document.body.append(selBox);
 const LISTRE=/^(\s*)([-*•]|\d+[.)])\s+(.*)$/;
 function blockEnd(lines,ln){const L=lines[ln]||'',ind=(L.match(/^\s*/)[0]).length;let j=ln;
@@ -2341,13 +2341,23 @@ function selContext(r){
   c.ln=+blk.dataset.ln;const lines=String(o[c.field]||'').replace(/\r/g,'').split('\n'),L=lines[c.ln]??'',m=L.match(LISTRE),h=L.match(/^(#{1,4})\s+(.*)$/);
   c.kind=m?'li':h?'h':/^\s*\|/.test(L)?'table':/^>/.test(L)?'quote':'p';
   c.cur=m?m[3]:h?h[2]:lines.slice(c.ln,blockEnd(lines,c.ln)+1).join('\n');c.canEdit=c.same&&c.kind!=='table'&&c.kind!=='quote';return c}
+// Phones: Chrome shows its own Copy / Select all / Web search menu only for selections the user made by hand.
+// Once the finger is lifted, put the same range back from script so that menu closes and only our bar stays.
+const COARSE=matchMedia('(pointer:coarse)').matches;let touching=false;
+addEventListener('touchstart',()=>{touching=true},{passive:true,capture:true});
+addEventListener('touchend',()=>{touching=false;clearTimeout(SELT.t);SELT.t=setTimeout(selCheck,250)},{passive:true,capture:true});
+addEventListener('touchcancel',()=>{touching=false},{passive:true,capture:true});
+const sameRange=(a,b)=>a&&b&&a.startContainer===b.startContainer&&a.startOffset===b.startOffset&&a.endContainer===b.endContainer&&a.endOffset===b.endOffset;
+function hideNativeMenu(s,r){if(!COARSE||touching||sameRange(SELT.applied,r))return;
+  const c=r.cloneRange();SELT.applied=c;s.removeAllRanges();s.addRange(c)}
 function selHide(){if(SELT.down&&Date.now()-SELT.down<1500)return;selBox.hidden=true}
 function selCheck(){
   const s=getSelection(),ae=document.activeElement;
   if(!s||s.isCollapsed||!s.rangeCount||(ae&&/^(TEXTAREA|INPUT|SELECT)$/.test(ae.tagName)))return selHide();
   const r=s.getRangeAt(0),txt=s.toString().replace(/\s+/g,' ').trim(),an=r.commonAncestorContainer,el=an.nodeType===1?an:an.parentElement;
   if(txt.length<2||!el||el.closest('#seltb,nav,header,#toast'))return selHide();
-  SELT.ctx=selContext(r);SELT.text=txt.slice(0,300);
+  SELT.ctx=selContext(r);SELT.full=s.toString().trim();SELT.text=txt.slice(0,300);SELT.range=r.cloneRange();
+  hideNativeMenu(s,r);
   const c=SELT.ctx;selBox.querySelector('[data-a=add]').hidden=!c;selBox.querySelector('[data-a=edit]').hidden=!(c&&c.canEdit);
   selBox.hidden=false;const rc=r.getBoundingClientRect(),w=selBox.offsetWidth,h=selBox.offsetHeight;
   let top=rc.bottom+12;if(top+h>innerHeight-76)top=rc.top-h-12;
@@ -2356,8 +2366,12 @@ document.addEventListener('selectionchange',()=>{clearTimeout(SELT.t);SELT.t=set
 addEventListener('scroll',()=>{if(!selBox.hidden)selCheck()},{passive:true,capture:true});
 // Keep the selection (and the toolbar) alive while a toolbar button is being pressed.
 ['pointerdown','mousedown'].forEach(ev=>selBox.addEventListener(ev,e=>{e.preventDefault();SELT.down=Date.now()}));
-selBox.addEventListener('click',e=>{const b=e.target.closest('button');SELT.down=0;if(!b)return;const a=b.dataset.a,c=SELT.ctx,t=SELT.text;
+selBox.addEventListener('click',async e=>{const b=e.target.closest('button');SELT.down=0;if(!b)return;const a=b.dataset.a,c=SELT.ctx,t=SELT.text;
+  if(a==='all'){const r=SELT.range,n=r&&(r.commonAncestorContainer.nodeType===1?r.commonAncestorContainer:r.commonAncestorContainer.parentElement);
+    const box=n&&n.closest('.reading,.story,.flash,.fs-in,.card,.itext')||$('#view');const nr=document.createRange();nr.selectNodeContents(box);
+    const s=getSelection();SELT.applied=nr;s.removeAllRanges();s.addRange(nr);selCheck();return}
   selBox.hidden=true;getSelection()?.removeAllRanges();
+  if(a==='copy'){toast(await copyText(SELT.full||t)?'Copied':'Could not copy');return}
   if(a==='g')window.open('https://www.google.com/search?q='+encodeURIComponent(t),'_blank','noopener');
   else if(c)lineSheet(a,c,t)});
 function lineSheet(mode,c,sel){
