@@ -252,6 +252,22 @@ body.storyon main{padding-top:0}
 .seltb button{background:none;border:0;color:inherit;font-size:13px;padding:7px 11px;border-radius:16px;cursor:pointer;white-space:nowrap}
 .seltb button:active{background:rgba(127,127,127,.3)}
 .seltb button b{color:#8ab4f8}
+/* read-aloud highlight */
+.ttshl{background:var(--mark);border-radius:6px;box-shadow:0 0 0 4px var(--mark);transition:background .25s,box-shadow .25s}
+tr.ttshl{box-shadow:none}tr.ttshl td{background:var(--mark)}
+#ttsbar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(74px + env(safe-area-inset-bottom));z-index:24;background:var(--ink);color:var(--bg);border:0;border-radius:20px;padding:8px 14px;font-size:13px;box-shadow:0 6px 20px rgba(0,0,0,.28);white-space:nowrap;max-width:94vw;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+#ttsbar b{color:#8ab4f8}
+.eq{display:inline-flex;gap:2px;align-items:flex-end;height:11px;margin-right:4px;vertical-align:-1px}.eq i{width:3px;background:currentColor;border-radius:1px;animation:eq 1s infinite ease-in-out}
+.eq i:nth-child(2){animation-delay:-.4s}.eq i:nth-child(3){animation-delay:-.7s}
+@keyframes eq{0%,100%{height:3px}50%{height:11px}}
+/* one-liner listen */
+.olp{text-align:center}.olp .ph{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.olp .pq{font-size:1.15em;font-weight:500;margin:10px 0;border-radius:8px;padding:4px 6px}.olp .pa{color:var(--good);font-weight:600;font-size:1.1em;border-radius:8px;padding:4px 6px;min-height:1.5em}
+.olp .pa.wait{color:var(--muted);font-weight:400;font-style:italic}
+.pctl{display:flex;justify-content:center;align-items:center;gap:14px;margin:14px 0 4px}
+.pctl button{width:48px;height:48px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:18px;cursor:pointer}
+.pctl button.big{width:64px;height:64px;font-size:24px;background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.olr.cur{background:var(--mark);border-radius:8px}
 .hl{animation:hl 2s ease-out}
 @keyframes hl{from{background:var(--mark)}}
 /* one-line Q&A */
@@ -656,8 +672,9 @@ function bindNoteCommon(v,n,store){
     if(!TTS.ok())return toast('This browser has no speech support. Use Chrome.');
     const idle=()=>{delete b.dataset.on;b.textContent='🔈 Listen'};
     b.dataset.on=1;b.textContent='⏹ Stop';TTS.wake(true);
-    TTS.say((kind==='note'?n.title:n.question)+'. '+elSpeech($('.reading',v)),()=>{idle();TTS.wake(false)});
-    const tok=TTS.tok,w=setInterval(()=>{if(TTS.tok!==tok||!b.isConnected){clearInterval(w);if(b.isConnected)idle()}},400)};
+    const rid=TTS.read($('.reading',v),(kind==='note'?n.title:n.question)+'.',()=>{idle();TTS.wake(false)});
+    b.dataset.on=1;b.textContent='⏹ Stop';
+    const w=setInterval(()=>{if(TTS.rid!==rid||!b.isConnected){clearInterval(w);if(b.isConnected)idle()}},400)};
   if($('#focus'))$('#focus').onclick=()=>{document.body.classList.add('focus');window.scrollTo(0,0)};
   $('#addcard').onclick=()=>cardEditor(null,{kind,id:n.id,paper:n.paper},refreshCards);
   $('#more').onclick=()=>modal(`<h3>${esc(kind==='note'?n.title:'Question')}</h3>
@@ -1216,7 +1233,7 @@ function feedSay(i){const s=F.slides[i],sec=$(`#fslides .fs[data-i="${i}"]`);
   TTS.stop();if(!S.settings.feedTts||!TTS.ok()||!s||!sec)return;F.spoke=true;TTS.wake(true);
   if(s.k==='quiz'){feedQuizSay(sec,s,s.revealed);return}
   const nxt=+S.settings.ttsAuto?()=>{TTS.t=setTimeout(()=>{if(F.cur===i&&location.hash.startsWith('#/feed'))sec.nextElementSibling?.scrollIntoView({behavior:'smooth'})},1200)}:null;
-  TTS.say(s.k==='done'?'Topic finished: '+s.title+'.':(s.tag?s.tag+'. ':'')+elSpeech($('.reading',sec)),nxt)}
+  if(s.k==='done')TTS.say('Topic finished: '+s.title+'.',nxt);else TTS.read($('.reading',sec),s.tag?s.tag+'.':'',nxt,{bar:false,jump:false,block:'none'})}
 function feedQuizSay(sec,s,reveal){
   const click=a=>()=>$(`[data-act="${a}"]`,sec)?.click(),skip=()=>sec.nextElementSibling?.scrollIntoView({behavior:'smooth'});
   if(s.done)return TTS.say(cardSpeech(s.card,true));
@@ -1579,7 +1596,7 @@ const TTS={tok:0,lock:null,
   // Android Chrome quirks handled here: speak() straight after cancel() is dropped, so wait a moment;
   // an utterance that gets garbage-collected never fires onend, so keep a reference and run a watchdog;
   // a selected voice that isn't installed fails, so retry with the default voice; the engine can stay paused after backgrounding, so resume().
-  say(text,done){if(!this.ok())return;const tok=++this.tok,sy=speechSynthesis,busy=sy.speaking||sy.pending;if(busy)sy.cancel();clearTimeout(this.dog);this.lastErr='';
+  say(text,done,keep){if(!this.ok())return;if(!keep)this.endRead();const tok=++this.tok,sy=speechSynthesis,busy=sy.speaking||sy.pending;if(busy)sy.cancel();clearTimeout(this.dog);this.lastErr='';
     const parts=this.clean(text).match(/[^.!?;:]+[.!?;:]*\s*/g)||[];const chunks=[];
     for(const p of parts){const l=chunks[chunks.length-1];if(l&&(l+p).length<180)chunks[chunks.length-1]=l+p;else chunks.push(p)}
     let plainVoice=false,heard=false;
@@ -1597,12 +1614,52 @@ const TTS={tok:0,lock:null,
       try{sy.resume()}catch(e){}sy.speak(u)};
     if(!chunks.length){done&&done();return}
     if(busy)this.dog=setTimeout(()=>next(0),250);else next(0)},
-  stop(){this.tok++;clearTimeout(this.t);clearTimeout(this.dog);this.u=null;if(this.ok())speechSynthesis.cancel();VC.stop()},
+  stop(){this.endRead();this.tok++;clearTimeout(this.t);clearTimeout(this.dog);this.u=null;if(this.ok())speechSynthesis.cancel();VC.stop()},
+  // Read a rendered element block by block (paragraph, list item, table row…), highlighting the block being read
+  // and keeping it on screen. Tap another block while it reads to jump there. Returns a read id (TTS.rid).
+  rid:0,reading:false,
+  read(root,lead,done,opt={}){if(!this.ok())return 0;this.stop();const bl=speechBlocks(root);if(lead)bl.unshift({el:null,text:lead});
+    const id=this.rid;this.reading=true;this.rd={root,bl,i:0,done,opt};if(opt.bar!==false)ttsBar(true);
+    this.step(id);return id},
+  step(id){const r=this.rd;if(this.rid!==id||!r)return;hlClear();
+    if(r.i>=r.bl.length){const d=r.done;this.endRead();d&&d();return}
+    const b=r.bl[r.i++];if(b.el&&b.el!==r.root&&b.el.isConnected){b.el.classList.add('ttshl');const q=b.el.getBoundingClientRect();
+      if(r.opt.block!=='none'&&(q.top<70||q.bottom>innerHeight-110))b.el.scrollIntoView({block:r.opt.block||'center',behavior:'smooth'})}
+    this.say(b.text,()=>this.step(id),true)},
+  jump(el){const r=this.rd;if(!r)return false;const i=r.bl.findIndex(b=>b.el===el);if(i<0)return false;
+    const id=this.rid;r.i=i;this.tok++;clearTimeout(this.dog);speechSynthesis.cancel();setTimeout(()=>this.step(id),150);return true},
+  endRead(){if(this.reading||this.rd){this.rid++;this.reading=false;this.rd=null;hlClear();ttsBar(false)}},
   async wake(on){try{if(on&&!this.lock&&navigator.wakeLock)this.lock=await navigator.wakeLock.request('screen');else if(!on&&this.lock){await this.lock.release();this.lock=null}}catch(e){}}
 };
 if(TTS.ok()){speechSynthesis.getVoices();speechSynthesis.onvoiceschanged=()=>{const sel=$('#t_v');if(!sel||sel.options.length>1)return;const vs=TTS.voices(),cur=TTS.voice();if(vs.length)sel.innerHTML=vs.map(v=>`<option value="${esc(v.voiceURI)}" ${cur&&v.voiceURI===cur.voiceURI?'selected':''}>${esc(v.name)} (${esc(v.lang)})</option>`).join('')}}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&(S.settings.tts||S.settings.voiceCmd)&&location.hash.startsWith('#/review')||S.settings.feedTts&&location.hash.startsWith('#/feed')){TTS.lock=null;TTS.wake(true)}});
 // Visible text of rendered markdown, with list items and lines turned into sentences.
+// The readable blocks of el in reading order: [{el,text}]. A block is any non-inline element's own text
+// (its inline children included, nested blocks read separately); a table row reads as one block.
+function speechBlocks(root){const out=[];if(!root)return out;
+  const add=(el,t)=>{t=String(t||'').replace(/\s+/g,' ').trim();if(!/[A-Za-z0-9ఀ-౿]/.test(t))return;
+    if(t===t.toUpperCase()&&/[A-Z]{3}/.test(t))t=t[0]+t.slice(1).toLowerCase();if(!/[.!?;:]$/.test(t))t+='.';
+    const l=out[out.length-1];if(l&&l.el===el)l.text+=' '+t;else out.push({el,text:t})};
+  const walk=el=>{let buf='';
+    for(const c of el.childNodes){
+      if(c.nodeType===3){buf+=c.nodeValue;continue}
+      if(c.nodeType!==1||c.matches('button,script,style,input,select,textarea,[data-nospeak]'))continue;
+      const d=getComputedStyle(c).display;if(d==='none')continue;
+      if(c.tagName==='BR'){buf+='. ';continue}
+      if(/^inline/.test(d)){buf+=c.innerText;continue}
+      add(el,buf);buf='';
+      if(c.tagName==='TR')add(c,[...c.cells].map(x=>x.innerText.trim()).filter(Boolean).join(', '));else walk(c)}
+    add(el,buf)};
+  walk(root);return out}
+function hlClear(){$$('.ttshl').forEach(e=>e.classList.remove('ttshl'))}
+// Floating stop button while a long read-aloud runs, since the Listen button scrolls out of view.
+function ttsBar(on){let b=$('#ttsbar');if(!on){if(b)b.remove();return}
+  if(!b){b=document.createElement('button');b.id='ttsbar';b.innerHTML='<span class="eq"><i></i><i></i><i></i></span> Reading · tap a line to jump · <b>⏹ Stop</b>';
+    b.onclick=()=>{TTS.stop();TTS.wake(false)};document.body.appendChild(b)}}
+document.addEventListener('click',e=>{const r=TTS.rd;if(!r||!TTS.reading||r.opt.jump===false||!r.root.contains(e.target)||e.target.closest('a,button,input,select,textarea,.vg'))return;
+  if(String(getSelection()||'').trim())return;let el=e.target;
+  while(el&&el!==r.root.parentNode){if(r.bl.some(b=>b.el===el))break;el=el.parentElement}
+  if(el&&el!==r.root&&TTS.jump(el))e.stopPropagation()},true);
 const elSpeech=el=>el?el.innerText.split(/\n+/).map(t=>t.trim()).filter(Boolean).map(t=>t===t.toUpperCase()?t[0]+t.slice(1).toLowerCase():t).map(t=>/[.!?;:]$/.test(t)?t:t+'.').join(' '):'';
 // What to say for the question side and the answer side of a card.
 function cardSpeech(c,reveal){
@@ -2176,7 +2233,9 @@ function vStory(v,[id]){
   $('#sback').onclick=()=>go('#/stories');
   $('#sfont').onclick=()=>{ST.fs=ST.fs>=6?0:ST.fs+2;saveST();$('#sbody').style.fontSize=`calc(var(--fs) + ${ST.fs}px)`};
   $('#slisten').onclick=()=>{if(!TTS.ok())return toast('No speech support in this browser');if(TTS.on){TTS.stop();TTS.on=false;$('#slisten').textContent='🔈';return}
-    TTS.on=true;$('#slisten').textContent='⏹';TTS.wake(true);TTS.say(elSpeech($('#sbody')),()=>{TTS.on=false;const b=$('#slisten');if(b)b.textContent='🔈'})};
+    const off=()=>{TTS.on=false;const b=$('#slisten');if(b)b.textContent='🔈'};TTS.wake(true);
+    const rid=TTS.read($('#sbody'),'',off);TTS.on=true;$('#slisten').textContent='⏹';
+    const w=setInterval(()=>{if(TTS.rid!==rid||!$('#slisten')){clearInterval(w);off()}},400)};
   if(s.progress>0.03&&!s.read&&!writing)setTimeout(()=>{const sb=$('#sbody');scrollTo(0,(sb.offsetTop+sb.offsetHeight-innerHeight)*s.progress)},30);
 }
 
@@ -2362,13 +2421,14 @@ function drawOL(box,id){
     ${err?`<p class="small" style="color:var(--again);margin:10px 0 0">${esc(err)}</p>`:''}</div>
     <div class="row" style="margin-top:-4px;flex-wrap:nowrap">
       <button class="btn" id="olcards" ${newForCards?'':'disabled'}>${newForCards?`+ ${newForCards} to flashcards`:'✓ In flashcards'}</button>
-      <button class="btn" id="olmore">✨ More</button><span class="spacer"></span><button class="btn ghost" id="olmenu" aria-label="More options">⋯</button></div>
+      <button class="btn" id="olmore">✨ More</button><button class="btn" id="olplay" aria-label="Listen to these one-liners">🎧</button><span class="spacer"></span><button class="btn ghost" id="olmenu" aria-label="More options">⋯</button></div>
     <p class="small muted" style="margin:6px 0 0">${quiz?'Tap a question to reveal the answer. ':''}Made ${ago(n.olAt)} from this note.</p>`;
   $$('#olm button',box).forEach(b=>{b.classList.toggle('on',b.dataset.m===OL.mode);b.onclick=()=>{OL.mode=b.dataset.m;saveOL();drawOL(box,id)}});
   if(quiz)$$('.olr',box).forEach(el=>el.onclick=()=>{if(el.classList.contains('on'))return;el.classList.add('on');floatXp(award(1))});
   $$('.olx',box).forEach(b=>b.onclick=async e=>{e.stopPropagation();const x=list[+b.dataset.x];n.oneliners=list.filter(y=>y!==x);await upsert('notes',n);drawOL(box,id);
     toast('Deleted',4000,{label:'Undo',fn:async()=>{n.oneliners=list;await upsert('notes',n);drawOL(box,id)}})});
   $('#olmore',box).onclick=()=>genOL(id,true);
+  $('#olplay',box).onclick=()=>{OLS.tab='listen';OLS.filter='n:'+id;saveOLS();OLP.key='';OLP.auto=true;go('#/ol')};
   $('#olcards',box).onclick=async()=>{const t=Date.now(),have=new Set(cardsOf(id).map(c=>olKey(c.front)));const cs=[];
     for(const x of list){if(inCards(x))continue;let c=cardsOf(id).find(c=>olKey(c.front)===olKey(x.q));
       if(!c&&!have.has(olKey(x.q))){c=newCard({type:'basic',front:x.q,back:x.a,paper:n.paper,sourceType:'note',sourceId:id,group:'ol-'+id,created:t+cs.length});cs.push(c)}
@@ -2405,11 +2465,65 @@ function olFilterOpts(){const ns=S.notes.filter(n=>n.oneliners?.length),ps=[...n
 function vOL(v){
   if(OLS.filter&&!olFilterOpts().includes(`value="${OLS.filter}"`))OLS.filter='';
   const total=S.notes.reduce((a,n)=>a+(n.oneliners?.length||0),0);
-  v.innerHTML=`<div class="seg" id="olt"><button data-t="study">Study</button><button data-t="browse">Browse${total?' '+total:''}</button></div><div id="olv"></div>`;
-  $$('#olt button').forEach(b=>{b.classList.toggle('on',b.dataset.t===OLS.tab);b.onclick=()=>{OLS.tab=b.dataset.t;saveOLS();vOL(v)}});
+  v.innerHTML=`<div class="seg" id="olt"><button data-t="study">Study</button><button data-t="browse">Browse${total?' '+total:''}</button><button data-t="listen">🎧 Listen</button></div><div id="olv"></div>`;
+  $$('#olt button').forEach(b=>{b.classList.toggle('on',b.dataset.t===OLS.tab);b.onclick=()=>{olpStop();OLS.tab=b.dataset.t;saveOLS();vOL(v)}});
   const box=$('#olv');if(!total)return olEmpty(box);
-  OLS.tab==='browse'?olBrowse(box):olStudy(box);
+  OLS.tab==='browse'?olBrowse(box):OLS.tab==='listen'?olListen(box):olStudy(box);
 }
+/* Listen: plays the one-liners of a topic as audio — question, a pause to recall, then the answer. */
+const OLP={list:[],i:0,play:false,run:0,key:'',phase:'q'};
+const olpStop=()=>{OLP.play=false;OLP.run++;clearTimeout(OLP.t);TTS.stop();TTS.wake(false)};
+function olListen(box){if(OLP.play)olpStop();
+  const gap=OLS.lgap??3,ord=OLS.lorder||'order',key=OLS.filter+'|'+ord;
+  if(OLP.key!==key||!OLP.list.length){let l=olPool();if(ord==='shuffle')l=l.map(p=>[Math.random(),p]).sort((a,b)=>a[0]-b[0]).map(p=>p[1]);
+    else if(ord==='weak')l=l.map(p=>{const s=olS(p.x);return[!s.state?1:s.state===2?2+(s.stability||0):(s.lapses||0)?-1:0,p]}).sort((a,b)=>a[0]-b[0]).map(p=>p[1]);
+    OLP.list=l;OLP.i=0;OLP.key=key;OLP.phase='q'}
+  const L=OLP.list,top=($('#top')?.offsetHeight||52)+'px';
+  box.innerHTML=`<div class="row" style="flex-wrap:nowrap;margin-bottom:10px"><select id="olf" style="flex:1;min-width:0">${olFilterOpts()}</select></div>
+    <div class="card olp" id="olp" style="position:sticky;top:${top};z-index:4"></div>
+    <div class="row small" style="gap:8px;margin:2px 0 12px;flex-wrap:wrap">
+      <label class="row" style="gap:6px;margin:0">Pause <select id="olgap" style="width:auto;padding:4px 6px">${[0,2,3,5,8,12].map(s=>`<option value="${s}" ${s===+gap?'selected':''}>${s?s+' s':'none'}</option>`).join('')}</select></label>
+      <label class="row" style="gap:6px;margin:0">Order <select id="olord" style="width:auto;padding:4px 6px"><option value="order">As in notes</option><option value="shuffle">Shuffle</option><option value="weak">Weakest first</option></select></label>
+      <label class="row" style="gap:6px;margin:0">Speed <select id="olspd" style="width:auto;padding:4px 6px">${[0.8,0.9,1,1.1,1.2,1.4,1.6].map(r=>`<option value="${r}" ${r===+(S.settings.ttsRate||1)?'selected':''}>${r}×</option>`).join('')}</select></label>
+      <label class="row" style="gap:6px;margin:0"><input type="checkbox" id="olloop" ${OLS.lloop?'checked':''} style="width:auto"> Repeat all</label></div>
+    <div class="card ol" id="olq">${L.map((p,i)=>`<div class="olr on" data-i="${i}"><div class="q"><span class="n">${i+1}</span>${esc(p.x.q)}</div><div class="a">${esc(p.x.a)}</div></div>`).join('')||'<div class="empty">No one-liners here.</div>'}</div>
+    <p class="small muted" style="text-align:center">Tap any one-liner to play from there. The screen stays on while it plays.</p>`;
+  $('#olf').value=OLS.filter;$('#olf').onchange=e=>{olpStop();OLS.filter=e.target.value;saveOLS();olListen(box)};
+  $('#olgap').onchange=e=>{OLS.lgap=+e.target.value;saveOLS()};
+  $('#olord').value=ord;$('#olord').onchange=e=>{olpStop();OLS.lorder=e.target.value;saveOLS();olListen(box)};
+  $('#olspd').onchange=async e=>{S.settings.ttsRate=+e.target.value;await saveSettings()};
+  $('#olloop').onchange=e=>{OLS.lloop=e.target.checked;saveOLS()};
+  $$('#olq .olr').forEach(el=>el.onclick=()=>{OLP.i=+el.dataset.i;olpGo(box)});
+  olpDraw(box);
+  if(OLP.auto){OLP.auto=false;if(L.length)olpGo(box)}
+}
+function olpDraw(box){const L=OLP.list,p=L[OLP.i],el=$('#olp',box);if(!el)return;
+  if(!p){el.innerHTML='<div class="empty" style="padding:8px">Nothing to play.</div>';return}
+  const showA=OLP.phase==='a'||!OLP.play,a=OLP.phase==='wait'?'thinking…':showA?esc(p.x.a):'';
+  el.innerHTML=`<div class="ph">${OLP.i+1} / ${L.length} · <a data-go="#/note/${p.n.id}" style="text-transform:none;letter-spacing:0">${esc(p.n.title.slice(0,46))}</a></div>
+    <div class="progress" style="margin:8px 0 0"><i style="width:${(OLP.i+1)/L.length*100}%"></i></div>
+    <div class="pq${OLP.play&&OLP.phase==='q'?' ttshl':''}">${esc(p.x.q)}</div>
+    <div class="pa${OLP.phase==='wait'?' wait':''}${OLP.play&&OLP.phase==='a'?' ttshl':''}">${a}</div>
+    <div class="pctl"><button id="olprev" aria-label="Previous">⏮</button><button class="big" id="olpp" aria-label="${OLP.play?'Pause':'Play'}">${OLP.play?'⏸':'▶'}</button><button id="olnext" aria-label="Next">⏭</button></div>`;
+  $('#olpp',el).onclick=()=>OLP.play?(olpStop(),olpDraw(box)):olpGo(box);
+  $('#olprev',el).onclick=()=>{OLP.i=Math.max(0,OLP.i-1);OLP.play?olpGo(box):(OLP.phase='q',olpDraw(box))};
+  $('#olnext',el).onclick=()=>{OLP.i=Math.min(L.length-1,OLP.i+1);OLP.play?olpGo(box):(OLP.phase='q',olpDraw(box))};
+  $$('#olq .olr',box).forEach(r=>r.classList.toggle('cur',+r.dataset.i===OLP.i));
+  const cur=$(`#olq .olr[data-i="${OLP.i}"]`,box);if(cur&&OLP.play){const q=cur.getBoundingClientRect(),pb=el.getBoundingClientRect().bottom;
+    if(q.top<pb+8||q.bottom>innerHeight-100)scrollBy({top:q.top-pb-(innerHeight-pb)/3,behavior:'smooth'})}}
+// Play from OLP.i: question → pause → answer → next. Each run has an id so Stop/skip cancels the old chain.
+function olpGo(box){if(!TTS.ok())return toast('No speech support in this browser');
+  olpStop();const id=OLP.run,L=OLP.list;OLP.play=true;TTS.wake(true);
+  const alive=()=>id===OLP.run&&box.isConnected&&location.hash==='#/ol';
+  const one=()=>{if(!alive())return;const p=L[OLP.i];
+    if(!p){if(OLS.lloop&&L.length){OLP.i=0;return one()}OLP.play=false;OLP.i=0;OLP.phase='q';olpDraw(box);scrollTo({top:0,behavior:'smooth'});TTS.wake(false);toast('Finished · '+L.length+' one-liners');return}
+    const prev=L[OLP.i-1],intro=!prev||prev.n.id!==p.n.id?p.n.title+'. ':'';
+    OLP.phase='q';olpDraw(box);
+    TTS.say(intro+p.x.q,()=>{if(!alive())return;const g=+(OLS.lgap??3);
+      const ans=()=>{if(!alive())return;OLP.phase='a';olpDraw(box);
+        TTS.say(p.x.a,()=>{if(!alive())return;OLP.t=setTimeout(()=>{if(!alive())return;OLP.i++;one()},1100)})};
+      if(g){OLP.phase='wait';olpDraw(box);OLP.t=setTimeout(ans,g*1000)}else ans()})};
+  one()}
 function olEmpty(box){const ns=[...S.notes].sort((a,b)=>(b.updated||0)-(a.updated||0));
   box.innerHTML=`<div class="card empty" style="color:var(--ink)"><div style="font-size:34px">⚡</div><h3 style="margin:6px 0">No one-liners yet</h3>
     <p class="small muted">One-liners are short questions and answers made from your notes. Study them here like flashcards, with spaced repetition.</p></div>${olMissingHTML(ns)}`;bindOlMissing(box)}
