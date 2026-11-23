@@ -24,7 +24,8 @@ header#top h1{font-size:17px;margin:0;font-weight:600;flex:1;white-space:nowrap;
 .iconbtn:active{background:var(--soft)}
 main{max-width:760px;margin:0 auto;padding:16px 16px calc(96px + env(safe-area-inset-bottom))}
 nav#nav{position:fixed;bottom:0;left:0;right:0;z-index:6;background:var(--surface);border-top:1px solid var(--line);display:flex;justify-content:space-around;padding:6px 4px calc(6px + env(safe-area-inset-bottom))}
-nav#nav a{flex:1;text-decoration:none;color:var(--muted);display:flex;flex-direction:column;align-items:center;font-size:11px;gap:2px;padding:4px 0;position:relative}
+nav#nav a{flex:1;min-width:0;text-decoration:none;color:var(--muted);display:flex;flex-direction:column;align-items:center;font-size:11px;gap:2px;padding:4px 0;position:relative;white-space:nowrap;letter-spacing:-.01em}
+@media (max-width:400px){nav#nav a{font-size:10px}}
 nav#nav a.on{color:var(--accent)}
 nav#nav svg{width:22px;height:22px}
 .badge{position:absolute;top:0;left:calc(50% + 6px);background:var(--accent);color:var(--accent-ink);border-radius:9px;font-size:10px;padding:0 5px;line-height:16px;min-width:16px;text-align:center}
@@ -285,6 +286,7 @@ body.storyon main{padding-top:0}
   <a href="#/lib" data-r="lib"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h4v16H5zM10 4h4v16h-4zM15.5 5l3.5-1 3 15-3.5 1z"/></svg>Library</a>
   <a href="#/add" data-r="add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8v8M8 12h8"/></svg>Add</a>
   <a href="#/review" data-r="review"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="14" height="12" rx="2"/><path d="M7 3h12a2 2 0 0 1 2 2v10"/></svg>Review<span class="badge hide" id="dueBadge"></span></a>
+  <a href="#/ol" data-r="ol"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3L5 13.5h6L10 21l8-10.5h-6z"/></svg>1-Liners<span class="badge hide" id="olBadge"></span></a>
   <a href="#/syl" data-r="syl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/></svg>Syllabus</a>
   <a href="#/ideas" data-r="ideas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg>Ideas</a>
   <a href="#/more" data-r="more"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/></svg>More</a>
@@ -497,7 +499,8 @@ function readFile(accept){return new Promise(res=>{const i=document.createElemen
 const stamp=()=>new Date().toISOString().slice(0,10);
 function applyTheme(){const s=S.settings;document.documentElement.dataset.theme=s.theme==='auto'?'':s.theme;document.documentElement.style.setProperty('--fs',s.fontSize+'px');
   const dark=s.theme==='dark'||(s.theme==='auto'&&matchMedia('(prefers-color-scheme: dark)').matches);$('meta[name=theme-color]').content=dark?'#131313':'#faf9f7'}
-function updateBadge(){const c=counts('all');const n=c.learn+c.review+c.newLeft;const b=$('#dueBadge');b.textContent=n>99?'99+':n;b.classList.toggle('hide',!n)}
+function updateBadge(){const c=counts('all');const n=c.learn+c.review+c.newLeft;const b=$('#dueBadge');b.textContent=n>99?'99+':n;b.classList.toggle('hide',!n);
+  const o=olCounts(olPool()),m=o.learn+o.review+o.newLeft,ob=$('#olBadge');if(ob){ob.textContent=m>99?'99+':m;ob.classList.toggle('hide',!m)}}
 function streak(){const days=new Set([...S.logs.map(l=>l.day),...Object.keys(G.days).filter(k=>G.days[k]>0)]);let n=0,t=Date.now();if(!days.has(dayKey(t)))t-=DAY;while(days.has(dayKey(t))){n++;t-=DAY}return n}
 
 /* ================= Game: XP, levels, daily goal ================= */
@@ -525,7 +528,7 @@ const revTag=n=>`<span class="tag" style="${revN(n)?'color:var(--good)':''}" tit
 
 /* ================= Router ================= */
 let tick=null;const R={deck:'all',card:null,pv:null,shown:false,t0:0,undo:[],lastGroup:'',cram:null,done:0};
-const TITLES={feed:'Feed',home:'Today',lib:'Library',add:'Add content',review:'Review',more:'More',note:'Note',qa:'Question',edit:'Edit',practice:'Answer practice',stats:'Statistics',settings:'Settings',backup:'Backup & import',help:'How it works',syl:'TSPSC Mains syllabus',ideas:'My ideas',deck:'Answer-writing deck',stories:'Story mode',story:'Story'};
+const TITLES={feed:'Feed',home:'Today',lib:'Library',add:'Add content',review:'Review',more:'More',note:'Note',qa:'Question',edit:'Edit',practice:'Answer practice',stats:'Statistics',settings:'Settings',backup:'Backup & import',help:'How it works',syl:'TSPSC Mains syllabus',ideas:'My ideas',deck:'Answer-writing deck',stories:'Story mode',story:'Story',ol:'One-liners'};
 function go(h){if(location.hash===h)render();else location.hash=h}
 window.addEventListener('hashchange',render);
 document.addEventListener('click',e=>{const a=e.target.closest('[data-go]');if(a){e.preventDefault();go(a.dataset.go)}});
@@ -537,9 +540,9 @@ function render(){
   const parts=(location.hash||'#/home').slice(2).split('/');const r=parts[0]||'home';
   $$('#nav a').forEach(a=>a.classList.toggle('on',a.dataset.r===r));
   $('#title').textContent=TITLES[r]||'Mains';
-  $('#back').classList.toggle('hide',['home','lib','add','review','syl','ideas','more'].includes(r));
+  $('#back').classList.toggle('hide',['home','lib','add','review','ol','syl','ideas','more'].includes(r));
   const v=$('#view');v.scrollTop=0;window.scrollTo(0,0);
-  const fn={feed:vFeed,home:vHome,lib:vLib,add:vAdd,review:vReview,more:vMore,note:vNote,qa:vQA,edit:vEdit,practice:vPractice,stats:vStats,settings:vSettings,backup:vBackup,help:vHelp,syl:vSyl,ideas:vIdeas,deck:vDeck,stories:vStories,story:vStory}[r]||vHome;
+  const fn={feed:vFeed,home:vHome,lib:vLib,add:vAdd,review:vReview,more:vMore,note:vNote,qa:vQA,edit:vEdit,practice:vPractice,stats:vStats,settings:vSettings,backup:vBackup,help:vHelp,syl:vSyl,ideas:vIdeas,deck:vDeck,stories:vStories,story:vStory,ol:vOL}[r]||vHome;
   fn(v,parts.slice(1));updateBadge();
 }
 
@@ -2376,6 +2379,107 @@ function drawOL(box,id){
       if(a==='copy'){toast(await copyText(list.map((x,i)=>`${i+1}. ${x.q} — ${x.a}`).join('\n'))?'Copied':'Could not copy');closeModal()}
       if(a==='redo'||a==='del'){if(!confirm(a==='del'?`Delete all ${list.length} one-liners?`:`Replace all ${list.length} one-liners with a new set?`))return;n.oneliners=[];await upsert('notes',n);closeModal();if(a==='redo')genOL(id,false);else{drawOL(box,id);toast('Deleted')}}}));
 }
+
+/* ================= One-liners menu: browse + Anki-style study ================= */
+// Each one-liner keeps its own FSRS schedule in x.s (same fields as a card), stored on its note,
+// so it travels with the note in backups. Separate from the main flashcard deck and its daily limits.
+const OLS={tab:'study',filter:'',q:'',newPerDay:20,days:{}};
+try{Object.assign(OLS,JSON.parse(localStorage.getItem('mains-ols')||'{}'))}catch(e){}
+const saveOLS=()=>{try{const d={};const keep=new Set([dayKey(),dayKey(Date.now()-DAY)]);for(const k in OLS.days)if(keep.has(k))d[k]=OLS.days[k];OLS.days=d;localStorage.setItem('mains-ols',JSON.stringify(OLS))}catch(e){}};
+const OLR={cur:null,shown:false,pv:null,undo:[],done:0,last:''};
+const olS=x=>x.s||{state:0,due:0,stability:0,difficulty:0,reps:0,lapses:0,step:0,ivl:0,last:0};
+function olPool(){const f=OLS.filter,out=[];
+  for(const n of[...S.notes].sort((a,b)=>(a.created||0)-(b.created||0))){if(!n.oneliners?.length)continue;
+    if(f&&(f.startsWith('n:')?n.id!==f.slice(2):n.paper!==f))continue;n.oneliners.forEach((x,i)=>out.push({n,x,i}))}return out}
+function olCounts(pool,now=Date.now()){const end=dayEnd(now);let learn=0,review=0,nw=0;
+  for(const{x}of pool){const s=olS(x);if(!s.state)nw++;else if(s.state===2){if(s.due<end)review++}else if(s.due<end)learn++}
+  const done=OLS.days[dayKey(now)]?.new||0;return{learn,review,newLeft:Math.min(nw,Math.max(0,OLS.newPerDay-done)),newTotal:nw}}
+function olNext(pool,now=Date.now()){
+  const end=dayEnd(now),c=olCounts(pool,now),notLast=a=>a.length>1?a.filter(p=>p.x.id!==OLR.last):a,by=a=>a.sort((p,q)=>olS(p.x).due-olS(q.x).due)[0];
+  const lrn=pool.filter(p=>{const s=olS(p.x);return(s.state===1||s.state===3)&&s.due<=now});if(lrn.length)return by(notLast(lrn));
+  const rev=pool.filter(p=>{const s=olS(p.x);return s.state===2&&s.due<end});if(rev.length)return by(notLast(rev));
+  if(c.newLeft>0){const nw=notLast(pool.filter(p=>!olS(p.x).state));if(nw.length)return nw[0]}
+  const ahead=pool.filter(p=>{const s=olS(p.x);return(s.state===1||s.state===3)&&s.due<=now+20*MIN});return ahead.length?by(notLast(ahead)):null}
+function olFilterOpts(){const ns=S.notes.filter(n=>n.oneliners?.length),ps=[...new Set(ns.map(n=>n.paper).filter(Boolean))].sort();
+  return`<option value="">All one-liners</option>${ps.length>1?`<optgroup label="Paper">${ps.map(p=>`<option value="${p}">${esc(paperName(p))}</option>`).join('')}</optgroup>`:''}<optgroup label="Note">${ns.map(n=>`<option value="n:${n.id}">${esc(n.title.slice(0,60))} (${n.oneliners.length})</option>`).join('')}</optgroup>`}
+function vOL(v){
+  if(OLS.filter&&!olFilterOpts().includes(`value="${OLS.filter}"`))OLS.filter='';
+  const total=S.notes.reduce((a,n)=>a+(n.oneliners?.length||0),0);
+  v.innerHTML=`<div class="seg" id="olt"><button data-t="study">Study</button><button data-t="browse">Browse${total?' '+total:''}</button></div><div id="olv"></div>`;
+  $$('#olt button').forEach(b=>{b.classList.toggle('on',b.dataset.t===OLS.tab);b.onclick=()=>{OLS.tab=b.dataset.t;saveOLS();vOL(v)}});
+  const box=$('#olv');if(!total)return olEmpty(box);
+  OLS.tab==='browse'?olBrowse(box):olStudy(box);
+}
+function olEmpty(box){const ns=[...S.notes].sort((a,b)=>(b.updated||0)-(a.updated||0));
+  box.innerHTML=`<div class="card empty" style="color:var(--ink)"><div style="font-size:34px">⚡</div><h3 style="margin:6px 0">No one-liners yet</h3>
+    <p class="small muted">One-liners are short questions and answers made from your notes. Study them here like flashcards, with spaced repetition.</p></div>${olMissingHTML(ns)}`;bindOlMissing(box)}
+function olMissingHTML(ns){const miss=ns.filter(n=>!n.oneliners?.length);if(!miss.length)return'';
+  return`<h3>Notes without one-liners <span class="muted small">(${miss.length})</span></h3><div class="card list" style="padding:2px 12px">${miss.slice(0,40).map(n=>`<div class="item row" style="flex-wrap:nowrap"><a style="flex:1;min-width:0;text-decoration:none;color:var(--ink)" data-go="#/note/${n.id}"><div class="t">${esc(n.title)}</div><div class="s">${n.paper||'—'}</div></a><button class="btn" data-olg="${n.id}" ${OLGEN[n.id]?'disabled':''}>${OLGEN[n.id]?'Writing…':'✨ Make'}</button></div>`).join('')}</div>
+    <p class="small muted" style="text-align:center">Uses your AI key. You can keep studying while they are written.</p>`}
+function bindOlMissing(box){$$('[data-olg]',box).forEach(b=>b.onclick=()=>{const id=b.dataset.olg;genOL(id,false);b.disabled=true;b.textContent='Writing…';
+  const w=setInterval(()=>{if(OLGEN[id])return;clearInterval(w);if(location.hash==='#/ol')render()},800)})}
+function olStudy(box){
+  const pool=olPool(),k=olCounts(pool),now=Date.now();OLR.cur=(OLR.forced&&pool.find(p=>p.x.id===OLR.forced))||olNext(pool,now);OLR.forced=null;OLR.shown=false;
+  const head=`<div class="rv-top"><select id="olf">${olFilterOpts()}</select><div class="cnt"><span class="n">${k.newLeft}</span> · <span class="l">${k.learn}</span> · <span class="r">${k.review}</span></div></div>`;
+  if(!OLR.cur){const nl=pool.map(p=>olS(p.x)).filter(s=>s.state===1||s.state===3).sort((a,b)=>a.due-b.due)[0];
+    const tm=pool.filter(p=>{const s=olS(p.x);return s.state===2&&s.due>=dayEnd(now)&&s.due<dayEnd(now)+DAY}).length;
+    box.innerHTML=head+`<div class="card empty" style="color:var(--ink)"><div style="font-size:34px">✓</div><h3 style="margin:6px 0">Done for now</h3>
+      <p class="small muted">${nl?`Next learning one-liner at ${new Date(nl.due).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}. `:''}${tm} due tomorrow.${k.newTotal&&!k.newLeft?` ${k.newTotal} new waiting (limit ${OLS.newPerDay} a day).`:''}</p>
+      ${OLR.done?`<p class="small">This session: ${OLR.done}</p>`:''}</div>
+      <div style="display:grid;gap:8px">${k.newTotal&&!k.newLeft?'<button class="btn" id="olmore10">Learn 10 more new today</button>':''}<button class="btn" id="olnew">New per day: ${OLS.newPerDay}</button></div>`;
+    $('#olf').value=OLS.filter;$('#olf').onchange=e=>{OLS.filter=e.target.value;saveOLS();olStudy(box)};
+    if($('#olmore10'))$('#olmore10').onclick=()=>{const d=OLS.days[dayKey()]||(OLS.days[dayKey()]={new:0});d.new-=10;saveOLS();olStudy(box);updateBadge()};
+    $('#olnew').onclick=()=>{const n=prompt('New one-liners per day',OLS.newPerDay);if(n!=null&&+n>=0){OLS.newPerDay=Math.round(+n);saveOLS();olStudy(box);updateBadge()}};
+    return}
+  const{n,x}=OLR.cur,s=olS(x),tot=Math.max(1,OLR.done+k.newLeft+k.learn+k.review);
+  const face=rev=>`<div class="ftag">⚡ ${!s.state?'New':s.state===2?'Review':'Learning'} · <a data-go="#/note/${n.id}" style="text-transform:none;letter-spacing:0">${esc(n.title.slice(0,50))}</a></div>
+    <div style="font-size:1.12em;font-weight:500;margin-top:6px">${esc(x.q)}</div>${rev?`<hr class="divider"><div style="color:var(--good);font-weight:600;font-size:1.1em">${esc(x.a)}</div>`:''}`;
+  box.innerHTML=head+`<div class="progress"><i style="width:${OLR.done/tot*100}%"></i></div>
+    <article class="flash" id="olface">${face(false)}</article>
+    <div id="olctrl"><button class="btn primary block" id="olshow" style="margin-top:12px">Show answer</button></div>
+    <div class="rv-tools"><button id="olundo" ${OLR.undo.length?'':'disabled'}>↶ Undo</button><button id="oledit">Edit</button><button id="oldel">Delete</button><button id="oltts">🔈 Read</button></div>`;
+  const show=()=>{if(OLR.shown)return;OLR.shown=true;$('#olface').innerHTML=face(true);const t=Date.now();OLR.pv=preview(olS(x),t);
+    const names={1:'Again',2:'Hard',3:'Good',4:'Easy'};
+    $('#olctrl').innerHTML=`<div class="grades">${[1,2,3,4].map(g=>`<button class="g${g}" data-g="${g}"><b>${names[g]}</b><small>${ivlLabel(OLR.pv[g],t)}</small></button>`).join('')}</div>`;
+    $$('#olctrl [data-g]').forEach(b=>b.onclick=()=>olAnswer(+b.dataset.g,box))};
+  OLR.show=show;$('#olshow').onclick=show;$('#olface').onclick=e=>{if(!e.target.closest('a'))show()};
+  $('#olf').value=OLS.filter;$('#olf').onchange=e=>{OLS.filter=e.target.value;saveOLS();OLR.undo=[];OLR.done=0;olStudy(box)};
+  $('#olundo').onclick=()=>olUndo(box);
+  $('#oledit').onclick=()=>olEdit(n,x,()=>olStudy(box));
+  $('#oldel').onclick=async()=>{if(!confirm('Delete this one-liner?'))return;n.oneliners=n.oneliners.filter(y=>y!==x);await upsert('notes',n);toast('Deleted');olStudy(box);updateBadge()};
+  $('#oltts').onclick=()=>{if(!TTS.ok())return toast('No speech support in this browser');TTS.say(OLR.shown?x.q+'. '+x.a:x.q)};
+}
+async function olAnswer(g,box){
+  const p=OLR.cur,o=OLR.pv&&OLR.pv[g];if(!p||!o)return;const{n,x}=p,prev=x.s?{...x.s}:null,day=dayKey(),wasNew=!olS(x).state;
+  x.s={state:o.state,due:o.due,stability:o.stability,difficulty:o.difficulty,reps:o.reps,lapses:o.lapses||0,step:o.step,ivl:o.ivl,last:o.last};
+  const d=OLS.days[day]||(OLS.days[day]={new:0,rev:0});if(wasNew)d.new=(d.new||0)+1;else d.rev=(d.rev||0)+1;saveOLS();
+  await upsert('notes',n);OLR.undo.push({noteId:n.id,xid:x.id,prev,wasNew,day});if(OLR.undo.length>20)OLR.undo.shift();
+  OLR.last=x.id;OLR.done++;award(g===1?1:2);olStudy(box);updateBadge()}
+async function olUndo(box){const u=OLR.undo.pop();if(!u)return;const n=byId('notes',u.noteId),x=n?.oneliners?.find(y=>y.id===u.xid);if(!x)return olStudy(box);
+  if(u.prev)x.s=u.prev;else delete x.s;if(u.wasNew&&OLS.days[u.day])OLS.days[u.day].new=Math.max(0,(OLS.days[u.day].new||0)-1);saveOLS();
+  await upsert('notes',n);OLR.done=Math.max(0,OLR.done-1);OLR.last='';OLR.forced=x.id;olStudy(box);toast('Undone');updateBadge()}
+function olEdit(n,x,after){modal(`<h3>Edit one-liner</h3><label>Question</label><textarea id="oeq" rows="2">${esc(x.q)}</textarea><label>Answer</label><textarea id="oea" rows="2">${esc(x.a)}</textarea>
+  <div class="row end" style="margin-top:12px"><button class="btn" data-close>Cancel</button><button class="btn primary" id="oes">Save</button></div>`,m=>{
+  $('#oes',m).onclick=async()=>{const q=$('#oeq',m).value.trim(),a=$('#oea',m).value.trim();if(!q||!a)return toast('Question and answer are both needed');x.q=q;x.a=a;await upsert('notes',n);closeModal();toast('Saved');after()}})}
+function olBrowse(box){
+  const pool=olPool(),q=OLS.q.trim().toLowerCase(),now=Date.now(),end=dayEnd(now);
+  const hit=pool.filter(p=>!q||(p.x.q+' '+p.x.a+' '+p.n.title).toLowerCase().includes(q));
+  const groups=new Map();for(const p of hit){if(!groups.has(p.n.id))groups.set(p.n.id,[]);groups.get(p.n.id).push(p)}
+  const st=x=>{const s=olS(x);return!s.state?'<span class="tag">new</span>':s.state===2?`<span class="tag" ${s.due<end?'style="color:var(--again)"':''}>${s.due<end?'due':until(s.due)}</span>`:'<span class="tag">learning</span>'};
+  box.innerHTML=`<div class="row" style="flex-wrap:nowrap;margin-bottom:10px"><input type="search" id="olq" placeholder="Search one-liners" value="${esc(OLS.q)}" style="flex:1;min-width:0"><select id="olf" style="width:auto;max-width:42%;flex:none">${olFilterOpts()}</select></div>
+    <div class="row small" style="margin-bottom:8px"><span class="muted">${hit.length} one-liner${hit.length===1?'':'s'}</span><span class="spacer"></span><button class="btn ghost" id="olrev">${OLS.reveal?'Hide answers':'Show answers'}</button></div>
+    ${[...groups].map(([id,ps])=>{const n=ps[0].n;return`<div class="sec"><div class="h row"><a data-go="#/note/${id}" style="text-decoration:none;color:inherit;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(n.title)}</a><span class="muted">${ps.length}</span></div>
+      <div class="card ol">${ps.map(p=>`<div class="olr${OLS.reveal?' on':''}" data-x="${p.x.id}" data-n="${id}"><div class="q"><span class="n">${p.i+1}</span>${esc(p.x.q)} ${st(p.x)}</div><div class="a">${esc(p.x.a)}</div></div>`).join('')}</div></div>`}).join('')||'<div class="empty">Nothing matches.</div>'}
+    ${olMissingHTML(S.notes)}`;
+  $('#olf').value=OLS.filter;$('#olf').onchange=e=>{OLS.filter=e.target.value;saveOLS();olBrowse(box)};
+  $('#olq').oninput=e=>{OLS.q=e.target.value;saveOLS();const p=e.target.selectionStart;olBrowse(box);const i=$('#olq');i.focus();i.setSelectionRange(p,p)};
+  $('#olrev').onclick=()=>{OLS.reveal=!OLS.reveal;saveOLS();olBrowse(box)};
+  $$('.olr',box).forEach(el=>el.onclick=()=>{if(!el.classList.contains('on'))return el.classList.add('on');const n=byId('notes',el.dataset.n),x=n?.oneliners.find(y=>y.id===el.dataset.x);if(x)olEdit(n,x,()=>olBrowse(box))});
+  bindOlMissing(box)}
+document.addEventListener('keydown',e=>{if(location.hash!=='#/ol'||OLS.tab!=='study'||$('#modal').classList.contains('on')||/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)||!OLR.cur)return;
+  if(!OLR.shown&&(e.key===' '||e.key==='Enter')){e.preventDefault();OLR.show&&OLR.show()}
+  else if(OLR.shown&&/^[1-4]$/.test(e.key))olAnswer(+e.key,$('#olv'));
+  else if(OLR.shown&&(e.key===' '||e.key==='Enter')){e.preventDefault();olAnswer(3,$('#olv'))}});
 
 /* ================= [verify] → one-tap Google search ================= */
 // Every "[verify…]" mark on screen gets a small G button that searches Google for the sentence just before it.
