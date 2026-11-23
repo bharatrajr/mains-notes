@@ -215,6 +215,19 @@ body.storyon main{padding-top:0}
 .story h3::before,.story h3::after{content:'✦';margin:0 10px;opacity:.7}
 .story h3+p::first-letter{float:left;font-size:3.3em;line-height:.85;padding:6px 8px 0 0;color:var(--gold);font-weight:700}
 .story strong{color:var(--accent);font-weight:700}
+/* articles: left-aligned headings, summary box, callouts, tables */
+.story.art{line-height:1.75}
+.story.art h2,.story.art h3{text-align:left;text-transform:none;letter-spacing:0;font-size:1.18em;color:var(--ink);margin:32px 0 10px;line-height:1.35;font-weight:700}
+.story.art h3::before,.story.art h3::after{content:none}
+.story.art h3+p::first-letter{float:none;font-size:inherit;padding:0;color:inherit;font-weight:inherit}
+.story.art .stand{font-style:italic;color:var(--muted);font-size:1.05em;margin-bottom:16px}
+.story.art .tldr{font-family:system-ui,sans-serif;font-size:.9em;line-height:1.6;background:var(--soft);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:12px;padding:12px 14px;margin:0 0 20px}
+.story.art .tldr strong:first-child{display:block;font-size:.78em;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin-bottom:4px}
+.story.art blockquote{margin:14px 0 6px;padding:10px 14px;border-left:4px solid var(--gold);background:color-mix(in srgb,var(--gold) 12%,transparent);border-radius:0 12px 12px 0;font-family:system-ui,sans-serif;font-size:.9em;line-height:1.55}
+.story.art blockquote p{margin:0}
+.story.art ul,.story.art ol{padding-left:1.25em;margin:0 0 1em}.story.art li{margin:.35em 0}
+.story.art table{border-collapse:collapse;display:block;overflow-x:auto;max-width:100%;font-family:system-ui,sans-serif;font-size:.82em;line-height:1.45;margin:12px 0 18px}
+.story.art th,.story.art td{border:1px solid var(--line);padding:6px 9px;text-align:left;vertical-align:top}.story.art th{background:var(--soft)}
 .cursor{display:inline-block;width:.45em;height:1.05em;background:var(--gold);vertical-align:-3px;margin-left:2px;animation:blink 1s steps(2) infinite}
 @keyframes blink{50%{opacity:0}}
 .theend{text-align:center;font-family:Georgia,serif;color:var(--gold);letter-spacing:.3em;font-size:13px;margin:34px 0 16px}
@@ -544,7 +557,7 @@ const revTag=n=>`<span class="tag" style="${revN(n)?'color:var(--good)':''}" tit
 
 /* ================= Router ================= */
 let tick=null;const R={deck:'all',card:null,pv:null,shown:false,t0:0,undo:[],lastGroup:'',cram:null,done:0};
-const TITLES={feed:'Feed',home:'Today',lib:'Library',add:'Add content',review:'Review',more:'More',note:'Note',qa:'Question',edit:'Edit',practice:'Answer practice',stats:'Statistics',settings:'Settings',backup:'Backup & import',help:'How it works',syl:'TSPSC Mains syllabus',ideas:'My ideas',deck:'Answer-writing deck',stories:'Story mode',story:'Story',ol:'One-liners'};
+const TITLES={feed:'Feed',home:'Today',lib:'Library',add:'Add content',review:'Review',more:'More',note:'Note',qa:'Question',edit:'Edit',practice:'Answer practice',stats:'Statistics',settings:'Settings',backup:'Backup & import',help:'How it works',syl:'TSPSC Mains syllabus',ideas:'My ideas',deck:'Answer-writing deck',stories:'Articles',story:'Article',ol:'One-liners'};
 function go(h){if(location.hash===h)render();else location.hash=h}
 window.addEventListener('hashchange',render);
 document.addEventListener('click',e=>{const a=e.target.closest('[data-go]');if(a){e.preventDefault();go(a.dataset.go)}});
@@ -1291,7 +1304,7 @@ function vPractice(v){
 /* ================= More / Stats / Settings / Backup / Help ================= */
 function vMore(v){
   v.innerHTML=`<div class="card list" style="padding:2px 14px">
-  ${[['#/stories','✨ Story mode','AI stories that teach a topic, then you write the Mains answer'],['#/deck','Answer-writing deck','Ready-made TSPSC cards: directives, articles, Telangana facts, quotes'],['#/feed','Revision feed','Swipe through your notes, earn XP, keep the streak'],['#/practice','Answer practice','Timed writing with model-answer comparison'],['#/stats','Statistics','Retention, streak, heatmap, forecast'],['#/lib/cards','Browse cards','Edit, suspend, find leeches'],['#/backup','Backup & import','Export, restore, share, Anki export'],['#/settings','Settings','Theme, font size, review limits, exam date'],['#/help','How it works','Workflow and the review buttons']].map(([h,t,s])=>`<a class="item" data-go="${h}"><div class="t">${t}</div><div class="s">${s}</div></a>`).join('')}</div>
+  ${[['#/stories','✨ Articles','Engaging AI articles that make a topic stick, then you write the Mains answer'],['#/deck','Answer-writing deck','Ready-made TSPSC cards: directives, articles, Telangana facts, quotes'],['#/feed','Revision feed','Swipe through your notes, earn XP, keep the streak'],['#/practice','Answer practice','Timed writing with model-answer comparison'],['#/stats','Statistics','Retention, streak, heatmap, forecast'],['#/lib/cards','Browse cards','Edit, suspend, find leeches'],['#/backup','Backup & import','Export, restore, share, Anki export'],['#/settings','Settings','Theme, font size, review limits, exam date'],['#/help','How it works','Workflow and the review buttons']].map(([h,t,s])=>`<a class="item" data-go="${h}"><div class="t">${t}</div><div class="s">${s}</div></a>`).join('')}</div>
   <p class="small muted" style="text-align:center">${S.notes.length} notes · ${S.qas.length} questions · ${S.cards.length} cards</p>`;
 }
 function vStats(v){
@@ -1343,7 +1356,7 @@ const cardRaw=id=>cardsOf(id).filter(c=>!c.group?.startsWith('outline-')).reduce
 function packNote(n){return{title:n.title,paper:n.paper,topic:n.topic,tags:n.tags,summary:n.summary,content:n.content,keyFacts:n.keyFacts,telanganaAngle:n.telanganaAngle,mnemonics:n.mnemonics,pyqs:n.pyqs,oneliners:(n.oneliners||[]).map(x=>({q:x.q,a:x.a})),cards:cardRaw(n.id)}}
 function packQA(q){return{question:q.question,paper:q.paper,topic:q.topic,tags:q.tags,marks:q.marks,wordLimit:q.wordLimit,directive:q.directive,keywords:q.keywords,answer:{intro:q.intro,body:q.body,conclusion:q.conclusion},diagram:q.diagram,mnemonic:q.mnemonic,valueAdd:q.valueAdd,cards:cardRaw(q.id)}}
 function vBackup(v){
-  v.innerHTML=`<div class="card"><b>Full backup</b><p class="small muted" style="margin:4px 0 10px">Everything — notes, Q&amp;A, cards, ideas, stories, review history, attempts and settings. Last backup: ${ago(S.settings.lastBackup)}.</p>
+  v.innerHTML=`<div class="card"><b>Full backup</b><p class="small muted" style="margin:4px 0 10px">Everything — notes, Q&amp;A, cards, ideas, articles, review history, attempts and settings. Last backup: ${ago(S.settings.lastBackup)}.</p>
    <div class="row"><button class="btn primary" id="bdl">Download</button><button class="btn" id="bsh">Share (Drive, WhatsApp…)</button></div></div>
   <div class="card"><b>Restore / import a file</b><p class="small muted" style="margin:4px 0 10px">Accepts a full backup, a shared notes/Q&amp;A pack, or a saved AI reply.</p><button class="btn" id="bimp">Choose file</button></div>
   <div class="card"><b>Export content</b><label>Paper</label><select id="bpaper">${paperOpts('','All papers')}</select>
@@ -1940,16 +1953,29 @@ function vIdeas(v){
         $('#es',m).onclick=async()=>{const t=$('#et',m).value.trim();if(!t)return toast('Idea is empty');Object.assign(x,{text:t,paper:$('#ep',m).value,tags:tags($('#eg',m).value)});await upsert('ideas',x);closeModal();vIdeas(v)}})})});
 }
 
-/* ================= Story mode: AI stories that end in a Mains answer ================= */
+/* ================= Articles (formerly Story mode): AI articles that end in a Mains answer ================= */
 // API key lives in localStorage only (never in backups) and is sent only to the chosen provider.
 const AI={provider:'claude',claudeKey:'',openaiKey:'',claudeModel:'claude-opus-5-5',openaiModel:'gpt-5-mini'};
 try{Object.assign(AI,JSON.parse(localStorage.getItem('mains-ai')||'{}'))}catch(e){}
 const saveAI=()=>{try{localStorage.setItem('mains-ai',JSON.stringify(AI))}catch(e){}};
 const aiReady=()=>!!(AI.provider==='openai'?AI.openaiKey:AI.claudeKey);
-const ST={genre:'thriller',src:'syl',paper:'',unit:'',point:'',custom:'',len:'regular',lang:'en',fs:2,web:true};
+const ST={genre:'explain',src:'syl',paper:'',unit:'',point:'',custom:'',len:'regular',lang:'en',fs:2,web:true};
 try{Object.assign(ST,JSON.parse(localStorage.getItem('mains-st')||'{}'))}catch(e){}
 const saveST=()=>{try{localStorage.setItem('mains-st',JSON.stringify(ST))}catch(e){}};
+// Article styles: [id, emoji, name, short description, cover colour 1, cover colour 2, how to write it].
 const GENRES=[
+  ['explain','📘','Explainer','The topic made simple: what, why, how and so what','#1e3a5f','#2f5d9c','A clear explainer in the style of a top magazine. Open with a striking fact or a real moment, then build understanding step by step: what it is, why it came about, how it works, what it changed. Use analogies from everyday Indian life.'],
+  ['feature','📰','Feature','A magazine long-read with real scenes and real people','#7c2d12','#c2410c','A narrative feature like a great Sunday-magazine piece. Open with a real, documented moment, follow the real people and events, then zoom out to the big picture. No invented characters, scenes or dialogue.'],
+  ['why','❓','Big question','Starts with a puzzle and solves it step by step','#4c1d95','#7c3aed','Built around one intriguing question the reader cannot resist (for example "Why did X happen when Y?"). Each section answers part of it and the ending resolves it.'],
+  ['time','🗓️','Timeline','Events in order, every date anchored','#0f4c5c','#0e7490','Told in order. Each section is a period, every key event has its year in bold, and the text shows how each event caused the next. End the body with a compact Year | Event table.'],
+  ['tg','🌾','Telangana lens','Through Telangana districts, data and schemes','#2f5a36','#4d7c0f','Ground the whole topic in Telangana: districts, state schemes, local history and Telangana Socio-Economic Outlook data, compared with all-India where useful.'],
+  ['debate','⚖️','Both sides','Arguments for and against, then a verdict','#3d2c2e','#a4651c','Set out the strongest case for and against, with evidence, committees, judgments and data, then a balanced verdict and way forward. Include a For | Against table.'],
+  ['myths','🔍','Myths vs facts','Common mistakes busted, right facts locked in','#7f1d1d','#b91c1c','Organised around the common misconceptions and exam traps on this topic. Bust each one with the correct fact and say why it matters in an answer.'],
+  ['numbers','📊','In numbers','The topic told through its key figures','#134e4a','#0d9488','Built around 8-12 key numbers (years, percentages, counts, amounts). Explain each so it sticks: what it measures, source and year, and why it matters. Use comparisons to make numbers memorable.'],
+  ['palace','🧠','Memory palace','Facts placed along a walk you can replay','#312e81','#6d28d9','Use the memory-palace method: walk the reader through a familiar Telangana place (for example Charminar to Hussain Sagar) and place each key fact at a spot with a vivid image. Recap the route at the end. The walk is the only imagined part; every fact is real.'],
+  ['editorial','🗞️','Editorial','A sharp newspaper op-ed with analysis','#1f2937','#4b5563','A newspaper editorial in the style of a quality Indian daily: context, analysis, criticism and a reasoned way forward, with crisp, quotable lines a candidate can reuse in answers.']];
+// Story genres from the old Story mode, kept so earlier stories still open with their covers.
+const OLDGENRES=[
   ['thriller','🕵️','Mystery thriller','A detective cracks a case, and every clue is an exam fact','#1f2a44','#6a2c91'],
   ['time','⏳','Time travel','The reader wakes up inside the events and lives them','#0f4c5c','#d9601a'],
   ['ias','🏛️','Collector\'s diary','A young IAS officer solving real problems in a Telangana district','#24406e','#2e7a4e'],
@@ -1966,9 +1992,11 @@ const GENRES=[
   ['news','📰','Breaking news','A reporter chases the story live, from ground reports to the editor\'s desk','#1e3a5f','#b91c1c'],
   ['quest','🗺️','Treasure hunt','Friends follow clues across Telangana; each clue is a fact','#064e3b','#a16207'],
   ['letters','✉️','Letters & diaries','Told through letters, diary entries and telegrams of the time','#57534e','#a8a29e']];
-const genreOf=id=>GENRES.find(g=>g[0]===id)||GENRES[0];
-const SURPRISE=['random','🎲','Surprise me','A different story type every time','#444','#888'];
-const LENS={quick:[700,'Quick'],regular:[1200,'Regular'],long:[2000,'Long']};
+const genreOf=id=>GENRES.find(g=>g[0]===id)||OLDGENRES.find(g=>g[0]===id)||GENRES[0];
+const isOldStory=s=>!GENRES.some(g=>g[0]===s.genre);
+if(ST.genre!=='random'&&!GENRES.some(g=>g[0]===ST.genre))ST.genre='explain';
+const SURPRISE=['random','🎲','Surprise me','A different style every time','#444','#888'];
+const LENS={quick:[700,'Short'],regular:[1200,'Regular'],long:[2000,'Deep dive']};
 const GEN={};// story id -> {text, ctrl, on}
 
 async function sseRead(res,on){const rd=res.body.getReader(),dec=new TextDecoder();let buf='';
@@ -2006,26 +2034,34 @@ async function aiStream(system,user,onText,signal,opts={}){
 
 function storyPrompt(o){
   const g=genreOf(o.genre),words=(LENS[o.len]||LENS.regular)[0];
-  const system=`You are a gifted storyteller and a TSPSC Group-I Mains mentor. You write short fiction so gripping that aspirants read it for pleasure, and finish it able to write a full Mains answer on the topic.
+  const system=`You are a TSPSC Group-I Mains mentor and an award-winning non-fiction writer. You write articles on syllabus topics that aspirants enjoy reading, understand on the first read, and still remember in the exam hall.
 
 Accuracy comes first. The reader will write these facts in a government exam, so one wrong date or number costs real marks.
-- The characters, dialogue and plot are fiction. Every real-world fact is not: historical events, dates, real people, places, articles, acts, amendments, judgments, schemes, committees, commissions and statistics must be real and correct as stated.
-- Never invent a fact, number, date, quote, scheme, committee, report or court case, and never put invented words in a real person's mouth as if they were said. Real people may appear only doing what they actually did.
+- This is non-fiction. Every statement must be true: events, dates, people, places, articles, acts, amendments, judgments, schemes, committees, commissions and statistics must be real and correct as stated.
+- Never invent a fact, number, date, quote, scheme, committee, report, court case, person, scene or dialogue. Quote real people only with words they are well documented to have said.
 - Prefer fewer, well-established facts over many shaky ones. If you are not certain of a figure or date, leave it out, or keep it and add [verify] right after it.
-- For statistics, use official sources (Census 2011, Economic Survey of India, Telangana Socio-Economic Outlook, NFHS, RBI) and say the source and year in the text.
-- Time travel, sci-fi and fantasy framings are only the wrapper: the history and facts inside must stay accurate, and real outcomes must not be changed.
-- Weave facts into dialogue, clues and scenes, never as a lecture.
-${o.web?'- Before writing anything, use web search to confirm the key dates, figures and provisions for this topic (prefer government, PIB, PRS, Telangana government and reputed newspaper sources). Do all searching first, then output only the story in the format below, with no text before the title.\n':''}
-How to write:
-- Indian and Telangana settings, names and texture. Vivid scenes, real stakes, a twist, and end every chapter on a hook.
-- Let the plot walk naturally through what a model answer needs: background, causes, key provisions or features, impact, criticism, the Telangana angle, and the way forward.
-- Plain markdown. Use **bold** for the 6-10 terms an examiner looks for.
-${o.lang==='te'?'- Write the story and the answer kit content in Telugu script. Keep the ANSWER KIT labels (QUESTION:, MARKS: …) exactly in English.\n':''}
+- For statistics, use official sources (Census 2011, Economic Survey of India, Telangana Socio-Economic Outlook, NFHS, RBI) and give the source and year in the text.
+${o.web?'- Before writing anything, use web search to confirm the key dates, figures and provisions for this topic (prefer government, PIB, PRS, Telangana government and reputed newspaper sources). Do all searching first, then output only the article in the format below, with no text before the title.\n':''}
+Make it engaging and easy to read:
+- Hook the reader in the first two sentences with a surprising fact, a real moment or a sharp question.
+- Plain, conversational English. Short sentences. Paragraphs of 2-4 sentences. Explain any technical term the first time it appears.
+- A "## " subheading every 120-200 words, phrased as a question or a punchy claim, so the reader can skim and find their place.
+- Explain why, not just what: causes, consequences, links between ideas. Use analogies and contrasts from everyday Indian life.
+Make it memorable:
+- End each section with one callout line: "> 💡 Remember: <the one takeaway of that section>", using a mnemonic, acronym, number pattern or vivid image whenever possible.
+- Give at least one acronym or mnemonic for any list the reader must recall (provisions, causes, features).
+- Use a markdown table where a comparison or chronology helps.
+- **Bold** the 8-12 terms, names and figures an examiner looks for.
+- Cover what a model answer needs: background, causes, key provisions or features, impact, criticism, the Telangana angle and the way forward.
+- Close the article with "## Key takeaways": 5-7 bullet points, each a complete, exam-ready fact.
+${o.lang==='te'?'- Write the article and the answer kit content in Telugu script. Keep the ANSWER KIT labels (QUESTION:, MARKS: …) exactly in English.\n':''}
 Reply in exactly this format and nothing else:
-# <story title>
-## <chapter title>
-<prose>
-(3 to 5 chapters, each starting with "## ")
+# <title: specific and intriguing>
+*<one-line standfirst: what the reader will understand by the end>*
+**In 30 seconds:** <the whole topic in 3 sentences>
+## <section heading>
+<prose, ending with a "> 💡 Remember:" line>
+(4 to 7 sections, each starting with "## ", then "## Key takeaways")
 === ANSWER KIT ===
 QUESTION: <a likely TSPSC Mains question on this topic>
 MARKS: <10 or 15>
@@ -2036,19 +2072,16 @@ BODY:
 (6-10 points; "### subheading" lines allowed)
 CONCLUSION: <2-3 sentence way forward>
 HOOKS:
-- <memory hook tying a story moment to a fact>
+- <a mnemonic, acronym or memory image from the article and what it unlocks>
 (3-5 hooks)
 RECALL:
 Q: <short question> | A: <short answer>
 (exactly 5 lines)
 FACTS:
-- <one real fact used in the story, with its year or source>
-(list every real fact the story relies on, 8-15 lines; nothing fictional here)
-CAST: <main characters in one line>
-TEASER: <one-line cliffhanger for the next episode>`;
-  let user=`Genre: ${g[2]}: ${g[3]}.\nTopic: ${o.topic}\n${o.paper?'Paper: '+paperName(o.paper)+'\n':''}Story length: about ${words} words (the answer kit is extra).`;
-  if(o.context)user+=`\n\nBuild the story on the facts in my own notes below:\n"""\n${o.context}\n"""`;
-  if(o.prev)user+=`\n\nThis is episode ${(o.prev.episode||1)+1} of a series. The last episode was "${o.prev.title}". Cast: ${o.prev.cast||'—'}. It ended with this cliffhanger: ${o.prev.teaser||'—'}\nPick up from that cliffhanger with the same characters, and build this episode's case around the new topic.`;
+- <one key fact from the article, with its year or source>
+(the 8-15 facts most worth memorising)`;
+  let user=`Article style: ${g[2]}. ${g[6]||g[3]}\nTopic: ${o.topic}\n${o.paper?'Paper: '+paperName(o.paper)+'\n':''}Article length: about ${words} words (the answer kit is extra).`;
+  if(o.context)user+=`\n\nBuild the article on the facts in my own notes below, explaining and connecting them (add only well-established context):\n"""\n${o.context}\n"""`;
   return[system,user];
 }
 function parseStory(raw){
@@ -2091,19 +2124,19 @@ async function writeStory(o){
   try{await aiStream(sys,usr,t=>{g.text+=t;g.on&&g.on()},g.ctrl.signal,{web:o.web,onStatus:m=>{g.status=m;g.on&&g.on()}});
     const p=parseStory(g.text);if(!p.body)throw new Error('The reply was empty. Try again.');
     Object.assign(s,{raw:g.text,title:p.title||o.topic.slice(0,70),status:'done',error:''})}
-  catch(e){Object.assign(s,{raw:g.text,title:parseStory(g.text).title||s.title,status:'error',error:e.name==='AbortError'?'You stopped the story.':(e.message==='Failed to fetch'?(AI.provider==='openai'?'Could not reach OpenAI. Usually the API key is wrong or has no credit (OpenAI hides the reason from browsers), or you are offline.':'Network error. Check your internet connection.'):e.message||String(e))})}
+  catch(e){Object.assign(s,{raw:g.text,title:parseStory(g.text).title||s.title,status:'error',error:e.name==='AbortError'?'You stopped the article.':(e.message==='Failed to fetch'?(AI.provider==='openai'?'Could not reach OpenAI. Usually the API key is wrong or has no credit (OpenAI hides the reason from browsers), or you are offline.':'Network error. Check your internet connection.'):e.message||String(e))})}
   delete GEN[s.id];await upsert('stories',s);
   if(location.hash==='#/story/'+s.id){const y=scrollY;render();scrollTo(0,y)}
-  else if(s.status==='done')toast('📖 “'+s.title+'” is ready in Stories',3500);
+  else if(s.status==='done')toast('📖 “'+s.title+'” is ready in Articles',3500);
 }
 function aiSetup(after){
   let prov=AI.provider;
-  modal(`<h3>AI for Story mode &amp; Q&amp;A</h3><p class="small muted" style="margin-top:-4px">Use your own Claude or OpenAI API key. It stays on this phone only (not in backups) and is sent only to the provider you pick. Each story or Q&amp;A set costs about a rupee or two with the default models.</p>
+  modal(`<h3>AI for Articles &amp; Q&amp;A</h3><p class="small muted" style="margin-top:-4px">Use your own Claude or OpenAI API key. It stays on this phone only (not in backups) and is sent only to the provider you pick. Each article or Q&amp;A set costs about a rupee or two with the default models.</p>
     <div class="seg" id="aip"><button data-p="claude">Claude</button><button data-p="openai">OpenAI</button></div><div id="aic"></div>
     <div class="row end" style="margin-top:14px"><button class="btn" data-close>Cancel</button><button class="btn primary" id="aisave">Save</button></div>`,m=>{
     const draw=()=>{$$('#aip button',m).forEach(b=>b.classList.toggle('on',b.dataset.p===prov));
       $('#aic',m).innerHTML=prov==='claude'?`<label>Claude API key (starts with sk-ant-)</label><input type="text" id="aik" autocomplete="off" spellcheck="false" value="${esc(AI.claudeKey)}" placeholder="sk-ant-…" style="-webkit-text-security:disc">
-        <label>Model</label><select id="aim">${[['claude-opus-5-5','Claude Opus 5.5: best stories'],['claude-sonnet-5-5','Claude Sonnet 5.5: faster, cheaper'],['claude-haiku-5-5','Claude Haiku 5.5: fastest, cheapest']].map(([k,l])=>`<option value="${k}" ${k===AI.claudeModel?'selected':''}>${l}</option>`).join('')}</select>
+        <label>Model</label><select id="aim">${[['claude-opus-5-5','Claude Opus 5.5: best writing'],['claude-sonnet-5-5','Claude Sonnet 5.5: faster, cheaper'],['claude-haiku-5-5','Claude Haiku 5.5: fastest, cheapest']].map(([k,l])=>`<option value="${k}" ${k===AI.claudeModel?'selected':''}>${l}</option>`).join('')}</select>
         <p class="small muted">Get a key at <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a> → API keys.</p>`
        :`<label>OpenAI API key (starts with sk-)</label><input type="text" id="aik" autocomplete="off" spellcheck="false" value="${esc(AI.openaiKey)}" placeholder="sk-…" style="-webkit-text-security:disc">
         <label>Model</label><input type="text" id="aim" value="${esc(AI.openaiModel)}" spellcheck="false">
@@ -2116,11 +2149,10 @@ function aiSetup(after){
 // Today-screen nudge: an unread story, an unwritten answer, the next episode, or an invitation.
 function storyHookHTML(){
   const list=[...S.stories].filter(x=>x.status==='done').sort((a,b)=>b.created-a.created),unread=list.find(x=>!x.read);
-  const unwritten=list.find(x=>x.read&&!storyAttempts(x).length&&parseStory(x.raw).kit?.question),nu=nextUpStory(),sk=storyStreak();
-  let em='📖',tag='Story mode',t='Learn a topic as a gripping story, then write the Mains answer.',go='#/stories';
-  if(unread){em=genreOf(unread.genre)[1];tag=unread.progress>0.03?'Continue reading':'Your story is waiting';t=unread.title;go='#/story/'+unread.id}
-  else if(unwritten){em='✍️';tag='Answer not written yet';t=unwritten.title+': write it while you remember the story';go='#/story/'+unwritten.id}
-  else if(nu){const k=parseStory(nu.raw).kit;if(k?.teaser){em='▶';tag='Next episode';t=k.teaser}}
+  const unwritten=list.find(x=>x.read&&!storyAttempts(x).length&&parseStory(x.raw).kit?.question),sk=storyStreak();
+  let em='📖',tag='Articles',t='Read an engaging article on a syllabus topic, then write the Mains answer.',go='#/stories';
+  if(unread){em=genreOf(unread.genre)[1];tag=unread.progress>0.03?'Continue reading':'Your article is waiting';t=unread.title;go='#/story/'+unread.id}
+  else if(unwritten){em='✍️';tag='Answer not written yet';t=unwritten.title+': write it while it is fresh';go='#/story/'+unwritten.id}
   return`<a class="card storyhook" data-go="${go}"><span style="font-size:30px">${em}</span><div style="flex:1;min-width:0"><div class="ftag" style="color:var(--gold)">${esc(tag)}${sk?' · 🔥 '+sk:''}</div><div style="font-weight:500">${esc(t)}</div></div><span style="font-size:22px;color:var(--muted)">›</span></a>`;
 }
 const coverStyle=g=>`--c1:${g[4]};--c2:${g[5]}`;
@@ -2131,11 +2163,10 @@ function bindSeg(id,attr,get,set){const sync=()=>$$('#'+id+' button').forEach(b=
 function vStories(v){
   const list=[...S.stories].sort((a,b)=>b.created-a.created),read=S.stories.filter(x=>x.read).length,sk=storyStreak();
   const written=S.stories.filter(x=>storyAttempts(x).length).length;
-  const unread=list.find(x=>x.status==='done'&&!x.read),nu=nextUpStory(),nk=nu&&parseStory(nu.raw).kit;
-  v.innerHTML=`<div class="row" style="flex-wrap:nowrap"><div style="flex:1;min-width:0"><b>🔥 ${sk}-day story streak</b><div class="small muted">${read} read · ${written} answers written from stories</div></div><button class="btn" id="aiset">${aiReady()?'⚙ '+(AI.provider==='openai'?'OpenAI':'Claude'):'🔑 Add AI key'}</button></div>
+  const unread=list.find(x=>x.status==='done'&&!x.read);
+  v.innerHTML=`<div class="row" style="flex-wrap:nowrap"><div style="flex:1;min-width:0"><b>🔥 ${sk}-day reading streak</b><div class="small muted">${read} read · ${written} answers written from articles</div></div><button class="btn" id="aiset">${aiReady()?'⚙ '+(AI.provider==='openai'?'OpenAI':'Claude'):'🔑 Add AI key'}</button></div>
   ${unread?`<a class="card storyhook" data-go="#/story/${unread.id}" style="margin-top:12px"><span style="font-size:30px">${genreOf(unread.genre)[1]}</span><div style="flex:1"><div class="ftag" style="color:var(--gold)">${unread.progress>0.03?'Continue reading':'Waiting for you'}</div><b>${esc(unread.title)}</b></div><span style="font-size:22px">›</span></a>`:''}
-  ${!unread&&nk&&nk.teaser?`<div class="card storyhook" style="margin-top:12px;display:block"><div class="ftag" style="color:var(--gold)">Next episode of “${esc(nu.title)}”</div><p style="margin:6px 0 10px;font-family:Georgia,serif;font-style:italic">${esc(nk.teaser)}</p><button class="btn primary block" id="snextup">▶ Write episode ${nu.episode+1}</button></div>`:''}
-  <h3>New story</h3><div class="card">
+  <h3>New article</h3><div class="card"><label style="margin-top:0">Style</label>
     <div class="genres" id="sgen">${[SURPRISE,...GENRES].map(g=>`<button data-g="${g[0]}" title="${esc(g[3])}"><b>${g[1]}</b>${esc(g[2])}</button>`).join('')}</div>
     <p class="small muted" id="sgdesc" style="margin:-4px 0 4px;text-align:center"></p>
     <label>Topic from</label><div class="seg" id="ssrc"><button data-s="syl">Syllabus</button><button data-s="mine">My notes</button><button data-s="custom">My topic</button></div>
@@ -2146,14 +2177,14 @@ function vStories(v){
     <div class="row" style="flex-wrap:nowrap;gap:10px"><div style="flex:1"><label>Length</label><div class="seg" id="slen" style="margin:0">${Object.entries(LENS).map(([k,[,l]])=>`<button data-l="${k}">${l}</button>`).join('')}</div></div>
     <div style="flex:1"><label>Language</label><div class="seg" id="slang" style="margin:0"><button data-l="en">English</button><button data-l="te">తెలుగు</button></div></div></div>
     <div class="switch small ${AI.provider==='openai'?'hide':''}" style="border-bottom:0;padding-bottom:0"><span>🔎 Check facts on the web first <span class="muted">(Claude Opus / Sonnet; a little slower and costlier)</span></span><input type="checkbox" id="sweb" ${ST.web?'checked':''}></div>
-    <button class="btn primary block" id="sgo" style="margin-top:14px">✨ Write my story</button>
+    <button class="btn primary block" id="sgo" style="margin-top:14px">✨ Write my article</button>
   </div>
-  ${list.length?`<h3>Your shelf</h3><div class="shelf">${list.map(bookHTML).join('')}</div>`:`<p class="small muted" style="text-align:center">Each story teaches one topic and ends with a Mains question, an answer outline and a quick recall quiz. Read it, then write the answer while it's fresh.</p>`}`;
+  ${list.length?`<h3>Your articles</h3><div class="shelf">${list.map(bookHTML).join('')}</div>`:`<p class="small muted" style="text-align:center">Each article explains one topic in plain language, with a 30-second summary, memory hooks after every section and key takeaways. It ends with a Mains question, an answer outline and a quick recall quiz.</p>`}`;
   const gd=()=>$('#sgdesc').textContent=ST.genre==='random'?SURPRISE[3]:genreOf(ST.genre)[3];
   const sg=()=>{$$('#sgen button').forEach(b=>b.classList.toggle('on',b.dataset.g===ST.genre));gd()};sg();
   $$('#sgen button').forEach(b=>b.onclick=()=>{ST.genre=b.dataset.g;saveST();sg()});
   const sh=()=>{const c=ST.src==='custom';$('#stopic').classList.toggle('hide',!c);$('#ssrch').classList.toggle('hide',c);
-    $('#ssrch').textContent=ST.src==='mine'?(S.notes.length?'Picks one of your notes (due for revision first) and builds the story on its facts.':'You have no notes yet. Use Syllabus or My topic.'):ST.paper?'Pick a unit and topic below, or leave them on 🎲 for a surprise.':'Choose a paper to pick an exact syllabus topic, or leave it on Any paper for a surprise.';
+    $('#ssrch').textContent=ST.src==='mine'?(S.notes.length?'Picks one of your notes (due for revision first) and builds the article on its facts.':'You have no notes yet. Use Syllabus or My topic.'):ST.paper?'Pick a unit and topic below, or leave them on 🎲 for a surprise.':'Choose a paper to pick an exact syllabus topic, or leave it on Any paper for a surprise.';
     $('#ssyl').classList.toggle('hide',!(ST.src==='syl'&&ST.paper))};
   const fillSyl=()=>{const secs=SYL[ST.paper]||[],told=new Set(S.stories.map(x=>x.topic));
     $('#sunit').innerHTML='<option value="">🎲 Any unit</option>'+secs.map(([sn,units],si)=>`<optgroup label="${esc(sn)}">${units.map(([u],ui)=>`<option value="${si}.${ui}">${esc(u)}</option>`).join('')}</optgroup>`).join('');
@@ -2172,64 +2203,71 @@ function vStories(v){
   $('#sweb').onchange=e=>{ST.web=e.target.checked;saveST()};
   $('#sgo').onclick=()=>{const t=pickTopic();if(!t)return toast(ST.src==='custom'?'Type a topic first':'No topic found for that choice');
     const genre=ST.genre==='random'?pickOne(GENRES)[0]:ST.genre;writeStory({...t,genre,len:ST.len,lang:ST.lang,web:AI.provider==='claude'&&ST.web})};
-  if($('#snextup'))$('#snextup').onclick=()=>continueSeries(nu);
 }
-function continueSeries(s){const k=parseStory(s.raw).kit||{};const t=pickTopic()||pickOne(sylPoints(''));
-  writeStory({...t,genre:s.genre,len:s.len,lang:s.lang,web:AI.provider==='claude'&&ST.web,prev:{seriesId:s.seriesId,episode:s.episode,title:s.title,cast:k.cast,teaser:k.teaser}})}
+// Next article: same style (a new style for old stories), next topic from the current Articles settings.
+function continueSeries(s){const t=pickTopic()||pickOne(sylPoints(''));
+  writeStory({...t,genre:isOldStory(s)?(ST.genre==='random'?pickOne(GENRES)[0]:ST.genre):s.genre,len:s.len,lang:s.lang,web:AI.provider==='claude'&&ST.web})}
 async function storyToQA(s,k){
   if(s.qaId&&byId('qas',s.qaId))return s.qaId;
-  const now=Date.now(),q={id:uid(),created:now,starred:false,rev:freshRev(now),question:k.question,paper:s.paper||'',topic:s.topic,tags:['story'],marks:k.marks,wordLimit:'',directive:'',
+  const now=Date.now(),q={id:uid(),created:now,starred:false,rev:freshRev(now),question:k.question,paper:s.paper||'',topic:s.topic,tags:[isOldStory(s)?'story':'article'],marks:k.marks,wordLimit:'',directive:'',
     keywords:k.keywords,intro:k.intro,body:k.body,conclusion:k.conclusion,diagram:'',valueAdd:k.hooks};
   await upsert('qas',q);if(S.settings.autoQaCards)await upsert('cards',qaOutlineCard(q,now+1));
   s.qaId=q.id;await upsert('stories',s,false);return q.id;
 }
 let curStory=null;
+// Article body: markdown plus the standfirst, the "In 30 seconds" box and the 💡 Remember callouts.
+const artHTML=b=>vfy(md(String(b||'').replace(/^(\s*\*[^*\n][^\n]*\*)[ \t]*\n(?!\s*\n)/,'$1\n\n').replace(/([^\n])\n(?=\*\*In 30 seconds)/i,'$1\n\n'))).replace(/^\s*<p>\s*<em>([\s\S]*?)<\/em>\s*<\/p>/,'<p class="stand">$1</p>')
+  .replace(/<p>\s*<strong>\s*In 30 seconds\s*:?\s*<\/strong>\s*:?/i,'<p class="tldr"><strong>In 30 seconds</strong>')
+  .replace(/<blockquote>(?=\s*(?:<p>)?\s*💡)/g,'<blockquote class="rem">');
 const vfy=h=>h.replace(/\[verify[^\]]*\]/gi,m=>`<span class="vf" title="Not fully certain. Check this in your notes.">${m}</span>`);
 document.addEventListener('scroll',()=>{const b=$('#stbar i');if(!b||!curStory)return;const h=document.documentElement.scrollHeight-innerHeight,sb=$('#sbody');
   const end=sb?sb.offsetTop+sb.offsetHeight-innerHeight:h,p=clamp(scrollY/Math.max(1,end),0,1);b.style.width=(p*100)+'%';
   if(!curStory.read&&curStory.status==='done'&&p>curStory.progress+0.02){curStory.progress=p;clearTimeout(curStory._t);const s=curStory;curStory._t=setTimeout(()=>{const{_t,...o}=s;DB.put('stories',o).catch(()=>{})},1500)}},{passive:true});
 function vStory(v,[id]){
-  const s=byId('stories',id);if(!s){v.innerHTML='<div class="empty">Story not found.</div>';return}
+  const s=byId('stories',id);if(!s){v.innerHTML='<div class="empty">Article not found.</div>';return}
   curStory=s;document.body.classList.add('focus','storyon');
-  const g=GEN[id],writing=!!g,p=parseStory(writing?g.text:s.raw),gn=genreOf(s.genre),k=p.kit;
+  const g=GEN[id],writing=!!g,p=parseStory(writing?g.text:s.raw),gn=genreOf(s.genre),k=p.kit,old=isOldStory(s);
   const words=(plain(p.body).match(/\S+/g)||[]).length,cursor='<span class="cursor"></span>';
   v.innerHTML=`<div class="stbar" id="stbar"><i></i></div>
   <div class="sthead"><button class="iconbtn" id="sback" aria-label="Back"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg></button><div class="tt" id="stt">${esc(p.title||s.title||'Writing…')}</div>
     <button class="iconbtn" id="sfont" aria-label="Text size" style="font-weight:700;font-family:Georgia,serif">Aa</button><button class="iconbtn" id="slisten" aria-label="Read aloud">🔈</button></div>
-  <div class="stcover" style="${coverStyle(gn)}"><div class="em">${gn[1]}</div><h2 id="sct">${esc(p.title||(writing?'Your story is being written…':s.title||'Untitled'))}</h2>
-    <div class="m">${esc(gn[2])}${s.episode>1?' · Episode '+s.episode:''}${s.paper?' · '+s.paper:''}${words&&!writing?' · '+Math.max(1,Math.round(words/200))+' min read':''}</div><div class="m" style="margin-top:6px;opacity:.75">${esc(s.topic)}</div><div class="stbadge">Fictional characters · real facts${s.req?.web?' · web-checked':''}</div></div>
-  <div class="story" id="sbody" style="font-size:calc(var(--fs) + ${ST.fs}px)">${vfy(md(p.body))}${writing?cursor:''}</div><div id="send"></div>`;
+  <div class="stcover" style="${coverStyle(gn)}"><div class="em">${gn[1]}</div><h2 id="sct">${esc(p.title||(writing?'Your article is being written…':s.title||'Untitled'))}</h2>
+    <div class="m">${esc(gn[2])}${old&&s.episode>1?' · Episode '+s.episode:''}${s.paper?' · '+s.paper:''}${words&&!writing?' · '+Math.max(1,Math.round(words/200))+' min read':''}</div><div class="m" style="margin-top:6px;opacity:.75">${esc(s.topic)}</div><div class="stbadge">${old?'Fictional characters · real facts':'Non-fiction · facts only'}${s.req?.web?' · web-checked':''}</div></div>
+  <div class="story${old?'':' art'}" id="sbody" style="font-size:calc(var(--fs) + ${ST.fs}px)">${artHTML(p.body)}${writing?cursor:''}</div><div id="send"></div>`;
   const endEl=$('#send');
   if(writing){endEl.innerHTML=`<div class="vc" id="sst">${words?'✍️ Writing… '+words+' words':esc(g.status||'✍️ Starting…')}</div><button class="btn block" id="sstop" style="margin-top:8px">Stop writing</button>`;
     $('#sstop').onclick=()=>g.ctrl.abort();let pend=false;
     g.on=()=>{if(pend)return;pend=true;requestAnimationFrame(()=>setTimeout(()=>{pend=false;const sb=$('#sbody');if(!sb||!$('#sst')||curStory!==s||!GEN[s.id])return;
       const near=innerHeight+scrollY>=document.documentElement.scrollHeight-120,q=parseStory(g.text),w=(plain(q.body).match(/\S+/g)||[]).length;
-      sb.innerHTML=vfy(md(q.body))+(q.kit?'':cursor);if(q.title){$('#stt').textContent=q.title;$('#sct').textContent=q.title}
-      $('#sst').textContent=q.kit?'🎯 Story done. Preparing your Mains question and fact list…':w?'✍️ Writing… '+w+' words':(g.status||'✍️ Starting…');if(near&&!q.kit)scrollTo(0,document.documentElement.scrollHeight)},90))}}
-  else if(s.status==='error'){endEl.innerHTML=`<div class="card" style="border-color:var(--again)"><b>Story stopped</b><p class="small" style="margin:6px 0 10px">${esc(s.error||'Unknown error')}</p><div class="row"><button class="btn primary" id="sretry">Try again</button><button class="btn" id="skey">AI settings</button><span class="spacer"></span><button class="btn ghost danger" id="sdel">Delete</button></div></div>`;
+      sb.innerHTML=artHTML(q.body)+(q.kit?'':cursor);if(q.title){$('#stt').textContent=q.title;$('#sct').textContent=q.title}
+      $('#sst').textContent=q.kit?'🎯 Article done. Preparing your Mains question and fact list…':w?'✍️ Writing… '+w+' words':(g.status||'✍️ Starting…');if(near&&!q.kit)scrollTo(0,document.documentElement.scrollHeight)},90))}}
+  else if(s.status==='error'){endEl.innerHTML=`<div class="card" style="border-color:var(--again)"><b>Article stopped</b><p class="small" style="margin:6px 0 10px">${esc(s.error||'Unknown error')}</p><div class="row"><button class="btn primary" id="sretry">Try again</button><button class="btn" id="skey">AI settings</button><span class="spacer"></span><button class="btn ghost danger" id="sdel">Delete</button></div></div>`;
     $('#sretry').onclick=async()=>{await removeMany('stories',[s.id]);writeStory(s.req)};$('#skey').onclick=()=>aiSetup();}
-  else if(!s.read){endEl.innerHTML=`<div class="theend">✦ THE END ✦</div><button class="btn primary block" id="sfin">I've read it: unlock the Mains question (+20 XP)</button>`;
+  else if(!s.read){endEl.innerHTML=`<div class="theend">✦ ✦ ✦</div><button class="btn primary block" id="sfin">I've read it: unlock the Mains question (+20 XP)</button>`;
     $('#sfin').onclick=async()=>{s.read=true;s.readAt=Date.now();s.progress=1;await upsert('stories',s,false);floatXp(award(20),true);const y=scrollY;vStory(v,[id]);scrollTo(0,y);setTimeout(()=>$('#skit')?.scrollIntoView({behavior:'smooth',block:'start'}),60)}}
   else{const nv=(s.raw.match(/\[verify/gi)||[]).length,att=storyAttempts(s),best=att.reduce((m,a)=>Math.max(m,a.score||0),0),mins=k?Math.round(k.marks*S.settings.minPerMark):0;
-    endEl.innerHTML=`<div class="theend">✦ THE END ✦</div>
+    endEl.innerHTML=`<div class="theend">✦ ✦ ✦</div>
     ${k&&k.question?`<div class="kit" id="skit"><div class="ftag" style="color:var(--gold)">🎯 Now write it · ${k.marks} marks · ${mins} min</div><div class="q">${esc(k.question)}</div>
       ${k.keywords.length?`<div style="margin:10px 0 12px">${k.keywords.map(x=>`<span class="tag" style="font-size:12px;margin-bottom:4px">${esc(x)}</span>`).join('')}</div>`:''}
-      ${att.length?`<p class="small" style="color:var(--good);margin:0 0 8px">✓ Written ${att.length}×${best?' · best self-score '+best+'/10':''}. Write it again in a few days to lock it in.</p>`:`<p class="small muted" style="margin:0 0 8px">The story is fresh in your head. This is the best moment to write the answer.</p>`}
+      ${att.length?`<p class="small" style="color:var(--good);margin:0 0 8px">✓ Written ${att.length}×${best?' · best self-score '+best+'/10':''}. Write it again in a few days to lock it in.</p>`:`<p class="small muted" style="margin:0 0 8px">The article is fresh in your head. This is the best moment to write the answer.</p>`}
       <button class="btn primary block" id="swrite">✍️ ${att.length?'Write it again':'Write this answer now'}</button>
       <details style="margin-top:12px"><summary class="small" style="cursor:pointer;color:var(--accent)">Model answer outline (peek after writing)</summary><div class="reading" style="font-size:15px">${k.intro?`<p><b>Intro:</b> ${inline(esc(k.intro))}</p>`:''}${md(k.body)}${k.conclusion?`<p><b>Way forward:</b> ${inline(esc(k.conclusion))}</p>`:''}</div></details></div>`:''}
-    ${k&&k.facts.length?`<div class="sec"><div class="h">Facts used in this story</div><div class="card" style="padding:6px 14px"><p class="small muted" style="margin:4px 0">Characters are fiction, these facts are not. ${nv?`<b style="color:var(--hard)">${nv} marked [verify]</b>: check them in your notes before using them.`:'Cross-check anything that surprises you with your notes.'}</p>${vfy(ulist(k.facts))}</div></div>`:''}
+    ${k&&k.facts.length?`<div class="sec"><div class="h">${old?'Facts used in this story':'Key facts to memorise'}</div><div class="card" style="padding:6px 14px"><p class="small muted" style="margin:4px 0">${old?'Characters are fiction, these facts are not. ':''}${nv?`<b style="color:var(--hard)">${nv} marked [verify]</b>: check them in your notes before using them.`:'Cross-check anything that surprises you with your notes.'}</p>${vfy(ulist(k.facts))}</div></div>`:''}
     ${k&&k.hooks.length?sec('Memory hooks',ulist(k.hooks)):''}
     ${k&&k.recall.length?`<div class="sec"><div class="h">Quick recall · tap to reveal</div><div class="card" style="padding:2px 14px">${k.recall.map((r,i)=>`<div class="rq" data-i="${i}"><div>${esc(r.q)}</div><div class="a">${esc(r.a)}</div></div>`).join('')}</div>
       <button class="btn block" id="scards" ${s.cardsAdded?'disabled':''}>${s.cardsAdded?'✓ Added to your flashcards':'+ Add these '+k.recall.length+' to flashcards'}</button></div>`:''}
-    <div class="card storyhook" style="display:block;margin-top:18px"><div class="ftag" style="color:var(--gold)">${k&&k.teaser?'Next episode':'Keep going'}</div>${k&&k.teaser?`<p style="margin:6px 0 10px;font-family:Georgia,serif;font-style:italic">${esc(k.teaser)}</p>`:''}
-      <button class="btn primary block" id="snext">▶ ${k&&k.teaser?'Write episode '+(s.episode+1):'Write another story'}</button><p class="small muted" style="margin:8px 0 0;text-align:center">Same characters, new topic.</p></div>
-    <div class="row" style="margin-top:16px"><button class="btn ghost" data-go="#/stories">All stories</button><span class="spacer"></span><button class="btn ghost danger" id="sdel">Delete story</button></div>`;
+    <div class="card storyhook" style="display:block;margin-top:18px"><div class="ftag" style="color:var(--gold)">Keep going</div>
+      <button class="btn primary block" id="snext" style="margin-top:8px">▶ Next article</button><p class="small muted" style="margin:6px 0 10px;text-align:center">${old?'A new topic, as an article.':'Same style ('+esc(gn[2])+'), next topic.'}</p>
+      <button class="btn block" id="sagain">🔄 This topic in another style</button></div>
+    <div class="row" style="margin-top:16px"><button class="btn ghost" data-go="#/stories">All articles</button><span class="spacer"></span><button class="btn ghost danger" id="sdel">Delete</button></div>`;
     if($('#swrite'))$('#swrite').onclick=async()=>{const qid=await storyToQA(s,k);P.qa=qid;P.phase='ready';go('#/practice')};
     $$('.rq',endEl).forEach(el=>el.onclick=()=>{if(el.classList.contains('on'))return;el.classList.add('on');floatXp(award(2))});
     if($('#scards'))$('#scards').onclick=async()=>{const t=Date.now();await upsertMany('cards',k.recall.map((r,i)=>newCard({type:'basic',front:r.q,back:r.a,paper:s.paper,sourceType:'story',sourceId:s.id,created:t+i})));
       s.cardsAdded=true;await upsert('stories',s,false);toast(k.recall.length+' cards added to Review');$('#scards').disabled=true;$('#scards').textContent='✓ Added to your flashcards';updateBadge()};
-    $('#snext').onclick=()=>continueSeries(s)}
-  if($('#sdel'))$('#sdel').onclick=async()=>{if(!confirm('Delete this story?'))return;await removeMany('stories',[s.id]);go('#/stories')};
+    $('#snext').onclick=()=>continueSeries(s);
+    $('#sagain').onclick=()=>{const r=s.req||{topic:s.topic,paper:s.paper,len:s.len,lang:s.lang},others=GENRES.filter(g=>g[0]!==s.genre);
+      writeStory({...r,prev:undefined,genre:pickOne(others)[0],web:AI.provider==='claude'&&ST.web})}}
+  if($('#sdel'))$('#sdel').onclick=async()=>{if(!confirm('Delete this article?'))return;await removeMany('stories',[s.id]);go('#/stories')};
   $('#sback').onclick=()=>go('#/stories');
   $('#sfont').onclick=()=>{ST.fs=ST.fs>=6?0:ST.fs+2;saveST();$('#sbody').style.fontSize=`calc(var(--fs) + ${ST.fs}px)`};
   $('#slisten').onclick=()=>{if(!TTS.ok())return toast('No speech support in this browser');if(TTS.on){TTS.stop();TTS.on=false;$('#slisten').textContent='🔈';return}
@@ -2702,7 +2740,7 @@ async function applyLine(mode,c,v){
 /* ================= Boot ================= */
 (async function boot(){
   try{await DB.open();const[notes,qas,cards,logs,attempts,ideas,stories,settings,game]=await Promise.all([DB.all('notes'),DB.all('qas'),DB.all('cards'),DB.all('logs'),DB.all('attempts'),DB.all('ideas'),DB.all('stories'),DB.getMeta('settings'),DB.getMeta('game')]);
-    stories.forEach(x=>{if(x.status==='writing'){x.status='error';x.error='The app was closed while this story was being written.'}});
+    stories.forEach(x=>{if(x.status==='writing'){x.status='error';x.error='The app was closed while this was being written.'}});
     Object.assign(S,{notes,qas,cards,logs,attempts,ideas,stories,settings:{...DEF,...(settings||{})}});if(game)G={...G,...game,seen:game.seen||{},days:game.days||{}}}
   catch(e){$('#view').innerHTML=`<div class="empty">Storage is unavailable in this browser (${esc(e.message||e)}). Open the app in Chrome, not in private mode.</div>`;return}
   applyTheme();matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',applyTheme);
