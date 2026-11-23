@@ -2166,6 +2166,7 @@ function vStories(v){
   const unread=list.find(x=>x.status==='done'&&!x.read);
   v.innerHTML=`<div class="row" style="flex-wrap:nowrap"><div style="flex:1;min-width:0"><b>🔥 ${sk}-day reading streak</b><div class="small muted">${read} read · ${written} answers written from articles</div></div><button class="btn" id="aiset">${aiReady()?'⚙ '+(AI.provider==='openai'?'OpenAI':'Claude'):'🔑 Add AI key'}</button></div>
   ${unread?`<a class="card storyhook" data-go="#/story/${unread.id}" style="margin-top:12px"><span style="font-size:30px">${genreOf(unread.genre)[1]}</span><div style="flex:1"><div class="ftag" style="color:var(--gold)">${unread.progress>0.03?'Continue reading':'Waiting for you'}</div><b>${esc(unread.title)}</b></div><span style="font-size:22px">›</span></a>`:''}
+  ${S.stories.some(isOldStory)?`<div class="card row" style="flex-wrap:nowrap;margin-top:12px"><div style="flex:1;min-width:0"><b>${S.stories.filter(isOldStory).length} old stories</b><div class="small muted">From the old Story mode</div></div><button class="btn danger" id="sdelold">Delete all</button></div>`:''}
   <h3>New article</h3><div class="card"><label style="margin-top:0">Style</label>
     <div class="genres" id="sgen">${[SURPRISE,...GENRES].map(g=>`<button data-g="${g[0]}" title="${esc(g[3])}"><b>${g[1]}</b>${esc(g[2])}</button>`).join('')}</div>
     <p class="small muted" id="sgdesc" style="margin:-4px 0 4px;text-align:center"></p>
@@ -2200,6 +2201,9 @@ function vStories(v){
   $('#stopic').oninput=e=>{ST.custom=e.target.value;saveST()};
   $('#spaper').onchange=e=>{ST.paper=e.target.value;ST.unit='';ST.point='';saveST();fillSyl();sh()};
   $('#aiset').onclick=()=>aiSetup();
+  if($('#sdelold'))$('#sdelold').onclick=async()=>{const old=S.stories.filter(isOldStory);
+    if(!confirm(`Permanently delete all ${old.length} old stories? This cannot be undone (except from a backup). Flashcards and Q&A you made from them stay.`))return;
+    old.forEach(x=>GEN[x.id]?.ctrl.abort());await removeMany('stories',old.map(x=>x.id));toast(old.length+' stories deleted');vStories(v)};
   $('#sweb').onchange=e=>{ST.web=e.target.checked;saveST()};
   $('#sgo').onclick=()=>{const t=pickTopic();if(!t)return toast(ST.src==='custom'?'Type a topic first':'No topic found for that choice');
     const genre=ST.genre==='random'?pickOne(GENRES)[0]:ST.genre;writeStory({...t,genre,len:ST.len,lang:ST.lang,web:AI.provider==='claude'&&ST.web})};
