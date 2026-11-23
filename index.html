@@ -522,7 +522,7 @@ function modal(html,bind){const m=$('#modal');m.innerHTML=`<div class="mbg"><div
 function closeModal(){const m=$('#modal');m.classList.remove('on');m.innerHTML=''}
 async function copyText(t){try{await navigator.clipboard.writeText(t);return true}catch(e){const a=document.createElement('textarea');a.value=t;a.style.position='fixed';a.style.opacity='0';document.body.appendChild(a);a.select();let ok=false;try{ok=document.execCommand('copy')}catch(_){}a.remove();return ok}}
 async function pasteInto(el){try{const t=await navigator.clipboard.readText();if(t){el.value=t;el.dispatchEvent(new Event('input'));toast('Pasted')}else toast('Clipboard is empty')}catch(e){toast('Long-press the box and choose Paste')}}
-function download(name,text,mime='application/json'){const b=new Blob([text],{type:mime});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000)}
+function download(name,text,mime='application/json'){if(window.NativeApp)return NativeApp.save(name,text,mime);const b=new Blob([text],{type:mime});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000)}
 async function shareFile(name,text){try{const f=new File([text],name,{type:'text/plain'});if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:name});return}}catch(e){if(e.name==='AbortError')return}download(name,text)}
 function readFile(accept){return new Promise(res=>{const i=document.createElement('input');i.type='file';i.accept=accept;i.onchange=()=>{const f=i.files[0];if(!f)return res(null);const r=new FileReader();r.onload=()=>res({name:f.name,text:r.result});r.readAsText(f)};i.click()})}
 const stamp=()=>new Date().toISOString().slice(0,10);
@@ -685,7 +685,7 @@ function bindNoteCommon(v,n,store){
     if(!TTS.ok())return toast('This browser has no speech support. Use Chrome.');
     const idle=()=>{delete b.dataset.on;b.textContent='🔈 Listen'};
     b.dataset.on=1;b.textContent='⏹ Stop';TTS.wake(true);
-    const rid=TTS.read($('.reading',v),(kind==='note'?n.title:n.question)+'.',()=>{idle();TTS.wake(false)});
+    const rid=TTS.read($('.reading',v),(kind==='note'?n.title:n.question)+'.',()=>{idle();TTS.wake(false)},{title:kind==='note'?n.title:n.question});
     b.dataset.on=1;b.textContent='⏹ Stop';
     const w=setInterval(()=>{if(TTS.rid!==rid||!b.isConnected){clearInterval(w);if(b.isConnected)idle()}},400)};
   if($('#focus'))$('#focus').onclick=()=>{document.body.classList.add('focus');window.scrollTo(0,0)};
@@ -1633,14 +1633,24 @@ const TTS={tok:0,lock:null,
   rid:0,reading:false,
   read(root,lead,done,opt={}){if(!this.ok())return 0;this.stop();const bl=speechBlocks(root);if(lead)bl.unshift({el:null,text:lead});
     const id=this.rid;this.reading=true;this.rd={root,bl,i:0,done,opt};if(opt.bar!==false)ttsBar(true);
-    this.step(id);return id},
+    if(window.NativeAudio)this.nplay(id,0);else this.step(id);return id},
+  hlb(r,b){hlClear();if(b&&b.el&&b.el!==r.root&&b.el.isConnected){b.el.classList.add('ttshl');const q=b.el.getBoundingClientRect();
+      if(r.opt.block!=='none'&&(q.top<70||q.bottom>innerHeight-110))b.el.scrollIntoView({block:r.opt.block||'center',behavior:'smooth'})}},
   step(id){const r=this.rd;if(this.rid!==id||!r)return;hlClear();
     if(r.i>=r.bl.length){const d=r.done;this.endRead();d&&d();return}
-    const b=r.bl[r.i++];if(b.el&&b.el!==r.root&&b.el.isConnected){b.el.classList.add('ttshl');const q=b.el.getBoundingClientRect();
-      if(r.opt.block!=='none'&&(q.top<70||q.bottom>innerHeight-110))b.el.scrollIntoView({block:r.opt.block||'center',behavior:'smooth'})}
+    const b=r.bl[r.i++];this.hlb(r,b);
     this.say(b.text,()=>this.step(id),true)},
+  // In the Android app: hand the whole read to the native player, which keeps going in the background;
+  // it reports each item as it starts so the highlight follows whenever the app is on screen.
+  nplay(id,from){const r=this.rd;if(!r||this.rid!==id)return;
+    if(!r.items){r.items=[];r.map=[];r.bl.forEach((b,bi)=>{for(const p of(this.clean(b.text).match(/[\s\S]{1,2800}(?:[.!?;:]\s|$)|[\s\S]{1,2800}/g)||[])){if(p.trim()){r.items.push({text:p});r.map.push(bi)}}})}
+    let pl=0;pl=r.pl=NativeAudio.play(r.items,{start:from,title:r.opt.title||'',rate:S.settings.ttsRate||1,voice:(this.voice()||{}).voiceURI||'',
+      onItem:k=>{if(this.rid===id&&this.rd===r){r.i=r.map[k]+1;this.hlb(r,r.bl[r.map[k]])}},
+      onEnd:()=>{if(this.rid!==id)return;const d=r.done;this.endRead();d&&d()},
+      onStop:()=>{if(this.rid===id&&r.pl===pl)this.endRead()}})},
   jump(el){const r=this.rd;if(!r)return false;const i=r.bl.findIndex(b=>b.el===el);if(i<0)return false;
-    const id=this.rid;r.i=i;this.tok++;clearTimeout(this.dog);speechSynthesis.cancel();setTimeout(()=>this.step(id),150);return true},
+    const id=this.rid;if(window.NativeAudio){if(!r.items)return false;const k=r.map.indexOf(i);if(k<0)return false;this.nplay(id,k);return true}
+    r.i=i;this.tok++;clearTimeout(this.dog);speechSynthesis.cancel();setTimeout(()=>this.step(id),150);return true},
   endRead(){if(this.reading||this.rd){this.rid++;this.reading=false;this.rd=null;hlClear();ttsBar(false)}},
   async wake(on){try{if(on&&!this.lock&&navigator.wakeLock)this.lock=await navigator.wakeLock.request('screen');else if(!on&&this.lock){await this.lock.release();this.lock=null}}catch(e){}}
 };
@@ -2276,7 +2286,7 @@ function vStory(v,[id]){
   $('#sfont').onclick=()=>{ST.fs=ST.fs>=6?0:ST.fs+2;saveST();$('#sbody').style.fontSize=`calc(var(--fs) + ${ST.fs}px)`};
   $('#slisten').onclick=()=>{if(!TTS.ok())return toast('No speech support in this browser');if(TTS.on){TTS.stop();TTS.on=false;$('#slisten').textContent='🔈';return}
     const off=()=>{TTS.on=false;const b=$('#slisten');if(b)b.textContent='🔈'};TTS.wake(true);
-    const rid=TTS.read($('#sbody'),'',off);TTS.on=true;$('#slisten').textContent='⏹';
+    const rid=TTS.read($('#sbody'),'',off,{title:s.title||'Article'});TTS.on=true;$('#slisten').textContent='⏹';
     const w=setInterval(()=>{if(TTS.rid!==rid||!$('#slisten')){clearInterval(w);off()}},400)};
   if(s.progress>0.03&&!s.read&&!writing)setTimeout(()=>{const sb=$('#sbody');scrollTo(0,(sb.offsetTop+sb.offsetHeight-innerHeight)*s.progress)},30);
 }
@@ -2557,6 +2567,18 @@ function olpDraw(box){const L=OLP.list,p=L[OLP.i],el=$('#olp',box);if(!el)return
 function olpGo(box){if(!TTS.ok())return toast('No speech support in this browser');
   olpStop();const id=OLP.run,L=OLP.list;OLP.play=true;TTS.wake(true);
   const alive=()=>id===OLP.run&&box.isConnected&&location.hash==='#/ol';
+  if(window.NativeAudio){// Android app: queue the whole topic in the native player so it plays on with the screen off.
+    const items=[],meta=[],g=+(OLS.lgap??3),add=(it,m)=>{items.push(it);meta.push(m)};let start=0;
+    L.forEach((p,j)=>{const prev=L[j-1];if(j===OLP.i)start=items.length;
+      add({text:TTS.clean((!prev||prev.n.id!==p.n.id?p.n.title+'. ':'')+p.x.q)},{i:j,ph:'q'});if(g)add({pause:g*1000},{i:j,ph:'wait'});
+      add({text:TTS.clean(p.x.a)},{i:j,ph:'a'});add({pause:1100},{i:j,ph:'a'})});
+    let pl=0;const f=OLS.filter,nt=f.startsWith('n:')?byId('notes',f.slice(2))?.title:f?paperName(f):'';
+    pl=OLP.pl=NativeAudio.play(items,{start,loop:!!OLS.lloop,rate:S.settings.ttsRate||1,voice:(TTS.voice()||{}).voiceURI||'',title:'One-liners'+(nt?' · '+nt:''),
+      onItem:k=>{if(OLP.pl!==pl)return;const m=meta[k];if(OLP.i===m.i&&OLP.phase===m.ph)return;OLP.i=m.i;OLP.phase=m.ph;if(alive())olpDraw(box)},
+      onState:paused=>{if(OLP.pl!==pl)return;OLP.play=!paused;if(alive())olpDraw(box)},
+      onEnd:()=>{if(OLP.pl!==pl)return;OLP.play=false;OLP.i=0;OLP.phase='q';if(alive()){olpDraw(box);scrollTo({top:0,behavior:'smooth'})}toast('Finished · '+L.length+' one-liners')},
+      onStop:()=>{if(OLP.pl!==pl)return;OLP.play=false;OLP.phase='q';if(alive())olpDraw(box)}});
+    olpDraw(box);return}
   const one=()=>{if(!alive())return;const p=L[OLP.i];
     if(!p){if(OLS.lloop&&L.length){OLP.i=0;return one()}OLP.play=false;OLP.i=0;OLP.phase='q';olpDraw(box);scrollTo({top:0,behavior:'smooth'});TTS.wake(false);toast('Finished · '+L.length+' one-liners');return}
     const prev=L[OLP.i-1],intro=!prev||prev.n.id!==p.n.id?p.n.title+'. ':'';
