@@ -253,6 +253,18 @@ body.storyon main{padding-top:0}
 .seltb button b{color:#8ab4f8}
 .hl{animation:hl 2s ease-out}
 @keyframes hl{from{background:var(--mark)}}
+/* one-line Q&A */
+.ol{padding:2px 14px}
+.olr{position:relative;border-bottom:1px solid var(--line);padding:10px 0;cursor:pointer}
+.olr:last-of-type{border-bottom:0}
+.olr .q{font-size:15px;line-height:1.45}
+.olr .q .n{display:inline-block;min-width:22px;color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
+.olr .a{display:none;margin:3px 0 0 22px;color:var(--good);font-weight:600;font-size:15px}
+.olr.on .a{display:block}
+.olr:not(.on) .q::after{content:'tap to reveal';display:block;margin-left:22px;font-size:11px;color:var(--muted)}
+.olr .olx{position:absolute;right:-6px;top:6px;font-size:12px;opacity:.55}
+.olr:has(.olx) .q,.olr:has(.olx) .a{padding-right:22px}
+.olempty{border-style:dashed;text-align:left}
 /* Q&A generator */
 #ltab.four button{font-size:13px;padding:7px 4px;line-height:1.2}
 .qtypes{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
@@ -582,7 +594,7 @@ function vLib(v,args){
     const pOk=x=>(!L.paper||x.paper===L.paper);
     if(L.tab==='notes'){let a=S.notes.filter(n=>pOk(n)&&(!L.star||n.starred)&&(!q||[n.title,n.topic,n.summary,n.content,(n.tags||[]).join(' '),(n.keyFacts||[]).join(' ')].join(' ').toLowerCase().includes(q)));
       a.sort(L.sort==='least'?(x,y)=>revN(x)-revN(y):L.sort==='most'?(x,y)=>revN(y)-revN(x):L.sort==='title'?(x,y)=>x.title.localeCompare(y.title):L.sort==='rev'?(x,y)=>(x.rev?.next||0)-(y.rev?.next||0):(x,y)=>(y.updated||0)-(x.updated||0));
-      h=a.map(n=>`<a class="item" data-go="#/note/${n.id}"><div class="t">${n.starred?'★ ':''}${esc(n.title)}</div><div class="s">${n.paper?`<span class="tag">${n.paper}</span>`:''}${revTag(n)}${revDue(n)?'<span class="tag">revise</span>':''}${esc(n.summary||plain(n.content).slice(0,140))}</div></a>`).join('')}
+      h=a.map(n=>`<a class="item" data-go="#/note/${n.id}"><div class="t">${n.starred?'★ ':''}${esc(n.title)}</div><div class="s">${n.paper?`<span class="tag">${n.paper}</span>`:''}${revTag(n)}${n.oneliners?.length?`<span class="tag" title="One-line Q&amp;A">⚡ ${n.oneliners.length}</span>`:''}${revDue(n)?'<span class="tag">revise</span>':''}${esc(n.summary||plain(n.content).slice(0,140))}</div></a>`).join('')}
     else if(L.tab==='qa'){let a=S.qas.filter(n=>pOk(n)&&(!L.star||n.starred)&&(!q||[n.question,n.topic,n.intro,n.body,n.conclusion,(n.keywords||[]).join(' ')].join(' ').toLowerCase().includes(q)));
       const att=id=>S.attempts.filter(x=>x.qaId===id).length;
       a.sort(L.sort==='least'?(x,y)=>revN(x)-revN(y):L.sort==='most'?(x,y)=>revN(y)-revN(x):L.sort==='title'?(x,y)=>x.question.localeCompare(y.question):L.sort==='rev'?(x,y)=>(x.rev?.next||0)-(y.rev?.next||0):L.sort==='weak'?(x,y)=>att(x.id)-att(y.id):(x,y)=>(y.updated||0)-(x.updated||0));
@@ -625,8 +637,10 @@ function vNote(v,[id]){
   ${sec('Memory aids',ulistF(n.mnemonics,'mnemonics'))}
   ${sec('Likely questions',ulistF(n.pyqs,'pyqs'))}
   </div>
+  <div class="sec" id="olsec"></div>
   <div class="sec"><div class="h row">Flashcards <span class="spacer"></span><button class="btn ghost" id="addcard">+ Card</button></div><div id="clist">${cardListHTML(id)}</div></div>`;
   bindNoteCommon(v,n,'notes');
+  drawOL($('#olsec',v),n.id);
 }
 function bindNoteCommon(v,n,store){
   const kind=store==='notes'?'note':'qa';
@@ -902,7 +916,10 @@ function parseAI(text){
 const keyNote=n=>((n.paper||'')+'|'+String(n.title||'').toLowerCase().replace(/\s+/g,' ').trim());
 const keyQA=q=>String(q.question||'').toLowerCase().replace(/[^a-z0-9\u0C00-\u0C7F]+/g,' ').trim().slice(0,160);
 function normNote(r,fallbackPaper){
-  return{title:String(r.title||r.topic||'Untitled').trim(),paper:normPaper(r.paper)||fallbackPaper||'',topic:str(r.topic||r.section||r.subtopic),tags:arr(r.tags),summary:str(r.summary),content:str(r.content||r.notes||r.body),keyFacts:arr(r.keyFacts||r.key_facts||r.facts),telanganaAngle:str(r.telanganaAngle||r.telangana_angle||r.telangana),mnemonics:arr(r.mnemonics),pyqs:arr(r.pyqs||r.questions||r.likelyQuestions),_cards:r.cards||r.flashcards||[]}}
+  return{title:String(r.title||r.topic||'Untitled').trim(),paper:normPaper(r.paper)||fallbackPaper||'',topic:str(r.topic||r.section||r.subtopic),tags:arr(r.tags),summary:str(r.summary),content:str(r.content||r.notes||r.body),keyFacts:arr(r.keyFacts||r.key_facts||r.facts),telanganaAngle:str(r.telanganaAngle||r.telangana_angle||r.telangana),mnemonics:arr(r.mnemonics),pyqs:arr(r.pyqs||r.questions||r.likelyQuestions),...olFromRaw(r.oneliners||r.oneLiners),_cards:r.cards||r.flashcards||[]}}
+// Only set oneliners when the import carries some, so re-importing a note never wipes the ones already made.
+function olFromRaw(v){const a=(Array.isArray(v)?v:[]).map(x=>typeof x==='string'?olParse('Q: '+x.replace(/\s+[—–-]\s+/,' | A: '))[0]:x&&{q:str(x.q||x.question),a:str(x.a||x.answer)}).filter(x=>x&&x.q&&x.a);
+  return a.length?{oneliners:a.map(x=>({id:uid(),q:x.q,a:x.a,card:''})),olAt:Date.now()}:{}}
 function normQA(r,fallbackPaper){
   const an=r.answer&&typeof r.answer==='object'&&!Array.isArray(r.answer)?r.answer:{body:r.answer||r.modelAnswer||r.body};
   return{question:String(r.question||'').trim(),paper:normPaper(r.paper)||fallbackPaper||'',topic:str(r.topic),tags:arr(r.tags),marks:+r.marks||'',wordLimit:+(r.wordLimit||r.word_limit||r.words)||'',directive:str(r.directive),keywords:arr(r.keywords),intro:str(an.intro||an.introduction||r.intro),body:str(an.body||an.mainBody||an.points),conclusion:str(an.conclusion||an.wayForward||r.conclusion),diagram:str(r.diagram),mnemonic:str(r.mnemonic||r.memoryAid||r.memory_aid),valueAdd:arr(r.valueAdd||r.value_add||r.valueAdditions),_cards:r.cards||r.flashcards||[]}}
@@ -1300,10 +1317,10 @@ function vSettings(v){
   $('#rprog').onclick=async()=>{if(!confirm('Reset every card to new and clear review history? Content stays.'))return;await upsertMany('cards',S.cards.map(resetCard));S.logs=[];await DB.clear('logs');toast('Progress reset');updateBadge()};
   $('#wipe').onclick=async()=>{if(!confirm('Delete ALL notes, questions, cards and history? Make a backup first.'))return;if(prompt('Type DELETE to confirm')!=='DELETE')return;for(const st of['notes','qas','cards','logs','attempts','ideas','stories']){S[st]=[];await DB.clear(st)}toast('Everything deleted');go('#/home')};
 }
-function noteToMd(n){return`# ${n.title}\n*${paperName(n.paper)}${n.topic?' · '+n.topic:''}*\n\n${n.summary?'> '+n.summary+'\n\n':''}${n.content||''}\n${n.keyFacts?.length?'\n## Key facts\n'+n.keyFacts.map(x=>'- '+x).join('\n')+'\n':''}${n.telanganaAngle?'\n## Telangana angle\n'+n.telanganaAngle+'\n':''}${n.mnemonics?.length?'\n## Memory aids\n'+n.mnemonics.map(x=>'- '+x).join('\n')+'\n':''}${n.pyqs?.length?'\n## Likely questions\n'+n.pyqs.map(x=>'- '+x).join('\n')+'\n':''}`}
+function noteToMd(n){return`# ${n.title}\n*${paperName(n.paper)}${n.topic?' · '+n.topic:''}*\n\n${n.summary?'> '+n.summary+'\n\n':''}${n.content||''}\n${n.keyFacts?.length?'\n## Key facts\n'+n.keyFacts.map(x=>'- '+x).join('\n')+'\n':''}${n.telanganaAngle?'\n## Telangana angle\n'+n.telanganaAngle+'\n':''}${n.mnemonics?.length?'\n## Memory aids\n'+n.mnemonics.map(x=>'- '+x).join('\n')+'\n':''}${n.pyqs?.length?'\n## Likely questions\n'+n.pyqs.map(x=>'- '+x).join('\n')+'\n':''}${n.oneliners?.length?'\n## One-line Q&A\n'+n.oneliners.map(x=>'- '+x.q+' — '+x.a).join('\n')+'\n':''}`}
 function qaToMd(q){return`## Q. ${q.question}\n*${paperName(q.paper)}${q.marks?' · '+q.marks+' marks':''}${q.wordLimit?' · '+q.wordLimit+' words':''}*\n\n${q.keywords?.length?'**Keywords:** '+q.keywords.join(', ')+'\n\n':''}${q.intro?q.intro+'\n\n':''}${q.body||''}\n\n${q.conclusion||''}\n${q.mnemonic?'\n**Memory aid:** '+q.mnemonic+'\n':''}${q.diagram?'\n**Diagram:** '+q.diagram+'\n':''}${q.valueAdd?.length?'\n**Value additions:**\n'+q.valueAdd.map(x=>'- '+x).join('\n')+'\n':''}`}
 const cardRaw=id=>cardsOf(id).filter(c=>!c.group?.startsWith('outline-')).reduce((a,c)=>{if(c.type==='cloze'){if(!a.seen.has(c.group)){a.seen.add(c.group);a.l.push({type:'cloze',text:c.text,back:c.back})}}else a.l.push({type:'basic',front:c.front,back:c.back});return a},{seen:new Set(),l:[]}).l;
-function packNote(n){return{title:n.title,paper:n.paper,topic:n.topic,tags:n.tags,summary:n.summary,content:n.content,keyFacts:n.keyFacts,telanganaAngle:n.telanganaAngle,mnemonics:n.mnemonics,pyqs:n.pyqs,cards:cardRaw(n.id)}}
+function packNote(n){return{title:n.title,paper:n.paper,topic:n.topic,tags:n.tags,summary:n.summary,content:n.content,keyFacts:n.keyFacts,telanganaAngle:n.telanganaAngle,mnemonics:n.mnemonics,pyqs:n.pyqs,oneliners:(n.oneliners||[]).map(x=>({q:x.q,a:x.a})),cards:cardRaw(n.id)}}
 function packQA(q){return{question:q.question,paper:q.paper,topic:q.topic,tags:q.tags,marks:q.marks,wordLimit:q.wordLimit,directive:q.directive,keywords:q.keywords,answer:{intro:q.intro,body:q.body,conclusion:q.conclusion},diagram:q.diagram,mnemonic:q.mnemonic,valueAdd:q.valueAdd,cards:cardRaw(q.id)}}
 function vBackup(v){
   v.innerHTML=`<div class="card"><b>Full backup</b><p class="small muted" style="margin:4px 0 10px">Everything — notes, Q&amp;A, cards, ideas, stories, review history, attempts and settings. Last backup: ${ago(S.settings.lastBackup)}.</p>
@@ -2281,6 +2298,83 @@ function vQGen(el){
   $('#qkey',el).onclick=()=>aiSetup();
   $('#qgo',el).onclick=go_;
   fill();
+}
+
+/* ================= One-line Q&A for a note (AI) ================= */
+// Stored on the note as n.oneliners = [{id,q,a,card}], so backups, exports and sync carry them with the note.
+const OLGEN={};// noteId -> running generation {text,ctrl,on,more}
+const OL={mode:'quiz'};try{Object.assign(OL,JSON.parse(localStorage.getItem('mains-ol')||'{}'))}catch(e){}
+const saveOL=()=>{try{localStorage.setItem('mains-ol',JSON.stringify(OL))}catch(e){}};
+const olKey=s=>String(s||'').toLowerCase().replace(/[^a-z0-9ఀ-౿]+/g,' ').trim();
+const olParse=t=>String(t||'').split('\n').map(l=>l.match(/^\s*(?:[-*•]|\d+[.)])?\s*\**Q\**\s*[:.]\s*(.+?)\s*\|\s*\**A\**\s*[:.]\s*(.+?)\s*$/i)).filter(Boolean).map(m=>({q:m[1].replace(/\*\*/g,'').trim(),a:m[2].replace(/\*\*/g,'').trim()}));
+function olPrompt(n,more){
+  const have=more?(n.oneliners||[]):[];
+  const system=`You turn a TSPSC (TGPSC) Group-1 Mains revision note into one-line questions and answers, so the student can remember every fact without rereading the note.
+
+RULES
+- Cover EVERY examinable fact in the note: names, dates, places, numbers, articles, acts, committees, reports, schemes, causes, effects, features, definitions and the Telangana angle. Follow the note's order.
+- Use ONLY facts stated in the note. Never add a fact that is not in it. If the note marks something [verify], keep [verify] after that answer.
+- Question: one line, under 15 words, specific enough to have exactly one right answer. No yes/no questions.
+- Answer: as short as possible: a word, number, name or phrase, under 10 words.
+- One fact per question. For a key fact worth drilling, you may ask it from a second angle (e.g. who and when).
+- Plain simple English. No markdown, no numbering, no headings.
+${more?`- I already have the questions listed by the user. Write only NEW ones on facts those missed (up to 20). If every fact is already covered, reply with nothing.`:'- Usually 15 to 40 questions, depending on how many facts the note has.'}
+
+Reply with ONLY lines in exactly this format, one per line, nothing else:
+Q: <question> | A: <answer>`;
+  const user=`NOTE:\n"""\n${noteToMd({...n,oneliners:[]}).slice(0,14000)}\n"""${have.length?`\n\nQUESTIONS I ALREADY HAVE:\n${have.map(x=>'- '+x.q).join('\n')}`:''}`;
+  return[system,user]}
+async function genOL(id,more){
+  const n=byId('notes',id);if(!n)return;if(!aiReady())return aiSetup(()=>genOL(id,more));if(OLGEN[id])return;
+  const g=OLGEN[id]={text:'',ctrl:new AbortController(),on:null,more,err:''};const[sys,usr]=olPrompt(n,more);redrawOL(id);
+  let msg='';
+  try{await aiStream(sys,usr,t=>{g.text+=t;g.on&&g.on()},g.ctrl.signal);
+    const o=byId('notes',id);if(!o)throw new Error('The note was deleted.');
+    const have=new Set((o.oneliners||[]).map(x=>olKey(x.q)));
+    const add=olParse(g.text).filter(x=>{const k=olKey(x.q);if(!k||have.has(k))return false;have.add(k);return true}).map(x=>({id:uid(),q:x.q,a:x.a,card:''}));
+    if(!add.length)throw new Error(more?'No new facts left to ask. This note is fully covered.':'No questions came back. Try again.');
+    o.oneliners=[...(o.oneliners||[]),...add];o.olAt=Date.now();await upsert('notes',o);
+    msg=`⚡ ${add.length} one-liners saved${location.hash==='#/note/'+id?'':' to “'+o.title+'”'}`}
+  catch(e){OLERR[id]=e.name==='AbortError'?'You stopped it.':e.message==='Failed to fetch'?(AI.provider==='openai'?'Could not reach OpenAI. Usually the key is wrong or has no credit, or you are offline.':'Network error. Check your internet connection.'):(e.message||String(e))}
+  delete OLGEN[id];redrawOL(id);if(msg){delete OLERR[id];toast(msg,3000);floatXp(award(5))}else if(location.hash!=='#/note/'+id)toast('One-liners: '+OLERR[id],4000)}
+const OLERR={};
+function redrawOL(id){const box=$('#olsec');if(box&&location.hash==='#/note/'+id)drawOL(box,id)}
+function drawOL(box,id){
+  const n=byId('notes',id);if(!n||!box)return;const g=OLGEN[id],list=n.oneliners||[],err=OLERR[id];
+  const inCards=x=>x.card&&byId('cards',x.card),newForCards=list.filter(x=>!inCards(x)).length;
+  const head=`<div class="h row" style="margin-bottom:8px">⚡ One-line Q&amp;A${list.length?' · '+list.length:''}<span class="spacer"></span>${list.length&&!g?`<div class="seg" id="olm" style="margin:0;padding:2px"><button data-m="quiz" style="padding:4px 10px;font-size:12px">Quiz</button><button data-m="list" style="padding:4px 10px;font-size:12px">List</button></div>`:''}</div>`;
+  if(g){const got=olParse(g.text);
+    box.innerHTML=head+`<div class="card ol">${[...(g.more?list:[]),...got].map(x=>`<div class="olr on"><div class="q">${esc(x.q)}</div><div class="a">${esc(x.a)}</div></div>`).join('')}
+      <div class="vc">${g.text?'✍️ Writing… '+got.length+' so far':'✍️ Reading your note…'}</div><button class="btn block" id="olstop" style="margin-top:8px">Stop</button></div>`;
+    $('#olstop',box).onclick=()=>g.ctrl.abort();
+    g.on=()=>{if(!box.isConnected)return;clearTimeout(g.t);g.t=setTimeout(()=>{const y=scrollY;drawOL(box,id);scrollTo(0,y)},120)};return}
+  if(!list.length){box.innerHTML=head+`<div class="card olempty"><div style="font-size:15px;font-weight:500">Remember every fact in this note</div>
+      <p class="small muted" style="margin:4px 0 12px">AI turns the note into short one-line questions and answers: every name, date, number and article, from the note only. Quiz yourself in a minute, or send them to flashcards.</p>
+      ${err?`<p class="small" style="color:var(--again);margin:0 0 10px">${esc(err)}</p>`:''}
+      <button class="btn primary block" id="olgo">✨ Generate one-line Q&amp;A</button>
+      <p class="small muted" style="text-align:center;margin:8px 0 0">${aiReady()?'Uses your '+(AI.provider==='openai'?'OpenAI':'Claude')+' key':'Needs an AI key (you can add it next)'}</p></div>`;
+    $('#olgo',box).onclick=()=>genOL(id,false);return}
+  const quiz=OL.mode==='quiz';
+  box.innerHTML=head+`<div class="card ol">${list.map((x,i)=>`<div class="olr${quiz?'':' on'}" data-i="${i}"><div class="q"><span class="n">${i+1}</span>${esc(x.q)}${inCards(x)?' <span class="tag" title="In your flashcards">card</span>':''}</div><div class="a">${esc(x.a)}</div>${quiz?'':`<button class="iconbtn olx" data-x="${i}" aria-label="Delete this one">✕</button>`}</div>`).join('')}
+    ${err?`<p class="small" style="color:var(--again);margin:10px 0 0">${esc(err)}</p>`:''}</div>
+    <div class="row" style="margin-top:-4px;flex-wrap:nowrap">
+      <button class="btn" id="olcards" ${newForCards?'':'disabled'}>${newForCards?`+ ${newForCards} to flashcards`:'✓ In flashcards'}</button>
+      <button class="btn" id="olmore">✨ More</button><span class="spacer"></span><button class="btn ghost" id="olmenu" aria-label="More options">⋯</button></div>
+    <p class="small muted" style="margin:6px 0 0">${quiz?'Tap a question to reveal the answer. ':''}Made ${ago(n.olAt)} from this note.</p>`;
+  $$('#olm button',box).forEach(b=>{b.classList.toggle('on',b.dataset.m===OL.mode);b.onclick=()=>{OL.mode=b.dataset.m;saveOL();drawOL(box,id)}});
+  if(quiz)$$('.olr',box).forEach(el=>el.onclick=()=>{if(el.classList.contains('on'))return;el.classList.add('on');floatXp(award(1))});
+  $$('.olx',box).forEach(b=>b.onclick=async e=>{e.stopPropagation();const x=list[+b.dataset.x];n.oneliners=list.filter(y=>y!==x);await upsert('notes',n);drawOL(box,id);
+    toast('Deleted',4000,{label:'Undo',fn:async()=>{n.oneliners=list;await upsert('notes',n);drawOL(box,id)}})});
+  $('#olmore',box).onclick=()=>genOL(id,true);
+  $('#olcards',box).onclick=async()=>{const t=Date.now(),have=new Set(cardsOf(id).map(c=>olKey(c.front)));const cs=[];
+    for(const x of list){if(inCards(x))continue;let c=cardsOf(id).find(c=>olKey(c.front)===olKey(x.q));
+      if(!c&&!have.has(olKey(x.q))){c=newCard({type:'basic',front:x.q,back:x.a,paper:n.paper,sourceType:'note',sourceId:id,group:'ol-'+id,created:t+cs.length});cs.push(c)}
+      if(c)x.card=c.id}
+    if(cs.length)await upsertMany('cards',cs);await upsert('notes',n);toast(`${cs.length} flashcards added to Review`);updateBadge();const y=scrollY;render();scrollTo(0,y)};
+  $('#olmenu',box).onclick=()=>modal(`<h3>One-line Q&amp;A</h3><div style="display:grid;gap:8px"><button class="btn" data-a="copy">Copy all as text</button><button class="btn" data-a="redo">Replace with a fresh set</button><button class="btn danger" data-a="del">Delete all ${list.length}</button><button class="btn ghost" data-close>Close</button></div>
+    <p class="small muted" style="margin-top:10px">Flashcards already made from them stay in Review.</p>`,m=>$$('[data-a]',m).forEach(b=>b.onclick=async()=>{const a=b.dataset.a;
+      if(a==='copy'){toast(await copyText(list.map((x,i)=>`${i+1}. ${x.q} — ${x.a}`).join('\n'))?'Copied':'Could not copy');closeModal()}
+      if(a==='redo'||a==='del'){if(!confirm(a==='del'?`Delete all ${list.length} one-liners?`:`Replace all ${list.length} one-liners with a new set?`))return;n.oneliners=[];await upsert('notes',n);closeModal();if(a==='redo')genOL(id,false);else{drawOL(box,id);toast('Deleted')}}}));
 }
 
 /* ================= [verify] → one-tap Google search ================= */
